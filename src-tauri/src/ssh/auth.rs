@@ -2,10 +2,11 @@
 use super::runner::{Limits, RunError, Runner};
 use crate::domain::*;
 use std::{
-    fs::{self, DirBuilder, OpenOptions},
+    fs::{self, OpenOptions},
     io::Write,
-    os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, symlink},
-    path::{Path, PathBuf},
+    os::unix::fs::{OpenOptionsExt, symlink},
+    path::Path,
+    sync::Arc,
     time::Duration,
 };
 
@@ -22,8 +23,7 @@ pub(super) const POLICY: &str = "Host *\n\
 /// Private policy overlay; source files are referenced, never copied or rewritten.
 /// The process owner retains this lease until cancellation/deadline cleanup has reaped SSH.
 pub(crate) struct PolicyConfig {
-    directory: PathBuf,
-    identity: (u64, u64),
+    pub runtime: Arc<super::runtime::RuntimeLease>,
     pub selection: SshSelection,
 }
 impl PolicyConfig {
@@ -38,28 +38,22 @@ impl PolicyConfig {
             }
             _ => return Err(invalid()),
         };
-        let mut random = [0; 16];
-        getrandom::fill(&mut random).map_err(|_| AppError::new(ErrorCode::Internal))?;
-        let token: String = random.iter().map(|byte| format!("{byte:02x}")).collect();
-        // Fixed short ASCII root avoids Include expansion/globbing and works on Linux/macOS.
-        let directory = Path::new("/tmp").join(format!("containerdesk-ssh-{token}"));
-        DirBuilder::new()
-            .mode(0o700)
-            .create(&directory)
-            .map_err(|_| invalid())?;
-        let metadata = fs::symlink_metadata(&directory).map_err(|_| invalid())?;
+        let runtime = Arc::new(super::runtime::RuntimeLease::create()?);
         let policy = Self {
-            identity: (metadata.dev(), metadata.ino()),
             selection: SshSelection {
                 alias: selection.alias.clone(),
-                config_path: directory.join("policy.conf").to_string_lossy().into_owned(),
+                config_path: runtime
+                    .path()
+                    .join("policy.conf")
+                    .to_string_lossy()
+                    .into_owned(),
                 use_default_config: false,
             },
-            directory,
+            runtime,
         };
         let mut text = POLICY.to_string();
         if source_exists {
-            let link = policy.directory.join("user.conf");
+            let link = policy.runtime.path().join("user.conf");
             symlink(source, &link).map_err(|_| invalid())?;
             text.push_str(&format!("Include {}\n", link.display()));
         }
@@ -76,18 +70,6 @@ impl PolicyConfig {
             .map_err(|_| invalid())?;
         file.write_all(text.as_bytes()).map_err(|_| invalid())?;
         Ok(policy)
-    }
-}
-impl Drop for PolicyConfig {
-    fn drop(&mut self) {
-        if fs::symlink_metadata(&self.directory)
-            .is_ok_and(|m| m.is_dir() && (m.dev(), m.ino()) == self.identity)
-        {
-            // Only our exact entries; never recurse into config symlinks or unexpected contents.
-            let _ = fs::remove_file(self.directory.join("policy.conf"));
-            let _ = fs::remove_file(self.directory.join("user.conf"));
-            let _ = fs::remove_dir(&self.directory);
-        }
     }
 }
 
@@ -116,6 +98,12 @@ pub async fn probe(
         .map_err(map_start)?
         .wait()
         .await;
+    report(selection, result)
+}
+pub(super) fn report(
+    selection: SshSelection,
+    result: Result<super::runner::Captured, RunError>,
+) -> Result<SshAccessReport, AppError> {
     let (status, ssh_error) = match result {
         Ok(output) if output.status.success() && output.stdout == b"containerdesk-access-ok" => {
             (SshAccessStatus::Verified, None)

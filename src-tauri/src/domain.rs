@@ -784,6 +784,7 @@ pub enum ConnectionDiagnosticCode {
     OutputLimit,
     ProbeUnavailable,
     RemoteCommandFailed,
+    ConnectionLost,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -833,4 +834,14 @@ pub struct ConnectionSnapshot {
     pub durations: Vec<StageDuration>,
     pub diagnostic: Option<ConnectionDiagnostic>,
     pub has_jump: bool,
+    pub transport_mode: SshTransportMode,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum SshTransportMode {
+    Unconnected,
+    Multiplexed,
+    DirectFallback,
 }

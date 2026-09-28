@@ -12,7 +12,7 @@ pub(crate) enum StageOutcome {
     Resolved {
         has_jump: bool,
     },
-    Authenticated,
+    Authenticated(SshTransportMode),
     #[cfg_attr(
         not(test),
         expect(
@@ -30,12 +30,16 @@ pub(crate) trait StageDriver: Send + Sync {
         stage: ConnectionStage,
         selection: &'a SshSelection,
     ) -> StageFuture<'a, StageOutcome>;
+    fn idle(&self) -> StageFuture<'_, Option<ConnectionDiagnosticCode>> {
+        Box::pin(std::future::pending())
+    }
     fn quiesce(&self) -> StageFuture<'_, ()>;
 }
 pub(crate) struct NativeDriver {
     pub runner: super::runner::Runner,
     pub executable: String,
     pub _permit: tokio::sync::OwnedSemaphorePermit,
+    pub connection: AsyncMutex<Option<super::multiplex::Connection>>,
 }
 impl StageDriver for NativeDriver {
     fn run<'a>(
@@ -64,11 +68,25 @@ impl StageDriver for NativeDriver {
                     }
                 },
                 ConnectionStage::Authenticate => {
-                    match super::auth::probe(&self.runner, &self.executable, selection.clone())
-                        .await
-                    {
+                    let connection = match super::multiplex::Connection::new(
+                        &self.executable,
+                        selection.clone(),
+                    ) {
+                        Ok(connection) => connection,
+                        Err(_) => {
+                            return StageOutcome::Failed(
+                                ConnectionDiagnosticCode::ConnectionFailed,
+                            );
+                        }
+                    };
+                    let mut owner = self.connection.lock().await;
+                    *owner = Some(connection);
+                    let connection = owner.as_mut().expect("connection owner");
+                    match connection.start().await {
                         Ok(report) => match report.status {
-                            SshAccessStatus::Verified => StageOutcome::Authenticated,
+                            SshAccessStatus::Verified => {
+                                StageOutcome::Authenticated(connection.mode())
+                            }
                             SshAccessStatus::RemoteCommandFailed => {
                                 StageOutcome::Failed(ConnectionDiagnosticCode::RemoteCommandFailed)
                             }
@@ -94,7 +112,13 @@ impl StageDriver for NativeDriver {
                                 StageOutcome::Failed(ConnectionDiagnosticCode::ConnectionFailed)
                             }
                         },
-                        Err(_) => StageOutcome::Failed(ConnectionDiagnosticCode::ConnectionFailed),
+                        Err(error) => {
+                            StageOutcome::Failed(if error.code == ErrorCode::OperationTimedOut {
+                                ConnectionDiagnosticCode::TimedOut
+                            } else {
+                                ConnectionDiagnosticCode::ConnectionFailed
+                            })
+                        }
                     }
                 }
                 // Prompt 016 supplies the Docker capability probe. Never fabricate readiness now.
@@ -104,8 +128,22 @@ impl StageDriver for NativeDriver {
             }
         })
     }
+    fn idle(&self) -> StageFuture<'_, Option<ConnectionDiagnosticCode>> {
+        Box::pin(async move {
+            let owner = self.connection.lock().await;
+            if let Some(connection) = owner.as_ref() {
+                connection.wait_lost().await;
+            }
+            Some(ConnectionDiagnosticCode::ConnectionLost)
+        })
+    }
     fn quiesce(&self) -> StageFuture<'_, ()> {
-        Box::pin(self.runner.wait_idle())
+        Box::pin(async move {
+            if let Some(connection) = self.connection.lock().await.take() {
+                connection.close().await;
+            }
+            self.runner.wait_idle().await;
+        })
     }
 }
 #[derive(Default)]
@@ -175,6 +213,7 @@ impl Sessions {
                 durations: vec![],
                 diagnostic: None,
                 has_jump: false,
+                transport_mode: SshTransportMode::Unconnected,
             };
             state.snapshot = Some(snapshot.clone());
             snapshot
@@ -202,6 +241,7 @@ impl Sessions {
             snapshot.token.session_generation = generation;
             snapshot.state = ConnectionState::Disconnected;
             snapshot.diagnostic = None;
+            snapshot.transport_mode = SshTransportMode::Unconnected;
         }
         Ok(())
     }
@@ -237,6 +277,11 @@ impl Sessions {
             .snapshot
             .clone()
             .ok_or_else(|| AppError::new(ErrorCode::SessionNotFound))
+    }
+    pub async fn shutdown(&self) {
+        let mut control = self.control.lock().await;
+        let _ = self.invalidate();
+        stop(&mut control).await;
     }
     pub fn reset_idle(&self) -> Result<(), AppError> {
         // Caller holds the diagnostic gate: there can be no native stage/cleanup in flight.
@@ -283,7 +328,8 @@ async fn drive(
                 current.has_jump = has_jump;
                 current.state = ConnectionState::Connecting;
             }
-            (ConnectionStage::Authenticate, StageOutcome::Authenticated) => {
+            (ConnectionStage::Authenticate, StageOutcome::Authenticated(mode)) => {
+                current.transport_mode = mode;
                 current.state = ConnectionState::Probing
             }
             (ConnectionStage::Probe, StageOutcome::Ready) => current.state = ConnectionState::Ready,
@@ -304,6 +350,31 @@ async fn drive(
                 });
                 break;
             }
+        }
+    }
+    let hold = state.lock().is_ok_and(|state| {
+        state.snapshot.as_ref().is_some_and(|current| {
+            current.token == initial.token
+                && matches!(
+                    current.state,
+                    ConnectionState::Ready | ConnectionState::Degraded
+                )
+        })
+    });
+    if hold {
+        let diagnostic =
+            tokio::select! { biased; _ = &mut cancelled => None, code = driver.idle() => code };
+        if let Some(code) = diagnostic
+            && let Ok(mut state) = state.lock()
+            && let Some(current) = &mut state.snapshot
+            && current.token == initial.token
+        {
+            current.state = ConnectionState::Degraded;
+            current.diagnostic = Some(ConnectionDiagnostic {
+                stage: ConnectionStage::Probe,
+                code,
+            });
+            current.transport_mode = SshTransportMode::Unconnected;
         }
     }
     // Dropped stage futures cancel Runner Jobs. Hold the native gate until their owners reap.

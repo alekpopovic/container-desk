@@ -146,6 +146,7 @@ test("connection snapshots reject stale generations and mismatched aliases", asy
     durations: [],
     diagnostic: null,
     hasJump: false,
+    transportMode: "unconnected",
   };
   mockIPC(() => snapshot);
   const current = await beginSshSession(selected);

@@ -1,4 +1,5 @@
 use super::*;
+use std::os::unix::fs::MetadataExt;
 #[test]
 fn diagnostics_exclude_banners_paths_and_secrets_and_prioritize_trust() {
     let (status, message) = classify(
@@ -26,7 +27,7 @@ fn policy_references_source_without_copying_and_cleans_only_owned_entries() {
         use_default_config: false,
     };
     let policy = PolicyConfig::create(&selected).unwrap();
-    let directory = policy.directory.clone();
+    let directory = policy.runtime.path().to_path_buf();
     assert_eq!(fs::metadata(&directory).unwrap().mode() & 0o777, 0o700);
     assert_eq!(
         fs::metadata(&policy.selection.config_path).unwrap().mode() & 0o777,

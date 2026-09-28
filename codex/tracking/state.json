@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T20:41:31+00:00",
+  "updated_at": "2026-09-28T21:23:45+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -477,6 +477,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T20:42:21+00:00",
+      "id": "015",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T21:23:45+00:00",
+      "id": "015",
+      "action": "done",
+      "note": "68 Rust tests passed; clippy/fmt and 21 IPC tests passed; Real SSH lab: 5 tests including direct/ProxyJump reuse, cancellation, shutdown ownership, fallback, death and idle expiry passed; 12 browser tests and native Linux release build passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T20:42:21+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -670,12 +704,16 @@
       "note": ""
     },
     "015": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T20:42:21+00:00",
+      "finished_at": "2026-09-28T21:23:45+00:00",
+      "evidence": "codex/tracking/evidence/015.md",
+      "evidence_sha256": "37c23cc46f5e4750e3d4b4d4b02466fbbfb18d5d216bb7aaf15f7c1bc0045389",
+      "checks": [
+        "68 Rust tests passed; clippy/fmt and 21 IPC tests passed",
+        "Real SSH lab: 5 tests including direct/ProxyJump reuse, cancellation, shutdown ownership, fallback, death and idle expiry passed",
+        "12 browser tests and native Linux release build passed"
+      ],
       "commit": "",
       "note": ""
     },

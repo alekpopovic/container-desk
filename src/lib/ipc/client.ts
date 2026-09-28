@@ -619,6 +619,8 @@ export const connectionLabels: Record<ConnectionState, string> = {
   error: "Connection error",
 };
 export const connectionDiagnostics: Record<ConnectionDiagnosticCode, string> = {
+  connection_lost:
+    "The app-owned SSH connection ended or reached its idle limit. Reconnect explicitly; no command was replayed.",
   resolution_failed: "OpenSSH could not resolve the selected configuration.",
   unknown_host_key: sshAccessHelp.unknown_host_key,
   changed_host_key: sshAccessHelp.changed_host_key,
@@ -659,6 +661,9 @@ function decodeConnection(
     typeof value.state !== "string" ||
     !Object.hasOwn(connectionLabels, value.state) ||
     typeof value.hasJump !== "boolean" ||
+    !["unconnected", "multiplexed", "direct_fallback"].includes(
+      value.transportMode as string,
+    ) ||
     !Array.isArray(value.durations) ||
     value.durations.length > 3 ||
     !value.durations.every(

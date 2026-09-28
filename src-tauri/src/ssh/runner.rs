@@ -125,6 +125,16 @@ impl Runner {
         limits: Limits,
         resource: Box<dyn Send>,
     ) -> Result<Job, RunError> {
+        self.start_for_session(executable, args, limits, resource, None)
+    }
+    pub(crate) fn start_for_session(
+        &self,
+        executable: &str,
+        args: Vec<OsString>,
+        limits: Limits,
+        resource: Box<dyn Send>,
+        session: Option<tokio::sync::watch::Receiver<bool>>,
+    ) -> Result<Job, RunError> {
         limits.validate()?;
         if args.len() > 64
             || args
@@ -142,7 +152,7 @@ impl Runner {
         let (cancel, cancelled) = oneshot::channel();
         let (result, receive) = oneshot::channel();
         tokio::spawn(async move {
-            let outcome = execute(executable, args, limits, cancelled).await;
+            let outcome = execute(executable, args, limits, cancelled, session).await;
             drop(resource);
             drop(permit); // Capacity becomes available only after cleanup, before acknowledgment.
             let _ = result.send(outcome);
@@ -197,10 +207,17 @@ async fn execute(
     args: Vec<OsString>,
     limits: Limits,
     mut cancel: oneshot::Receiver<()>,
+    mut session: Option<tokio::sync::watch::Receiver<bool>>,
 ) -> Result<Captured, RunError> {
     match cancel.try_recv() {
         Ok(()) | Err(oneshot::error::TryRecvError::Closed) => return Err(RunError::Cancelled),
         Err(oneshot::error::TryRecvError::Empty) => (),
+    }
+    if session
+        .as_ref()
+        .is_some_and(|receiver| *receiver.borrow() || receiver.has_changed().is_err())
+    {
+        return Err(RunError::Cancelled);
     }
     let mut command = Command::new(executable);
     command
@@ -232,6 +249,13 @@ async fn execute(
     let outcome = tokio::select! {
         biased;
         _ = &mut cancel => Err(RunError::Cancelled),
+        _ = async {
+            if let Some(receiver) = &mut session {
+                while !*receiver.borrow() {
+                    if receiver.changed().await.is_err() { break; }
+                }
+            } else { std::future::pending::<()>().await; }
+        } => Err(RunError::Cancelled),
         _ = sleep(limits.deadline) => Err(RunError::TimedOut),
         result = async {
             // Keep the leader unreaped while inherited pipe handles remain, preserving group identity.

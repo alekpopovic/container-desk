@@ -39,7 +39,9 @@ impl StageDriver for Controlled {
             self.gates[index].acquire().await.unwrap().forget();
             match stage {
                 ConnectionStage::Resolve => StageOutcome::Resolved { has_jump: true },
-                ConnectionStage::Authenticate => StageOutcome::Authenticated,
+                ConnectionStage::Authenticate => {
+                    StageOutcome::Authenticated(SshTransportMode::DirectFallback)
+                }
                 ConnectionStage::Probe if self.fail_probe => {
                     StageOutcome::Failed(ConnectionDiagnosticCode::RemoteCommandFailed)
                 }
@@ -196,6 +198,7 @@ async fn disposable_lab_session_driver_reports_real_authentication_and_no_false_
             runner: super::super::runner::Runner::default(),
             executable: "/usr/bin/ssh".into(),
             _permit: gate.clone().try_acquire_owned().unwrap(),
+            connection: Default::default(),
         });
         let selected = SshSelection {
             alias: alias.into(),
@@ -206,11 +209,15 @@ async fn disposable_lab_session_driver_reports_real_authentication_and_no_false_
         let result = wait_state(&sessions, &snapshot.token, expected).await;
         assert_eq!(result.diagnostic.as_ref().unwrap().code, code);
         assert_eq!(result.has_jump, alias.starts_with("via-"));
-        sessions.disconnect(&snapshot.token).await.unwrap();
+        sessions.shutdown().await;
+        assert_eq!(
+            sessions.snapshot(&snapshot.token).unwrap_err().code,
+            ErrorCode::StaleSession
+        );
         assert_eq!(
             gate.available_permits(),
             1,
-            "disconnect waits for native cleanup"
+            "app shutdown waits for native cleanup"
         );
         println!(
             "native session {alias}: {:?}, {:?}, {} completed stages",
@@ -245,6 +252,7 @@ async fn native_cancel_closes_a_slow_ssh_handshake_before_releasing_the_probe_ga
         runner: super::super::runner::Runner::default(),
         executable: "/usr/bin/ssh".into(),
         _permit: gate.clone().try_acquire_owned().unwrap(),
+        connection: Default::default(),
     });
     let selected = SshSelection {
         alias: "fixture".into(),

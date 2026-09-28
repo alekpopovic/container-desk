@@ -114,7 +114,8 @@ fn generated_contract_is_current() {
         ConnectionRequest,
         StageDuration,
         ConnectionDiagnostic,
-        ConnectionSnapshot
+        ConnectionSnapshot,
+        SshTransportMode
     );
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/generated.ts"),

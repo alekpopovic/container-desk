@@ -10,6 +10,7 @@ use std::sync::{Arc, Mutex};
 pub struct Backend {
     process_runner: crate::ssh::runner::Runner,
     sessions: crate::ssh::sessions::Sessions,
+    shutting_down: std::sync::atomic::AtomicBool,
     config_home: std::path::PathBuf,
     policy: Mutex<PolicyEngine>,
     settings: Mutex<Result<SettingsStore, AppError>>,
@@ -25,6 +26,7 @@ impl Backend {
         Self {
             process_runner: crate::ssh::runner::Runner::default(),
             sessions: crate::ssh::sessions::Sessions::default(),
+            shutting_down: std::sync::atomic::AtomicBool::new(false),
             config_home,
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(settings),
@@ -32,6 +34,11 @@ impl Backend {
             workspace: Mutex::new(WorkspaceTransport::default()),
             read_slots: tokio::sync::Semaphore::new(4),
         }
+    }
+    pub async fn shutdown(&self) {
+        self.shutting_down
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+        self.sessions.shutdown().await;
     }
     pub fn config_path(&self, path: Option<&str>) -> Result<SshConfigPath, AppError> {
         let preferences = self.preferences()?;
@@ -150,6 +157,7 @@ impl Backend {
                     runner: self.process_runner.clone(),
                     executable,
                     _permit: permit,
+                    connection: Default::default(),
                 }))
             })
             .await
@@ -267,6 +275,9 @@ impl Backend {
     }
 
     fn require_live_mode(&self) -> Result<(), AppError> {
+        if self.shutting_down.load(std::sync::atomic::Ordering::SeqCst) {
+            return Err(AppError::new(ErrorCode::Disconnected));
+        }
         if self
             .workspace
             .lock()
@@ -541,6 +552,7 @@ impl Default for Backend {
         Self {
             process_runner: crate::ssh::runner::Runner::default(),
             sessions: crate::ssh::sessions::Sessions::default(),
+            shutting_down: std::sync::atomic::AtomicBool::new(false),
             config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
@@ -844,12 +856,19 @@ mod tests {
         std::fs::create_dir(&directory).unwrap();
         std::fs::set_permissions(&directory, std::fs::Permissions::from_mode(0o700)).unwrap();
         let executable = directory.join("ssh-fixture");
-        std::fs::write(
-            &executable,
-            b"#!/bin/sh\n: > \"${0%/*}/spawned\"\nprintf 'OpenSSH_fixture\\n' >&2\n",
-        )
-        .unwrap();
-        std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o700)).unwrap();
+        // Copy from a static fixture in a separate process. Concurrent Rust test forks cannot
+        // inherit a writable destination descriptor; /tmp may be on another filesystem.
+        assert!(
+            std::process::Command::new("/bin/cp")
+                .arg(
+                    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                        .join("fixtures/process/ssh-version-marker.sh")
+                )
+                .arg(&executable)
+                .status()
+                .unwrap()
+                .success()
+        );
         let path = executable.to_str().unwrap().to_string();
         assert_eq!(
             crate::diagnostics::inspect_ssh(&path).await.status,
@@ -1096,6 +1115,34 @@ mod tests {
                 .unwrap_err()
                 .code,
             ErrorCode::FeatureUnavailable
+        );
+    }
+}
+
+#[cfg(test)]
+mod shutdown_tests {
+    use super::*;
+    #[tokio::test]
+    async fn shutdown_fences_new_native_work() {
+        let backend = Backend::default();
+        backend.shutdown().await;
+        assert_eq!(
+            backend
+                .begin_ssh_session(ResolveSshRequest {
+                    selection: SshSelection {
+                        alias: "fixture".into(),
+                        config_path: "/fixture/config".into(),
+                        use_default_config: false
+                    }
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::Disconnected
+        );
+        assert_eq!(
+            backend.diagnostics().await.unwrap_err().code,
+            ErrorCode::Disconnected
         );
     }
 }

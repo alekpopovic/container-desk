@@ -203,3 +203,22 @@ fn native_ssh_accepts_structured_bounds_and_trust_options_without_connecting() {
         assert!(stdout.lines().any(|v| v == line), "missing {line}");
     }
 }
+
+#[tokio::test]
+async fn closed_session_rejects_a_late_job_before_dispatch() {
+    let lab = Lab::new("exit");
+    let runner = Runner::default();
+    let (sender, receiver) = tokio::sync::watch::channel(false);
+    drop(sender);
+    let job = runner
+        .start_for_session(
+            &lab.executable(),
+            lab.arguments(),
+            Limits::default(),
+            Box::new(()),
+            Some(receiver),
+        )
+        .unwrap();
+    assert_eq!(job.wait().await.unwrap_err(), RunError::Cancelled);
+    assert!(!lab.0.join("pid").exists());
+}

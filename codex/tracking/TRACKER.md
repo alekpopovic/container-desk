@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T20:41:31+00:00
+Updated: 2026-09-28T21:23:45+00:00
 
-blocked: **0** | done: **14** | in_progress: **0** | pending: **46**
+blocked: **0** | done: **15** | in_progress: **0** | pending: **45**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -24,7 +24,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 012 | 02 SSH transport | Remote argument quoting and Docker command builders | high | done | codex/tracking/evidence/012.md |
 | 013 | 02 SSH transport | SSH authentication and host trust flow | high | done | codex/tracking/evidence/013.md |
 | 014 | 02 SSH transport | Host connection state machine | high | done | codex/tracking/evidence/014.md |
-| 015 | 02 SSH transport | Connection reuse and child ownership | high | pending | — |
+| 015 | 02 SSH transport | Connection reuse and child ownership | high | done | codex/tracking/evidence/015.md |
 | 016 | 02 SSH transport | Remote Docker capability probe | high | pending | — |
 | 017 | 02 SSH transport | Host inventory screen and groups | medium | pending | — |
 | 018 | 02 SSH transport | SSH vertical slice checkpoint | high | pending | — |
@@ -101,3 +101,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T20:25:18+00:00 — 013: done; Native disposable SSH lab: 14 direct/ProxyJump trust and authentication cases passed; no askpass or config/trust changes; 60 Rust tests, 20 IPC tests, 6 browser presentation checks, clippy and native release build passed
 - 2026-09-28T20:26:26+00:00 — 014: start;
 - 2026-09-28T20:41:31+00:00 — 014: done; 64 Rust tests and 21 IPC tests passed; cancellation and stale-generation races verified; 66 browser tests, real SSH lab (15 auth cases plus 3 session outcomes), clippy and native release build passed
+- 2026-09-28T20:42:21+00:00 — 015: start;
+- 2026-09-28T21:23:45+00:00 — 015: done; 68 Rust tests passed; clippy/fmt and 21 IPC tests passed; Real SSH lab: 5 tests including direct/ProxyJump reuse, cancellation, shutdown ownership, fallback, death and idle expiry passed; 12 browser tests and native Linux release build passed

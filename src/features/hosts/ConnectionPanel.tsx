@@ -44,16 +44,22 @@ export function ConnectionPanel({ selection }: { selection: SshSelection }) {
         : "Connection state is unavailable.",
     );
   }
+  function observed(next: ConnectionSnapshot) {
+    return pending(next) || next.transportMode !== "unconnected";
+  }
   async function poll(next: ConnectionSnapshot, request: number) {
-    if (!valid(request) || !pending(next)) return;
+    if (!valid(request) || !observed(next)) return;
     try {
       const result = await getSshSession(next);
       if (!valid(request)) return;
       apply(result);
-      if (pending(result))
-        timer.current = setTimeout(() => {
-          void poll(result, request);
-        }, 200);
+      if (observed(result))
+        timer.current = setTimeout(
+          () => {
+            void poll(result, request);
+          },
+          pending(result) ? 200 : 1000,
+        );
     } catch (cause) {
       if (valid(request)) fail(cause);
     }
@@ -125,6 +131,13 @@ export function ConnectionPanel({ selection }: { selection: SshSelection }) {
       </button>
       {snapshot && (
         <>
+          <p className="muted">
+            {snapshot.transportMode === "multiplexed"
+              ? "SSH transport: app-owned shared connection."
+              : snapshot.transportMode === "direct_fallback"
+                ? "SSH transport: direct fallback. Connection reuse is unavailable; each command opens its own strict SSH connection."
+                : "No active SSH transport."}
+          </p>
           <p className="muted">
             Session generation {snapshot.token.sessionGeneration}.{" "}
             {snapshot.hasJump &&

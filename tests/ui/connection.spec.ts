@@ -49,6 +49,7 @@ test("switching during probe and cancellation reject old completions", async ({
             durations: [],
             diagnostic: null,
             hasJump: true,
+            transportMode: "direct_fallback",
           };
           return { ...current };
         }
@@ -107,6 +108,10 @@ test("switching during probe and cancellation reject old completions", async ({
   );
   await page.evaluate(() => Reflect.get(window, "finishOldProbe")());
   await expect(panel).toContainText("Session generation 3");
+  await expect(panel).toContainText("SSH transport: direct fallback.");
+  await expect(panel).toContainText(
+    "each command opens its own strict SSH connection.",
+  );
   await page.getByRole("button", { name: "Disconnect", exact: true }).click();
   await expect(panel.getByRole("status").first()).toHaveText("Disconnected");
   await page.getByRole("button", { name: "Connect selected host" }).click();

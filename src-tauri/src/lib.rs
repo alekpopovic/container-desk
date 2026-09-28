@@ -18,6 +18,7 @@ pub fn run() {
                 &app.path().app_data_dir()?,
                 app.path().home_dir()?,
             ));
+            tauri::async_runtime::spawn(ssh::runtime::recover());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -46,8 +47,13 @@ pub fn run() {
             commands::disconnect_ssh_session,
             commands::switch_workspace
         ])
-        .run(tauri::generate_context!())
-        .expect("failed to run ContainerDesk");
+        .build(tauri::generate_context!())
+        .expect("failed to build ContainerDesk")
+        .run(|app, event| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                tauri::async_runtime::block_on(app.state::<backend::Backend>().shutdown());
+            }
+        });
 }
 
 #[cfg(test)]
