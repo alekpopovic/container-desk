@@ -732,3 +732,34 @@ legend {
   overflow-wrap: anywhere;
   vertical-align: top;
 }
+
+.config-path,
+.ssh-candidates small,
+.discovery-warnings {
+  overflow-wrap: anywhere;
+}
+.ssh-candidates {
+  list-style: none;
+  padding: 0;
+  max-height: 20rem;
+  overflow: auto;
+}
+.ssh-candidates li {
+  display: grid;
+  gap: 0.35rem;
+  padding-block: 0.5rem;
+}
+.ssh-candidates button {
+  justify-self: start;
+}
+.discovery-warnings {
+  max-height: 16rem;
+  overflow: auto;
+  padding-left: 1.25rem;
+}
+.discovery-warnings li {
+  margin-bottom: 0.6rem;
+}
+.discovery-warnings small {
+  display: block;
+}

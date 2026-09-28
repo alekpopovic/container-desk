@@ -17,6 +17,9 @@ fn main() {
             "open_container_terminal",
             "get_workspace_mode",
             "switch_workspace",
+            "get_ssh_config_path",
+            "discover_ssh_hosts",
+            "select_ssh_alias",
         ]),
     ))
     .expect("failed to build ContainerDesk application context");

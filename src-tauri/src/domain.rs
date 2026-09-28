@@ -123,6 +123,8 @@ pub enum ErrorCode {
     IntentExpired,
     Disconnected,
     OperationTimedOut,
+    InvalidAlias,
+    InvalidConfigPath,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -160,6 +162,12 @@ impl AppError {
             ErrorCode::IntentExpired => "This confirmation expired. Review the operation again.",
             ErrorCode::Disconnected => "The connection closed. Reconnect before refreshing.",
             ErrorCode::OperationTimedOut => "The command exceeded its deadline.",
+            ErrorCode::InvalidAlias => {
+                "Use a concrete SSH alias: letters, digits, dots, underscores or dashes, starting with a letter or digit (maximum 256 bytes)."
+            }
+            ErrorCode::InvalidConfigPath => {
+                "Choose an absolute local SSH config path or use the default."
+            }
         };
         Self {
             code,
@@ -611,4 +619,75 @@ pub struct WorkspaceModeSnapshot {
     pub scenario: Option<DemoScenario>,
     pub scope: Option<SessionScope>,
     pub host: Option<HostSummary>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct DiscoverHostsRequest {
+    pub config_path: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SshConfigPath {
+    pub path: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SshCandidate {
+    pub alias: String,
+    pub source: String,
+    pub line: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct DiscoveryWarning {
+    pub code: DiscoveryWarningCode,
+    pub source: String,
+    pub line: Option<u32>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct HostDiscovery {
+    pub config_path: String,
+    pub candidates: Vec<SshCandidate>,
+    pub warnings: Vec<DiscoveryWarning>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SelectSshAliasRequest {
+    pub config_path: Option<String>,
+    pub alias: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SshSelection {
+    pub config_path: String,
+    pub alias: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum DiscoveryWarningCode {
+    MissingFile,
+    UnreadableFile,
+    UnsupportedSyntax,
+    PatternsSkipped,
+    ConditionalInclude,
+    MatchSkipped,
+    IncludeCycle,
+    LimitReached,
 }

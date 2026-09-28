@@ -77,6 +77,23 @@
       "version": "OpenSSH_fixture"
     }
   },
+  "discovery": {
+    "candidates": [
+      {
+        "alias": "fixture-host",
+        "line": 2,
+        "source": "/fixture/.ssh/config"
+      }
+    ],
+    "configPath": "/fixture/.ssh/config",
+    "warnings": [
+      {
+        "code": "patterns_skipped",
+        "line": 3,
+        "source": "/fixture/.ssh/config"
+      }
+    ]
+  },
   "error": {
     "code": "session_not_found",
     "message": "Connection session does not exist.",

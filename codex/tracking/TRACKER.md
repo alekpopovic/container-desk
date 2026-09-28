@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T19:12:13+00:00
+Updated: 2026-09-28T19:24:33+00:00
 
-blocked: **0** | done: **8** | in_progress: **0** | pending: **52**
+blocked: **0** | done: **9** | in_progress: **0** | pending: **51**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -18,7 +18,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 006 | 01 Foundations | Native dependency diagnostics | medium | done | codex/tracking/evidence/006.md |
 | 007 | 01 Foundations | Backend operation policy and command registry | high | done | codex/tracking/evidence/007.md |
 | 008 | 01 Foundations | Synthetic fixtures and offline development mode | medium | done | codex/tracking/evidence/008.md |
-| 009 | 02 SSH transport | SSH config discovery and host candidates | high | pending | — |
+| 009 | 02 SSH transport | SSH config discovery and host candidates | high | done | codex/tracking/evidence/009.md |
 | 010 | 02 SSH transport | Effective SSH configuration resolution | high | pending | — |
 | 011 | 02 SSH transport | OpenSSH subprocess runner | high | pending | — |
 | 012 | 02 SSH transport | Remote argument quoting and Docker command builders | high | pending | — |
@@ -89,3 +89,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T18:40:41+00:00 — 007: done; 26 Rust tests including direct read-only IPC denial and one-use scoped intents, 13 IPC tests, Clippy and Linux release build passed
 - 2026-09-28T18:41:44+00:00 — 008: start;
 - 2026-09-28T19:12:13+00:00 — 008: done; 34 Rust tests passed, including native executable marker and Tauri command DTO checks; Frontend check passed: 16 Node tests; 54 Playwright component checks passed; Native Linux build and startup passed; native demo input not confirmed and recorded separately
+- 2026-09-28T19:13:14+00:00 — 009: start;
+- 2026-09-28T19:24:33+00:00 — 009: done; 40 Rust and 18 frontend IPC tests passed; 60 Playwright checks passed; Native strace of 5 discovery tests showed no child exec; source configs remained unchanged; Clippy and native Linux release build passed

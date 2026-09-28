@@ -1,0 +1,97 @@
+import { readFileSync } from "node:fs";
+import { expect, test } from "@playwright/test";
+const fixtures = JSON.parse(
+  readFileSync(new URL("../fixtures/ipc.json", import.meta.url), "utf8"),
+);
+
+test("discovery waits for explicit browse and accepts a selected or manual alias without connection", async ({
+  page,
+}) => {
+  await page.addInitScript((fixtures) => {
+    Reflect.set(window, "isTauri", true);
+    const calls: string[] = [];
+    Reflect.set(window, "discoveryCalls", calls);
+    Reflect.set(window, "__TAURI_INTERNALS__", {
+      async invoke(
+        command: string,
+        args?: { request?: { configPath?: string; alias?: string } },
+      ) {
+        calls.push(command);
+        if (command === "app_version") return { version: "fixture-009" };
+        if (command === "get_preferences") return fixtures.preferences;
+        if (command === "get_workspace_mode") return fixtures.liveWorkspace;
+        if (command === "get_ssh_config_path")
+          return { path: fixtures.discovery.configPath };
+        if (command === "discover_ssh_hosts")
+          return args?.request?.configPath === "/missing/config"
+            ? {
+                configPath: "/missing/config",
+                candidates: [],
+                warnings: [
+                  {
+                    code: "missing_file",
+                    source: "/missing/config",
+                    line: null,
+                  },
+                ],
+              }
+            : fixtures.discovery;
+        if (command === "select_ssh_alias")
+          return {
+            configPath:
+              args?.request?.configPath || fixtures.discovery.configPath,
+            alias: args?.request?.alias,
+          };
+        throw new Error("Unexpected fixture command");
+      },
+    });
+  }, fixtures);
+  await page.goto("/#/settings");
+  await expect(
+    page.getByText("Default config:", { exact: false }),
+  ).toContainText("/fixture/.ssh/config");
+  expect(
+    await page.evaluate(() => Reflect.get(window, "discoveryCalls")),
+  ).not.toContain("discover_ssh_hosts");
+  await page.getByRole("button", { name: "Browse host candidates" }).click();
+  await expect(page.getByLabel("Discovery notes")).toContainText("Wildcard");
+  await page
+    .getByRole("button", { name: "Select fixture-host", exact: true })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Selected fixture-host" }),
+  ).toContainText("No connection was made");
+  await page
+    .getByLabel("SSH config path", { exact: true })
+    .fill("/missing/config");
+  await expect(
+    page.getByRole("button", { name: "Select fixture-host", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Browse host candidates" }).click();
+  await expect(
+    page.getByText("No literal host candidates found.", { exact: false }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Manual SSH alias", { exact: true })
+    .fill("-oProxyCommand=x");
+  await expect(
+    page.getByRole("button", { name: "Select manual alias" }),
+  ).toBeDisabled();
+  await page
+    .getByLabel("Manual SSH alias", { exact: true })
+    .fill("manual-lab-1");
+  await page.getByRole("button", { name: "Select manual alias" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Selected manual-lab-1" }),
+  ).toContainText("/missing/config");
+  const calls = await page.evaluate(
+    () => Reflect.get(window, "discoveryCalls") as string[],
+  );
+  expect(calls).not.toContain("connect_host");
+  expect(calls).not.toContain("dependency_diagnostics");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});

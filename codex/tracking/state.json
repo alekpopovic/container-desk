@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T19:12:13+00:00",
+  "updated_at": "2026-09-28T19:24:33+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -273,6 +273,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T19:13:14+00:00",
+      "id": "009",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T19:24:33+00:00",
+      "id": "009",
+      "action": "done",
+      "note": "40 Rust and 18 frontend IPC tests passed; 60 Playwright checks passed; Native strace of 5 discovery tests showed no child exec; source configs remained unchanged; Clippy and native Linux release build passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T19:13:14+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -384,12 +418,16 @@
       "note": ""
     },
     "009": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T19:13:14+00:00",
+      "finished_at": "2026-09-28T19:24:33+00:00",
+      "evidence": "codex/tracking/evidence/009.md",
+      "evidence_sha256": "a1de56b182e3174c1f848e1002606a8391c61937469b28c6d2f3c648db40a56e",
+      "checks": [
+        "40 Rust and 18 frontend IPC tests passed; 60 Playwright checks passed",
+        "Native strace of 5 discovery tests showed no child exec; source configs remained unchanged",
+        "Clippy and native Linux release build passed"
+      ],
       "commit": "",
       "note": ""
     },

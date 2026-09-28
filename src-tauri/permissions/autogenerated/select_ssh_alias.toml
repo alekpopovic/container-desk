@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-select-ssh-alias"
+description = "Enables the select_ssh_alias command without any pre-configured scope."
+commands.allow = ["select_ssh_alias"]
+
+[[permission]]
+identifier = "deny-select-ssh-alias"
+description = "Denies the select_ssh_alias command without any pre-configured scope."
+commands.deny = ["select_ssh_alias"]

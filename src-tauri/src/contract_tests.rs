@@ -94,7 +94,15 @@ fn generated_contract_is_current() {
         WorkspaceMode,
         DemoScenario,
         SwitchWorkspaceRequest,
-        WorkspaceModeSnapshot
+        WorkspaceModeSnapshot,
+        DiscoverHostsRequest,
+        SshConfigPath,
+        SshCandidate,
+        DiscoveryWarning,
+        DiscoveryWarningCode,
+        HostDiscovery,
+        SelectSshAliasRequest,
+        SshSelection
     );
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/generated.ts"),
@@ -121,6 +129,7 @@ fn serialized_fixtures_are_current() {
         environment_values_masked: true,
     };
     let fixtures = json!({
+        "discovery": HostDiscovery { config_path: "/fixture/.ssh/config".into(), candidates: vec![SshCandidate { alias: "fixture-host".into(), source: "/fixture/.ssh/config".into(), line: 2 }], warnings: vec![DiscoveryWarning { code: DiscoveryWarningCode::PatternsSkipped, source: "/fixture/.ssh/config".into(), line: Some(3) }] },
         "liveWorkspace": WorkspaceModeSnapshot { mode: WorkspaceMode::Live, scenario: None, scope: None, host: None },
         "confirmationRequest": PrepareConfirmationRequest { scope: scope(), operation: ConfirmationOperation::Mutation(MutationSpec { operation: MutationOperation::Stop, container_ids: vec![ContainerId("a".repeat(64))], timeout_seconds: 10 }) },
         "policyError": AppError::new(ErrorCode::PermissionDenied).in_scope(&scope()),

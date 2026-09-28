@@ -16,6 +16,9 @@
     "allow-inspect-container",
     "allow-container-logs",
     "allow-get-workspace-mode",
-    "allow-switch-workspace"
+    "allow-switch-workspace",
+    "allow-get-ssh-config-path",
+    "allow-discover-ssh-hosts",
+    "allow-select-ssh-alias"
   ]
 }

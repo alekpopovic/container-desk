@@ -15,6 +15,10 @@ import type {
 
 const messages: Record<ErrorCode, string> = {
   invalid_id: "Invalid resource identifier.",
+  invalid_alias:
+    "Use a concrete SSH alias: letters, digits, dots, underscores or dashes, starting with a letter or digit (maximum 256 bytes).",
+  invalid_config_path:
+    "Choose an absolute local SSH config path or use the default.",
   invalid_generation: "Invalid session or selection generation.",
   host_not_found: "Saved host does not exist.",
   session_not_found: "Connection session does not exist.",
@@ -447,4 +451,76 @@ export async function switchWorkspace(
   )
     throw new IpcError("invalid_response");
   return result;
+}
+
+import type {
+  HostDiscovery,
+  SshConfigPath,
+  SshSelection,
+} from "./generated.ts";
+const discoveryCodes = new Set([
+  "missing_file",
+  "unreadable_file",
+  "unsupported_syntax",
+  "patterns_skipped",
+  "conditional_include",
+  "match_skipped",
+  "include_cycle",
+  "limit_reached",
+]);
+export function isConcreteAlias(value: string): boolean {
+  return value.length <= 256 && /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(value);
+}
+export async function getSshConfigPath(): Promise<SshConfigPath> {
+  const value = await call("get_ssh_config_path");
+  if (!record(value) || !text(value.path) || !value.path.startsWith("/"))
+    throw new IpcError("invalid_response");
+  return value as SshConfigPath;
+}
+export async function discoverSshHosts(
+  configPath: string | null,
+): Promise<HostDiscovery> {
+  const value = await call("discover_ssh_hosts", { configPath });
+  if (
+    !record(value) ||
+    !text(value.configPath) ||
+    !value.configPath.startsWith("/") ||
+    !Array.isArray(value.candidates) ||
+    value.candidates.length > 1000 ||
+    !value.candidates.every(
+      (c) =>
+        record(c) &&
+        text(c.alias, 256) &&
+        isConcreteAlias(c.alias) &&
+        text(c.source) &&
+        generation(c.line),
+    ) ||
+    !Array.isArray(value.warnings) ||
+    value.warnings.length > 128 ||
+    !value.warnings.every(
+      (w) =>
+        record(w) &&
+        typeof w.code === "string" &&
+        discoveryCodes.has(w.code) &&
+        text(w.source) &&
+        (w.line === null || generation(w.line)),
+    )
+  )
+    throw new IpcError("invalid_response");
+  return value as HostDiscovery;
+}
+export async function selectSshAlias(
+  configPath: string | null,
+  alias: string,
+): Promise<SshSelection> {
+  if (!isConcreteAlias(alias)) throw new IpcError("invalid_alias");
+  const value = await call("select_ssh_alias", { configPath, alias });
+  if (
+    !record(value) ||
+    value.alias !== alias ||
+    !text(value.configPath) ||
+    !value.configPath.startsWith("/")
+  )
+    throw new IpcError("invalid_response");
+  return value as SshSelection;
 }

@@ -332,3 +332,22 @@ pub fn switch_workspace(
 ) -> Result<WorkspaceModeSnapshot, AppError> {
     backend.switch_workspace(request)
 }
+
+#[tauri::command]
+pub fn get_ssh_config_path(backend: tauri::State<'_, Backend>) -> Result<SshConfigPath, AppError> {
+    backend.config_path(None)
+}
+#[tauri::command]
+pub async fn discover_ssh_hosts(
+    backend: tauri::State<'_, Backend>,
+    request: DiscoverHostsRequest,
+) -> Result<HostDiscovery, AppError> {
+    backend.discover_hosts(request).await
+}
+#[tauri::command]
+pub fn select_ssh_alias(
+    backend: tauri::State<'_, Backend>,
+    request: SelectSshAliasRequest,
+) -> Result<SshSelection, AppError> {
+    backend.select_alias(request)
+}

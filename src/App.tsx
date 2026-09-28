@@ -1,5 +1,6 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
+import { SshDiscovery } from "./features/hosts/SshDiscovery";
 import { useWorkspaceMode } from "./features/workspace/useWorkspaceMode";
 import { DependencyDiagnostics } from "./components/DependencyDiagnostics";
 import { WorkspaceShell } from "./components/WorkspaceShell";
@@ -88,11 +89,14 @@ export default function App() {
         message: workspace.message,
       }}
       settingsExtra={
-        <DependencyDiagnostics
-          preferences={snapshot}
-          onSaved={setSnapshot}
-          demo={workspace.mode.mode === "demo"}
-        />
+        <>
+          <DependencyDiagnostics
+            preferences={snapshot}
+            onSaved={setSnapshot}
+            demo={workspace.mode.mode === "demo"}
+          />
+          <SshDiscovery demo={workspace.mode.mode === "demo"} />
+        </>
       }
       preferences={
         native

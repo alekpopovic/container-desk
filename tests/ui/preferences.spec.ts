@@ -28,6 +28,8 @@ for (const failSave of [false, true]) {
               };
             },
           ) {
+            if (command === "get_ssh_config_path")
+              return { path: "/fixture/.ssh/config" };
             if (command === "app_version") return { version: "fixture-005" };
             if (command === "get_preferences") return snapshot;
             if (command === "get_workspace_mode")

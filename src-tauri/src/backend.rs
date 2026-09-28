@@ -8,24 +8,61 @@ use std::sync::{Arc, Mutex};
 
 /// Resource operations remain behind identity gates. Local version probes are separately bounded.
 pub struct Backend {
+    config_home: std::path::PathBuf,
     policy: Mutex<PolicyEngine>,
     settings: Mutex<Result<SettingsStore, AppError>>,
-    diagnostic_slot: tokio::sync::Semaphore,
+    diagnostic_slot: Arc<tokio::sync::Semaphore>,
     workspace: Mutex<WorkspaceTransport>,
     read_slots: tokio::sync::Semaphore,
 }
 impl Backend {
-    pub fn new(app_data: &std::path::Path) -> Self {
+    pub fn new(app_data: &std::path::Path, config_home: std::path::PathBuf) -> Self {
         let settings = FileStorage::open(app_data)
             .map_err(|_| AppError::new(ErrorCode::StorageUnavailable))
             .and_then(|adapter| SettingsStore::load(Box::new(adapter)));
         Self {
+            config_home,
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(settings),
-            diagnostic_slot: tokio::sync::Semaphore::new(1),
+            diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             workspace: Mutex::new(WorkspaceTransport::default()),
             read_slots: tokio::sync::Semaphore::new(4),
         }
+    }
+    pub fn config_path(&self, path: Option<&str>) -> Result<SshConfigPath, AppError> {
+        let preferences = self.preferences()?;
+        let path = path.or(preferences.preferences.trusted_config_path.as_deref());
+        Ok(SshConfigPath {
+            path: crate::ssh::discovery::config_path(&self.config_home, path)?,
+        })
+    }
+    pub fn select_alias(&self, request: SelectSshAliasRequest) -> Result<SshSelection, AppError> {
+        self.require_live_mode()?;
+        crate::ssh::validate_alias(&request.alias)?;
+        Ok(SshSelection {
+            config_path: self.config_path(request.config_path.as_deref())?.path,
+            alias: request.alias,
+        })
+    }
+    pub async fn discover_hosts(
+        &self,
+        request: DiscoverHostsRequest,
+    ) -> Result<HostDiscovery, AppError> {
+        // Share the native probe gate so switching to demo cannot race discovery.
+        let permit = self
+            .diagnostic_slot
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        self.require_live_mode()?;
+        let path = self.config_path(request.config_path.as_deref())?.path;
+        let home = self.config_home.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            let _permit = permit;
+            crate::ssh::discovery::discover(&home, &path)
+        })
+        .await
+        .map_err(|_| AppError::new(ErrorCode::Internal))?
     }
     pub fn preferences(&self) -> Result<PreferencesSnapshot, AppError> {
         self.settings
@@ -380,9 +417,10 @@ impl Backend {
 impl Default for Backend {
     fn default() -> Self {
         Self {
+            config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
-            diagnostic_slot: tokio::sync::Semaphore::new(1),
+            diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             workspace: Mutex::new(WorkspaceTransport::default()),
             read_slots: tokio::sync::Semaphore::new(4),
         }
@@ -393,6 +431,90 @@ impl Default for Backend {
 mod tests {
     use super::*;
     use crate::contract_tests::scope;
+
+    #[tokio::test]
+    async fn discovery_defaults_and_manual_selection_require_no_connection_and_demo_denies_reads() {
+        let backend = Backend::default();
+        assert!(
+            backend
+                .config_path(None)
+                .unwrap()
+                .path
+                .ends_with("/.ssh/config")
+        );
+        let selected = backend
+            .select_alias(SelectSshAliasRequest {
+                config_path: Some("/tmp/missing-user-config".into()),
+                alias: "manual-wildcard-1".into(),
+            })
+            .unwrap();
+        assert_eq!(selected.alias, "manual-wildcard-1");
+        assert!(backend.list_hosts().unwrap().hosts.is_empty());
+        assert_eq!(
+            backend
+                .select_alias(SelectSshAliasRequest {
+                    config_path: None,
+                    alias: "-option".into()
+                })
+                .unwrap_err()
+                .code,
+            ErrorCode::InvalidAlias
+        );
+        assert_eq!(
+            backend
+                .select_alias(SelectSshAliasRequest {
+                    config_path: Some("relative".into()),
+                    alias: "safe".into()
+                })
+                .unwrap_err()
+                .code,
+            ErrorCode::InvalidConfigPath
+        );
+        let report = backend
+            .discover_hosts(DiscoverHostsRequest {
+                config_path: Some("/dev/null".into()),
+            })
+            .await
+            .unwrap();
+        assert!(report.candidates.is_empty());
+        assert_eq!(
+            report.warnings[0].code,
+            DiscoveryWarningCode::UnreadableFile
+        );
+        let permit = backend.diagnostic_slot.try_acquire().unwrap();
+        assert_eq!(
+            backend
+                .discover_hosts(DiscoverHostsRequest { config_path: None })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::ResourceLimit
+        );
+        drop(permit);
+        backend
+            .switch_workspace(SwitchWorkspaceRequest::Demo {
+                scenario: DemoScenario::Standard,
+            })
+            .unwrap();
+        assert_eq!(
+            backend
+                .discover_hosts(DiscoverHostsRequest { config_path: None })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+        assert_eq!(
+            backend
+                .select_alias(SelectSshAliasRequest {
+                    config_path: None,
+                    alias: "safe".into()
+                })
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+    }
 
     struct SpyLive {
         calls: Arc<std::sync::atomic::AtomicUsize>,

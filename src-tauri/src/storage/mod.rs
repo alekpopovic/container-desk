@@ -36,13 +36,7 @@ pub fn validate(preferences: &Preferences) -> Result<(), AppError> {
     let mut aliases = HashSet::new();
     for host in &preferences.hosts {
         host.id.validate().map_err(|_| invalid())?;
-        let alias = host.alias.as_bytes();
-        if alias.is_empty()
-            || alias.len() > 256
-            || !alias[0].is_ascii_alphanumeric()
-            || !alias
-                .iter()
-                .all(|b| b.is_ascii_alphanumeric() || b"._-".contains(b))
+        if crate::ssh::validate_alias(&host.alias).is_err()
             || !ids.insert(&host.id)
             || !aliases.insert(&host.alias)
             || host.display_name.is_empty()

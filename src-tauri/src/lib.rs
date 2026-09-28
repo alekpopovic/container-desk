@@ -1,5 +1,6 @@
 mod diagnostics;
 pub mod policy;
+mod ssh;
 mod storage;
 pub mod transport;
 use tauri::Manager;
@@ -12,7 +13,10 @@ pub mod domain;
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
-            app.manage(backend::Backend::new(&app.path().app_data_dir()?));
+            app.manage(backend::Backend::new(
+                &app.path().app_data_dir()?,
+                app.path().home_dir()?,
+            ));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -31,6 +35,9 @@ pub fn run() {
             commands::mutate_container,
             commands::open_container_terminal,
             commands::get_workspace_mode,
+            commands::get_ssh_config_path,
+            commands::discover_ssh_hosts,
+            commands::select_ssh_alias,
             commands::switch_workspace
         ])
         .run(tauri::generate_context!())
