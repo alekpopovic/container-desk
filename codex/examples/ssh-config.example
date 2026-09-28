@@ -1,0 +1,39 @@
+# Copy/adapt selected blocks into your own ~/.ssh/config after review.
+# These addresses are documentation placeholders, not live infrastructure.
+# Key files must already exist locally and be accepted by the destination.
+
+Host jump
+    HostName 203.0.113.10
+    User ubuntu
+    IdentityFile ~/.ssh/id_ed25519_jump
+    IdentitiesOnly yes
+    StrictHostKeyChecking yes
+    BatchMode yes
+
+Host app-server
+    HostName 10.0.1.20
+    User ubuntu
+    IdentityFile ~/.ssh/id_ed25519_app
+    IdentitiesOnly yes
+    ProxyJump jump
+    StrictHostKeyChecking yes
+    BatchMode yes
+    ServerAliveInterval 15
+    ServerAliveCountMax 3
+
+Host direct-server
+    HostName 203.0.113.20
+    User ubuntu
+    IdentityFile ~/.ssh/id_ed25519_app
+    IdentitiesOnly yes
+    StrictHostKeyChecking yes
+    BatchMode yes
+    ServerAliveInterval 15
+    ServerAliveCountMax 3
+
+# Trust bootstrap happens in a terminal with independently verified fingerprints:
+# ssh -o BatchMode=no -o StrictHostKeyChecking=ask jump
+# ssh -o BatchMode=no -o StrictHostKeyChecking=ask app-server
+# Load encrypted identities in your OS agent before using the desktop app.
+# macOS-only Keychain directives are intentionally omitted for shared syntax.
+# The app owns separate control sockets and must not edit this file.

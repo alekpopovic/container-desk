@@ -1,0 +1,607 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-28T15:48:31+00:00",
+  "history": [],
+  "tasks": {
+    "001": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "002": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "003": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "004": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "005": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "006": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "007": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "008": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "009": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "010": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "011": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "012": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "013": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "014": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "015": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "016": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "017": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "018": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "019": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "020": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "021": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "022": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "023": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "024": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "025": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "026": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "027": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "028": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "029": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "030": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "031": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "032": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "033": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "034": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "035": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "036": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "037": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "038": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "039": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "040": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "041": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "042": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "043": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "044": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "045": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "046": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "047": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "048": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "049": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "050": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "051": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "052": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "053": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "054": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "055": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "056": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "057": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "058": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "059": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    },
+    "060": {
+      "status": "pending",
+      "started_at": null,
+      "finished_at": null,
+      "evidence": null,
+      "evidence_sha256": null,
+      "checks": [],
+      "commit": "",
+      "note": ""
+    }
+  }
+}

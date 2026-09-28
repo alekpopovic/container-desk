@@ -1,0 +1,666 @@
+{
+  "schema_version": 1,
+  "product": "ContainerDesk",
+  "pack_version": "1.0.0",
+  "created_at": "2026-09-28",
+  "prompts": [
+    {
+      "id": "001",
+      "title": "Repository audit and implementation contract",
+      "phase": "01 Foundations",
+      "reasoning": "high",
+      "depends_on": [],
+      "file": "prompts/001-repository-audit-and-implementation-contract.md",
+      "sha256": "8a47b97ac5cdd9603e4e2251836d860cdde9c49c5f83412fc7c1e64edbb7f934"
+    },
+    {
+      "id": "002",
+      "title": "Tauri React TypeScript scaffold",
+      "phase": "01 Foundations",
+      "reasoning": "medium",
+      "depends_on": [
+        "001"
+      ],
+      "file": "prompts/002-tauri-react-typescript-scaffold.md",
+      "sha256": "b3ff67589748db2d125d4abe3a868673db4b238dceea0e15e947803b44307753"
+    },
+    {
+      "id": "003",
+      "title": "Application layout and design tokens",
+      "phase": "01 Foundations",
+      "reasoning": "medium",
+      "depends_on": [
+        "002"
+      ],
+      "file": "prompts/003-application-layout-and-design-tokens.md",
+      "sha256": "728b53334e7f9bd172d078f660fc00988f55d9b34f29e8717b6af73269a376c1"
+    },
+    {
+      "id": "004",
+      "title": "Typed domain models and IPC boundary",
+      "phase": "01 Foundations",
+      "reasoning": "high",
+      "depends_on": [
+        "003"
+      ],
+      "file": "prompts/004-typed-domain-models-and-ipc-boundary.md",
+      "sha256": "afae7d9f3b84fafe688631fda12162dd0d9a26c9ff8b537e8a1421cacab6dd22"
+    },
+    {
+      "id": "005",
+      "title": "Local settings and host metadata store",
+      "phase": "01 Foundations",
+      "reasoning": "high",
+      "depends_on": [
+        "004"
+      ],
+      "file": "prompts/005-local-settings-and-host-metadata-store.md",
+      "sha256": "1e05ce629b07e249e544051543ffff0036afe0cdabb4c16fb77387dfb3e63e12"
+    },
+    {
+      "id": "006",
+      "title": "Native dependency diagnostics",
+      "phase": "01 Foundations",
+      "reasoning": "medium",
+      "depends_on": [
+        "005"
+      ],
+      "file": "prompts/006-native-dependency-diagnostics.md",
+      "sha256": "6ca545eddfea05a04a774cdd1417dd60c373d83d623537f2f1aedd6b513899f8"
+    },
+    {
+      "id": "007",
+      "title": "Backend operation policy and command registry",
+      "phase": "01 Foundations",
+      "reasoning": "high",
+      "depends_on": [
+        "006"
+      ],
+      "file": "prompts/007-backend-operation-policy-and-command-registry.md",
+      "sha256": "2e985d29e3b6394ac0f2a2065170193f076b1fc156933db814bab8518d8c09f4"
+    },
+    {
+      "id": "008",
+      "title": "Synthetic fixtures and offline development mode",
+      "phase": "01 Foundations",
+      "reasoning": "medium",
+      "depends_on": [
+        "007"
+      ],
+      "file": "prompts/008-synthetic-fixtures-and-offline-development-mode.md",
+      "sha256": "17993b7fe000dea40924add9deca7d06976ec56e55dc2023e89fbf1cd33339f8"
+    },
+    {
+      "id": "009",
+      "title": "SSH config discovery and host candidates",
+      "phase": "02 SSH transport",
+      "reasoning": "high",
+      "depends_on": [
+        "008"
+      ],
+      "file": "prompts/009-ssh-config-discovery-and-host-candidates.md",
+      "sha256": "de93f2121834975634d951cd9ec8d5ec3d3452afd0a05b89313bd23ecf6b446f"
+    },
+    {
+      "id": "010",
+      "title": "Effective SSH configuration resolution",
+      "phase": "02 SSH transport",
+      "reasoning": "high",
+      "depends_on": [
+        "009"
+      ],
+      "file": "prompts/010-effective-ssh-configuration-resolution.md",
+      "sha256": "357cc1a1fca2176d4345b326552492409c9b0c6278b43f2f5200d8aa3bea6ee0"
+    },
+    {
+      "id": "011",
+      "title": "OpenSSH subprocess runner",
+      "phase": "02 SSH transport",
+      "reasoning": "high",
+      "depends_on": [
+        "010"
+      ],
+      "file": "prompts/011-openssh-subprocess-runner.md",
+      "sha256": "f7b25e322f9422f9c400ceaa6b0ff6a134e4f2841a8962990aaf931f22653a61"
+    },
+    {
+      "id": "012",
+      "title": "Remote argument quoting and Docker command builders",
+      "phase": "02 SSH transport",
+      "reasoning": "high",
+      "depends_on": [
+        "011"
+      ],
+      "file": "prompts/012-remote-argument-quoting-and-docker-command-builders.md",
+      "sha256": "d37c09e83f3531aae3940a37f045879ea811b624172af2de16efb8f40de465db"
+    },
+    {
+      "id": "013",
+      "title": "SSH authentication and host trust flow",
+      "phase": "02 SSH transport",
+      "reasoning": "high",
+      "depends_on": [
+        "012"
+      ],
+      "file": "prompts/013-ssh-authentication-and-host-trust-flow.md",
+      "sha256": "f5084889cd9d3ccfeb6c15cb5f8217a5b77df00aeedb99d2e4f65f11084acb24"
+    },
+    {
+      "id": "014",
+      "title": "Host connection state machine",
+      "phase": "02 SSH transport",
+      "reasoning": "high",
+      "depends_on": [
+        "013"
+      ],
+      "file": "prompts/014-host-connection-state-machine.md",
+      "sha256": "cc6865b0b823e4e038e42021c8ea1e35b26fec701a78fe6f89ad3de6c6c052f1"
+    },
+    {
+      "id": "015",
+      "title": "Connection reuse and child ownership",
+      "phase": "02 SSH transport",
+      "reasoning": "high",
+      "depends_on": [
+        "014"
+      ],
+      "file": "prompts/015-connection-reuse-and-child-ownership.md",
+      "sha256": "a76d0c63e364c28861f460daa1e1079189f7a6253a681794246555357d5ce227"
+    },
+    {
+      "id": "016",
+      "title": "Remote Docker capability probe",
+      "phase": "02 SSH transport",
+      "reasoning": "high",
+      "depends_on": [
+        "015"
+      ],
+      "file": "prompts/016-remote-docker-capability-probe.md",
+      "sha256": "e8be4b00b115137cc25ae7ea9b1d3b006b2e15db2ae6420284e1f4a9971d71fd"
+    },
+    {
+      "id": "017",
+      "title": "Host inventory screen and groups",
+      "phase": "02 SSH transport",
+      "reasoning": "medium",
+      "depends_on": [
+        "016"
+      ],
+      "file": "prompts/017-host-inventory-screen-and-groups.md",
+      "sha256": "2567c094735639c519650166e9a2b4704fdba757e351c8c3e13dfc4097e34828"
+    },
+    {
+      "id": "018",
+      "title": "SSH vertical slice checkpoint",
+      "phase": "02 SSH transport",
+      "reasoning": "high",
+      "depends_on": [
+        "017"
+      ],
+      "file": "prompts/018-ssh-vertical-slice-checkpoint.md",
+      "sha256": "294771aac96d514d96d8fcb42b8da045aca8b54d898168edc569da2c478a2c11"
+    },
+    {
+      "id": "019",
+      "title": "Container listing adapter",
+      "phase": "03 Read-only MVP",
+      "reasoning": "high",
+      "depends_on": [
+        "018"
+      ],
+      "file": "prompts/019-container-listing-adapter.md",
+      "sha256": "173a6647603596d6480a5ea9c4c715cf702c144fb270218f292a73365045e738"
+    },
+    {
+      "id": "020",
+      "title": "Container table and host-scoped cache",
+      "phase": "03 Read-only MVP",
+      "reasoning": "medium",
+      "depends_on": [
+        "019"
+      ],
+      "file": "prompts/020-container-table-and-host-scoped-cache.md",
+      "sha256": "9b3e64f2414f1aaebc473a292e9198decce9eb76ec8f56f9cfe1f8a73737a867"
+    },
+    {
+      "id": "021",
+      "title": "Container inspect adapter and details",
+      "phase": "03 Read-only MVP",
+      "reasoning": "high",
+      "depends_on": [
+        "020"
+      ],
+      "file": "prompts/021-container-inspect-adapter-and-details.md",
+      "sha256": "ea5cc533b188c80b9d45ca358438b8b36cec75c5b8fb3cf293fb03c7f3dd946a"
+    },
+    {
+      "id": "022",
+      "title": "Health, ports, mounts and environment panels",
+      "phase": "03 Read-only MVP",
+      "reasoning": "medium",
+      "depends_on": [
+        "021"
+      ],
+      "file": "prompts/022-health-ports-mounts-and-environment-panels.md",
+      "sha256": "f0323a71498b6bbe3662cc0e9fc36a31c2f740166e4de17d7332c81a2f8557d8"
+    },
+    {
+      "id": "023",
+      "title": "Bounded log snapshot retrieval",
+      "phase": "03 Read-only MVP",
+      "reasoning": "high",
+      "depends_on": [
+        "022"
+      ],
+      "file": "prompts/023-bounded-log-snapshot-retrieval.md",
+      "sha256": "65adf6ecd3d31ff3adf151d8c2b83acfd7a9fab21696bcbb8ddd1d6e703b3e9a"
+    },
+    {
+      "id": "024",
+      "title": "Live log subscriptions and cancellation",
+      "phase": "03 Read-only MVP",
+      "reasoning": "high",
+      "depends_on": [
+        "023"
+      ],
+      "file": "prompts/024-live-log-subscriptions-and-cancellation.md",
+      "sha256": "7020a24334db830151485dba82bee149fe43bcf424c960ddfdedbc1df2b77e56"
+    },
+    {
+      "id": "025",
+      "title": "Log viewer usability and export",
+      "phase": "03 Read-only MVP",
+      "reasoning": "medium",
+      "depends_on": [
+        "024"
+      ],
+      "file": "prompts/025-log-viewer-usability-and-export.md",
+      "sha256": "b759cee01c1fb6ae1dc17675c5dac67098d5925c0c44b7762ad7f6067863c917"
+    },
+    {
+      "id": "026",
+      "title": "Container resource statistics",
+      "phase": "03 Read-only MVP",
+      "reasoning": "high",
+      "depends_on": [
+        "025"
+      ],
+      "file": "prompts/026-container-resource-statistics.md",
+      "sha256": "8e3c5861c6b518853296fedfd257435918367ca7541b736a82c54470fcbb19cf"
+    },
+    {
+      "id": "027",
+      "title": "Docker event stream and inventory invalidation",
+      "phase": "03 Read-only MVP",
+      "reasoning": "high",
+      "depends_on": [
+        "026"
+      ],
+      "file": "prompts/027-docker-event-stream-and-inventory-invalidation.md",
+      "sha256": "8f8cb680f1a93564f70fa2d353bd2259adaa3ea3275004b1631b793f0bb105ab"
+    },
+    {
+      "id": "028",
+      "title": "Read refresh scheduling and stale data",
+      "phase": "03 Read-only MVP",
+      "reasoning": "high",
+      "depends_on": [
+        "027"
+      ],
+      "file": "prompts/028-read-refresh-scheduling-and-stale-data.md",
+      "sha256": "2c84cffd26f82d08acfa6e0e1292cefc1b509b4246b388de9348ae2c7ba5696d"
+    },
+    {
+      "id": "029",
+      "title": "Compose project discovery and read views",
+      "phase": "03 Read-only MVP",
+      "reasoning": "high",
+      "depends_on": [
+        "028"
+      ],
+      "file": "prompts/029-compose-project-discovery-and-read-views.md",
+      "sha256": "d847f9f485198a106405a88c2445c274a38bc9461ad4e5e6b2df6d9be7d3f430"
+    },
+    {
+      "id": "030",
+      "title": "Read-only MVP checkpoint",
+      "phase": "03 Read-only MVP",
+      "reasoning": "high",
+      "depends_on": [
+        "029"
+      ],
+      "file": "prompts/030-read-only-mvp-checkpoint.md",
+      "sha256": "4b7336cb62521f8a9ad704771ec426381871c5735d5c037f2eaafede276dac0b"
+    },
+    {
+      "id": "031",
+      "title": "Mutation intents and local activity records",
+      "phase": "04 Management",
+      "reasoning": "high",
+      "depends_on": [
+        "030"
+      ],
+      "file": "prompts/031-mutation-intents-and-local-activity-records.md",
+      "sha256": "5e0aa09107ffe599579a83f606d7e91ab8c789b680222a42dd16ace122d183d7"
+    },
+    {
+      "id": "032",
+      "title": "Container start stop and restart",
+      "phase": "04 Management",
+      "reasoning": "high",
+      "depends_on": [
+        "031"
+      ],
+      "file": "prompts/032-container-start-stop-and-restart.md",
+      "sha256": "1dfa3d62e4ac4921740732571497124175845b13817b56799e3181b1903f66f1"
+    },
+    {
+      "id": "033",
+      "title": "Multi-container actions and stopped-container removal",
+      "phase": "04 Management",
+      "reasoning": "high",
+      "depends_on": [
+        "032"
+      ],
+      "file": "prompts/033-multi-container-actions-and-stopped-container-removal.md",
+      "sha256": "f8c59d90bd9251aa74b45be922cf408094eb659f4761ad9b8c9f1ec4d4c1484a"
+    },
+    {
+      "id": "034",
+      "title": "Image inventory and inspection",
+      "phase": "04 Management",
+      "reasoning": "medium",
+      "depends_on": [
+        "033"
+      ],
+      "file": "prompts/034-image-inventory-and-inspection.md",
+      "sha256": "e3240c0b4692e1d3d536393da94233d6559fbbcab12c0a69d779f8c5232ca51c"
+    },
+    {
+      "id": "035",
+      "title": "Volume inventory and mount relationships",
+      "phase": "04 Management",
+      "reasoning": "medium",
+      "depends_on": [
+        "034"
+      ],
+      "file": "prompts/035-volume-inventory-and-mount-relationships.md",
+      "sha256": "27e4908a21b76d8efb299e453d2048f56ebafd121827f53d2223d33ca31bc9c9"
+    },
+    {
+      "id": "036",
+      "title": "Network inventory and container attachments",
+      "phase": "04 Management",
+      "reasoning": "medium",
+      "depends_on": [
+        "035"
+      ],
+      "file": "prompts/036-network-inventory-and-container-attachments.md",
+      "sha256": "b3cee182675a55d1854b6e5c48b0a6c0b71cb5fe884dedc8718444bf43aa474d"
+    },
+    {
+      "id": "037",
+      "title": "Verified remote Compose project actions",
+      "phase": "04 Management",
+      "reasoning": "high",
+      "depends_on": [
+        "036"
+      ],
+      "file": "prompts/037-verified-remote-compose-project-actions.md",
+      "sha256": "410a65fe51fdfb54c4af0729a58af7d9a0557d55aac8322b440b5030db73da8d"
+    },
+    {
+      "id": "038",
+      "title": "Management MVP checkpoint",
+      "phase": "04 Management",
+      "reasoning": "high",
+      "depends_on": [
+        "037"
+      ],
+      "file": "prompts/038-management-mvp-checkpoint.md",
+      "sha256": "72d56d8c8d6248c0f948d61bb08c286caaa184082bf4cae1e1c0bcd13e31f66c"
+    },
+    {
+      "id": "039",
+      "title": "PTY terminal transport",
+      "phase": "05 Terminal and resilience",
+      "reasoning": "high",
+      "depends_on": [
+        "038"
+      ],
+      "file": "prompts/039-pty-terminal-transport.md",
+      "sha256": "6d4cc98d099b24ba1cbba3b6131c863597eb8098de960ecce22babfcce49095d"
+    },
+    {
+      "id": "040",
+      "title": "Terminal UI with bounded lifecycle",
+      "phase": "05 Terminal and resilience",
+      "reasoning": "high",
+      "depends_on": [
+        "039"
+      ],
+      "file": "prompts/040-terminal-ui-with-bounded-lifecycle.md",
+      "sha256": "253b7cc6325e5e3b87116987a5275e49e99750022519c17853f2dd6cbb6da828"
+    },
+    {
+      "id": "041",
+      "title": "Sleep wake network loss and graceful shutdown",
+      "phase": "05 Terminal and resilience",
+      "reasoning": "high",
+      "depends_on": [
+        "040"
+      ],
+      "file": "prompts/041-sleep-wake-network-loss-and-graceful-shutdown.md",
+      "sha256": "3f236e688a4d6458116e1e4fae37102683b87fce4de05c010064ae34dd283a6e"
+    },
+    {
+      "id": "042",
+      "title": "Cross-platform GUI launch and SSH agent behavior",
+      "phase": "05 Terminal and resilience",
+      "reasoning": "high",
+      "depends_on": [
+        "041"
+      ],
+      "file": "prompts/042-cross-platform-gui-launch-and-ssh-agent-behavior.md",
+      "sha256": "f18d1aef63c146a1f66d6b73b2c65aea55af7513062072cd128d9dca3cc2caf3"
+    },
+    {
+      "id": "043",
+      "title": "Support diagnostics and redacted export",
+      "phase": "05 Terminal and resilience",
+      "reasoning": "high",
+      "depends_on": [
+        "042"
+      ],
+      "file": "prompts/043-support-diagnostics-and-redacted-export.md",
+      "sha256": "727a69ccdb033ae17304849c7c7eb0f3a431b421d3666178e43cd6d15d7062ec"
+    },
+    {
+      "id": "044",
+      "title": "Accessibility themes and keyboard workflow",
+      "phase": "05 Terminal and resilience",
+      "reasoning": "medium",
+      "depends_on": [
+        "043"
+      ],
+      "file": "prompts/044-accessibility-themes-and-keyboard-workflow.md",
+      "sha256": "2c46f54364842759f5b126ab7518141302795dd64e8b13acda55b34333767929"
+    },
+    {
+      "id": "045",
+      "title": "Large inventories and stream pressure",
+      "phase": "05 Terminal and resilience",
+      "reasoning": "high",
+      "depends_on": [
+        "044"
+      ],
+      "file": "prompts/045-large-inventories-and-stream-pressure.md",
+      "sha256": "052d9703f6b58fd1ce6bbadc753f0d740cd0ab5c61d87b05d123317ca43abec1"
+    },
+    {
+      "id": "046",
+      "title": "Feature-complete desktop checkpoint",
+      "phase": "05 Terminal and resilience",
+      "reasoning": "high",
+      "depends_on": [
+        "045"
+      ],
+      "file": "prompts/046-feature-complete-desktop-checkpoint.md",
+      "sha256": "c97bd76ec90749db3064b8357355ea5c61aafb69a3b8309e1222d9c00702daf4"
+    },
+    {
+      "id": "047",
+      "title": "Focused security review",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "046"
+      ],
+      "file": "prompts/047-focused-security-review.md",
+      "sha256": "eaa5d67e40d6d10df964d8645374a709b1b962baca018a2f1f12a5f9d7c0a925"
+    },
+    {
+      "id": "048",
+      "title": "Frontend and parser regression coverage",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "047"
+      ],
+      "file": "prompts/048-frontend-and-parser-regression-coverage.md",
+      "sha256": "89410ef38d9a75ad62832a42ec16b6e1b00759a1cb64673dc49558e1f781cf82"
+    },
+    {
+      "id": "049",
+      "title": "Disposable direct and bastion integration lab",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "048"
+      ],
+      "file": "prompts/049-disposable-direct-and-bastion-integration-lab.md",
+      "sha256": "3f61d0211780fe3a67ac32e12bdd15edbaeda2b840d10940c945c0732d09f72a"
+    },
+    {
+      "id": "050",
+      "title": "Native desktop integration tests",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "049"
+      ],
+      "file": "prompts/050-native-desktop-integration-tests.md",
+      "sha256": "b0a252c1ee48caa8b6a1760a6e8cdc1a39cde9ec05c608d8641fb94296ad1e2e"
+    },
+    {
+      "id": "051",
+      "title": "Local verification command and clean builds",
+      "phase": "06 Quality and delivery",
+      "reasoning": "medium",
+      "depends_on": [
+        "050"
+      ],
+      "file": "prompts/051-local-verification-command-and-clean-builds.md",
+      "sha256": "45276a34768e7d74b86bd8847999fedb11c93253e2721cf36ce0e8caf7875f2b"
+    },
+    {
+      "id": "052",
+      "title": "Linux and macOS CI build matrix",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "051"
+      ],
+      "file": "prompts/052-linux-and-macos-ci-build-matrix.md",
+      "sha256": "e54b1a789cb63edc1568ba6f19b8ff1ca2e2750b2e038343bbfb0be038dc0ce0"
+    },
+    {
+      "id": "053",
+      "title": "Linux package builds",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "052"
+      ],
+      "file": "prompts/053-linux-package-builds.md",
+      "sha256": "b957d3156a63dd7cae20c5c3614f14c4e31d6df0148dc0b83e25c5d192279bf0"
+    },
+    {
+      "id": "054",
+      "title": "macOS application and DMG builds",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "053"
+      ],
+      "file": "prompts/054-macos-application-and-dmg-builds.md",
+      "sha256": "de841fa1681738c1c0790ab30c4e073708df5e67dab50cbd644efc8f481e1235"
+    },
+    {
+      "id": "055",
+      "title": "Signing and notarization integration",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "054"
+      ],
+      "file": "prompts/055-signing-and-notarization-integration.md",
+      "sha256": "fcfcc8d3db74c932c4d14a007690e6a21d1973c3afd994f95dd1f633e785442a"
+    },
+    {
+      "id": "056",
+      "title": "Versioning updates and rollback guidance",
+      "phase": "06 Quality and delivery",
+      "reasoning": "medium",
+      "depends_on": [
+        "055"
+      ],
+      "file": "prompts/056-versioning-updates-and-rollback-guidance.md",
+      "sha256": "dafdf3e310c7ac3087ff274302f98b2eeb0d3ca7985e344062af0b5accdc2817"
+    },
+    {
+      "id": "057",
+      "title": "User and contributor documentation",
+      "phase": "06 Quality and delivery",
+      "reasoning": "medium",
+      "depends_on": [
+        "056"
+      ],
+      "file": "prompts/057-user-and-contributor-documentation.md",
+      "sha256": "57f59714e2175e770397d5ac857231cc3cadae06dbda4811962393c375b40519"
+    },
+    {
+      "id": "058",
+      "title": "Native platform acceptance matrix",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "057"
+      ],
+      "file": "prompts/058-native-platform-acceptance-matrix.md",
+      "sha256": "de55ae79cc866770652181c038907be10fab63b3a7aa0ddc39758fe92bf849c5"
+    },
+    {
+      "id": "059",
+      "title": "Release candidate review and defect closure",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "058"
+      ],
+      "file": "prompts/059-release-candidate-review-and-defect-closure.md",
+      "sha256": "ceca389613b5497873df32fd163d1c65163a5ad12387b6c27a9e1f5ad323df94"
+    },
+    {
+      "id": "060",
+      "title": "Final handover and release gate",
+      "phase": "06 Quality and delivery",
+      "reasoning": "high",
+      "depends_on": [
+        "059"
+      ],
+      "file": "prompts/060-final-handover-and-release-gate.md",
+      "sha256": "efbc1f4267b8068350e4d29a942841e26b1da2ee9ddc1aa2597b03ff8b0d39e4"
+    }
+  ]
+}

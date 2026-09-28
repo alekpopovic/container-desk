@@ -1,0 +1,6 @@
+# Merge with the application .gitignore; do not replace existing rules.
+codex/tracking/.tracker.lock
+**/__pycache__/
+*.pyc
+# Keep state.json, TRACKER.md, evidence, manifest and prompt files versioned.
+# Development lab secrets and real runtime data belong outside the repository.
