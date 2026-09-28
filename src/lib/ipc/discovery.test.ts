@@ -8,6 +8,7 @@ import {
   getSshConfigPath,
   isConcreteAlias,
   resolveSshConfig,
+  checkSshAccess,
 } from "./client.ts";
 const fixtures = JSON.parse(
   readFileSync(
@@ -110,4 +111,25 @@ test("effective diagnostics retain the selected alias and reject cross-selection
   await assert.rejects(resolveSshConfig(selection), {
     code: "invalid_response",
   });
+});
+
+test("SSH access rejects mismatched selection and unrecognized status", async () => {
+  const selection = fixtures.effectiveSsh.selection;
+  mockIPC((command) => {
+    assert.equal(command, "check_ssh_access");
+    return {
+      selection,
+      status: "changed_host_key",
+      sshError: "Host key verification failed.",
+    };
+  });
+  assert.equal((await checkSshAccess(selection)).status, "changed_host_key");
+  mockIPC(() => ({
+    selection: { ...selection, alias: "other" },
+    status: "verified",
+    sshError: null,
+  }));
+  await assert.rejects(checkSshAccess(selection), { code: "invalid_response" });
+  mockIPC(() => ({ selection, status: "trust_automatically", sshError: null }));
+  await assert.rejects(checkSshAccess(selection), { code: "invalid_response" });
 });

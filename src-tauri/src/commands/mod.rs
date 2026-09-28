@@ -359,3 +359,11 @@ pub async fn resolve_ssh_config(
 ) -> Result<EffectiveSshConfig, AppError> {
     backend.resolve_ssh(request).await
 }
+
+#[tauri::command]
+pub async fn check_ssh_access(
+    backend: tauri::State<'_, Backend>,
+    request: ResolveSshRequest,
+) -> Result<SshAccessReport, AppError> {
+    backend.check_ssh_access(request).await
+}

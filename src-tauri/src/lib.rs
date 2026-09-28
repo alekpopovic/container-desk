@@ -40,6 +40,7 @@ pub fn run() {
             commands::discover_ssh_hosts,
             commands::select_ssh_alias,
             commands::resolve_ssh_config,
+            commands::check_ssh_access,
             commands::switch_workspace
         ])
         .run(tauri::generate_context!())

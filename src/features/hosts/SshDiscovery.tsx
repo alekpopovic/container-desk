@@ -1,6 +1,8 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
 import {
+  checkSshAccess,
+  sshAccessHelp,
   discoverSshHosts,
   getSshConfigPath,
   selectSshAlias,
@@ -13,6 +15,7 @@ import type {
   EffectiveSshConfig,
   HostDiscovery,
   SshSelection,
+  SshAccessReport,
 } from "../../lib/ipc/generated";
 const warnings: Record<DiscoveryWarningCode, string> = {
   missing_file: "A config file or include was not found.",
@@ -35,6 +38,7 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
   const [defaultPath, setDefaultPath] = useState<string | null>(null);
   const [alias, setAlias] = useState("");
   const [report, setReport] = useState<HostDiscovery | null>(null);
+  const [access, setAccess] = useState<SshAccessReport | null>(null);
   const [resolved, setResolved] = useState<EffectiveSshConfig | null>(null);
   const [selected, setSelected] = useState<SshSelection | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -46,6 +50,7 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
     setReport(null);
     setSelected(null);
     setResolved(null);
+    setAccess(null);
     setMessage(null);
     if (native)
       getSshConfigPath()
@@ -90,11 +95,13 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
     setReport(null);
     setSelected(null);
     setResolved(null);
+    setAccess(null);
     void execute(() => discoverSshHosts(path || null), setReport);
   };
   const choose = (value: string) => {
     setSelected(null);
     setResolved(null);
+    setAccess(null);
     void execute(() => selectSshAlias(path || null, value), setSelected);
   };
   return (
@@ -141,6 +148,7 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
             setReport(null);
             setSelected(null);
             setResolved(null);
+            setAccess(null);
           }}
         />
         <p className="muted">
@@ -213,6 +221,7 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
             setAlias(event.target.value);
             setSelected(null);
             setResolved(null);
+            setAccess(null);
           }}
           aria-describedby="manual-alias-help"
         />
@@ -233,7 +242,7 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
       {selected && (
         <p role="status" className="config-path">
           Selected {selected.alias} from {selected.configPath}. No connection
-          was made.
+          was made by selecting the alias.
         </p>
       )}
       {selected && (
@@ -250,11 +259,62 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
             disabled={!native || busy}
             onClick={() => {
               setResolved(null);
+              setAccess(null);
               void execute(() => resolveSshConfig(selected), setResolved);
             }}
           >
             Resolve selected alias
           </button>
+        </div>
+      )}
+      {selected && (
+        <div>
+          <p className="muted">
+            Check access opens an SSH connection and runs a fixed inert command.
+            It uses strict host verification and your configured identities,
+            with no password prompts or agent forwarding.
+          </p>
+          <button
+            className="button"
+            type="button"
+            disabled={!native || busy}
+            onClick={() => {
+              setAccess(null);
+              void execute(() => checkSshAccess(selected), setAccess);
+            }}
+          >
+            Check SSH access
+          </button>
+          <details>
+            <summary>Terminal setup and host trust</summary>
+            <p>
+              In your terminal, connect to each jump alias first, then the
+              selected destination, using the same config and OpenSSH
+              executable. Compare host fingerprints with the administrator
+              through an independent trusted channel before accepting them.
+            </p>
+            <p>
+              For a changed key, investigate first. Only after a verified
+              rotation, repair the affected known_hosts entry yourself.
+              ContainerDesk never edits trust files.
+            </p>
+            <p>
+              Load encrypted keys using ssh-add or your normal OS agent. Keep
+              the agent available to the desktop app. Passwords and passphrases
+              are never requested or stored here. After completing setup, press
+              Check SSH access again.
+            </p>
+          </details>
+        </div>
+      )}
+      {access && (
+        <div role="status" aria-label="SSH access result">
+          <p>{sshAccessHelp[access.status]}</p>
+          {access.sshError && (
+            <p>
+              SSH diagnostic (sanitized): <code>{access.sshError}</code>
+            </p>
+          )}
         </div>
       )}
       {resolved && (

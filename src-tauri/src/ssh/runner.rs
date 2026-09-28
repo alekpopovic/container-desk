@@ -111,6 +111,15 @@ impl Runner {
         args: Vec<OsString>,
         limits: Limits,
     ) -> Result<Job, RunError> {
+        self.start_owned(executable, args, limits, Box::new(()))
+    }
+    pub(crate) fn start_owned(
+        &self,
+        executable: &str,
+        args: Vec<OsString>,
+        limits: Limits,
+        resource: Box<dyn Send>,
+    ) -> Result<Job, RunError> {
         limits.validate()?;
         if args.len() > 64
             || args
@@ -129,6 +138,7 @@ impl Runner {
         let (result, receive) = oneshot::channel();
         tokio::spawn(async move {
             let outcome = execute(executable, args, limits, cancelled).await;
+            drop(resource);
             drop(permit); // Capacity becomes available only after cleanup, before acknowledgment.
             let _ = result.send(outcome);
         });
@@ -142,7 +152,7 @@ struct OwnedChild(Child);
 impl OwnedChild {
     fn stop_group(&self) {
         if let Some(pid) = self.0.id() {
-            // SAFETY: process_group(0) creates a dedicated group; id exists only until reaping.
+            // SAFETY: setsid() creates a dedicated session/group; id exists only until reaping.
             unsafe {
                 libc::kill(-(pid as libc::pid_t), libc::SIGKILL);
             }
@@ -187,16 +197,30 @@ async fn execute(
         Ok(()) | Err(oneshot::error::TryRecvError::Closed) => return Err(RunError::Cancelled),
         Err(oneshot::error::TryRecvError::Empty) => (),
     }
-    let child = Command::new(executable)
+    let mut command = Command::new(executable);
+    command
         .args(args)
         .env("LC_ALL", "C")
+        .env("SSH_ASKPASS_REQUIRE", "never")
+        .env_remove("SSH_ASKPASS")
+        .env_remove("DISPLAY")
+        .env_remove("WAYLAND_DISPLAY")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .process_group(0)
-        .kill_on_drop(true)
-        .spawn()
-        .map_err(|_| RunError::Unavailable)?;
+        .kill_on_drop(true);
+    // SAFETY: setsid is async-signal-safe; no allocation/locks in the fork child.
+    // Detach the controlling terminal as well as creating an owned process group.
+    unsafe {
+        command.pre_exec(|| {
+            if libc::setsid() == -1 {
+                Err(std::io::Error::last_os_error())
+            } else {
+                Ok(())
+            }
+        });
+    }
+    let child = command.spawn().map_err(|_| RunError::Unavailable)?;
     let mut owned = OwnedChild(child);
     let stdout = owned.0.stdout.take().expect("piped stdout");
     let stderr = owned.0.stderr.take().expect("piped stderr");

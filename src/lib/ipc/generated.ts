@@ -87,3 +87,5 @@ export type SelectSshAliasRequest = { configPath: string | null, alias: string, 
 export type SshSelection = { useDefaultConfig: boolean, configPath: string, alias: string, };
 export type ResolveSshRequest = { selection: SshSelection, };
 export type EffectiveSshConfig = { selection: SshSelection, executablePath: string, hostname: string, user: string, port: number, proxyJump: string | null, hasProxyCommand: boolean, };
+export type SshAccessStatus = "verified" | "unknown_host_key" | "changed_host_key" | "host_key_rejected" | "authentication_failed" | "timed_out" | "output_limit" | "connection_failed";
+export type SshAccessReport = { selection: SshSelection, status: SshAccessStatus, sshError: string | null, };

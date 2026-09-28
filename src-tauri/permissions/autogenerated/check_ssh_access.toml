@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-check-ssh-access"
+description = "Enables the check_ssh_access command without any pre-configured scope."
+commands.allow = ["check_ssh_access"]
+
+[[permission]]
+identifier = "deny-check-ssh-access"
+description = "Denies the check_ssh_access command without any pre-configured scope."
+commands.deny = ["check_ssh_access"]

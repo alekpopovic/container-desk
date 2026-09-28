@@ -1,6 +1,6 @@
 # ContainerDesk project status
 
-Updated 2026-09-28 after prompt 012. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations and remote command preparation through 012 are implemented; live remote Docker management is not available yet.
+Updated 2026-09-28 after prompt 013. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations, remote command preparation and SSH access checks through 013 are implemented; live remote Docker management is not available yet.
 
 ## Current implementation
 
@@ -20,9 +20,11 @@ Updated 2026-09-28 after prompt 012. ContainerDesk is a working native Tauri v2 
 
 - Centralized POSIX remote quoting and validated Docker command preparation, including absolute binary overrides, named contexts and fixed optional sudo -n; hostile arguments checked through an inert shell harness.
 
-Design: [remote commands](remote-commands.md), [SSH runner](ssh-runner.md), [SSH resolution](ssh-resolution.md), [SSH discovery](ssh-discovery.md), [demo mode](demo-mode.md), [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
+- Explicit SSH access/trust flow with no password collection; strict native ProxyJump policy and 14 real disposable-lab cases verified on Linux.
 
-Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md), [008](../codex/tracking/evidence/008.md), [009](../codex/tracking/evidence/009.md), [010](../codex/tracking/evidence/010.md), [011](../codex/tracking/evidence/011.md), [012](../codex/tracking/evidence/012.md).
+Design: [SSH authentication](ssh-authentication.md), [remote commands](remote-commands.md), [SSH runner](ssh-runner.md), [SSH resolution](ssh-resolution.md), [SSH discovery](ssh-discovery.md), [demo mode](demo-mode.md), [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
+
+Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md), [008](../codex/tracking/evidence/008.md), [009](../codex/tracking/evidence/009.md), [010](../codex/tracking/evidence/010.md), [011](../codex/tracking/evidence/011.md), [012](../codex/tracking/evidence/012.md), [013](../codex/tracking/evidence/013.md).
 
 ## Actual platform status
 
@@ -34,8 +36,9 @@ Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evid
 | Ubuntu 24.04 baseline / native Wayland | Not verified |
 | macOS arm64 / Intel | Not built or executed |
 | Installers, signing, notarization | Not performed; native unbundled Linux builds only |
-| SSH host sessions / Docker resource reads / mutations / terminal | Not implemented or exercised live yet |
+| SSH authentication | Real native direct/ProxyJump lab verified; no persisted host sessions yet |
+| Docker resource reads / mutations / terminal | Not implemented or exercised live yet |
 
 No browser fixture, mock runtime or build is counted as native server-operation proof. Existing bundle-identifier warning and GitHub moderate dependency alert remain open for the relevant later review. [Checkpoints](checkpoints.md) still require actual lab/platform evidence.
 
-Next prompt: **013 — SSH authentication and host trust flow**. Continue sequentially under the user's [execution authorization](execution.md).
+Next prompt: **014 — Host connection state machine**. Continue sequentially under the user's [execution authorization](execution.md).

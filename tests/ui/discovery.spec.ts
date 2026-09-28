@@ -46,6 +46,12 @@ test("discovery waits for explicit browse and accepts a selected or manual alias
                 ],
               }
             : fixtures.discovery;
+        if (command === "check_ssh_access")
+          return {
+            selection: args?.request?.selection,
+            status: "unknown_host_key",
+            sshError: "Host key verification failed.",
+          };
         if (command === "resolve_ssh_config")
           return {
             ...fixtures.effectiveSsh,
@@ -93,10 +99,34 @@ test("discovery waits for explicit browse and accepts a selected or manual alias
   await expect(page.getByLabel("Effective SSH configuration")).toContainText(
     "fixture-jump",
   );
+  expect(
+    await page.evaluate(() => Reflect.get(window, "discoveryCalls")),
+  ).not.toContain("check_ssh_access");
+  await page.getByRole("button", { name: "Check SSH access" }).click();
+  await expect(page.getByLabel("SSH access result")).toContainText(
+    "Verify its fingerprint independently",
+  );
+  await expect(page.getByLabel("SSH access result")).toContainText(
+    "Host key verification failed.",
+  );
+  await page
+    .getByText("Terminal setup and host trust", { exact: true })
+    .click();
+  await expect(
+    page.getByText("Load encrypted keys using ssh-add", { exact: false }),
+  ).toBeVisible();
+  expect(
+    (
+      await page.evaluate(
+        () => Reflect.get(window, "discoveryCalls") as string[],
+      )
+    ).filter((c) => c === "check_ssh_access"),
+  ).toHaveLength(1);
   await page
     .getByLabel("SSH config path", { exact: true })
     .fill("/missing/config");
   await expect(page.getByLabel("Effective SSH configuration")).toHaveCount(0);
+  await expect(page.getByLabel("SSH access result")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Select fixture-host", exact: true }),
   ).toHaveCount(0);

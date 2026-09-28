@@ -561,3 +561,39 @@ export async function resolveSshConfig(
     throw new IpcError("invalid_response");
   return value as EffectiveSshConfig;
 }
+
+import type { SshAccessReport, SshAccessStatus } from "./generated.ts";
+export const sshAccessHelp: Record<SshAccessStatus, string> = {
+  verified: "SSH access verified. Docker readiness has not been checked.",
+  unknown_host_key:
+    "A destination or jump host is not trusted yet. Verify its fingerprint independently in your terminal, then retry explicitly.",
+  changed_host_key:
+    "A destination or jump host key has changed. Stop and verify the change with its administrator before repairing known_hosts in your terminal.",
+  host_key_rejected:
+    "SSH rejected a destination or jump host key. Review trust and revocation with its administrator.",
+  authentication_failed:
+    "SSH authentication failed at the destination or a jump host. Check each hop and load encrypted keys in your normal OS agent.",
+  timed_out:
+    "The SSH check reached its 15-second deadline. Check network access, each jump host and your agent, then retry explicitly.",
+  output_limit:
+    "The SSH check exceeded its output limit. Review remote login output in your terminal.",
+  connection_failed:
+    "SSH access could not be verified. Check the selected alias and each jump host in your terminal.",
+};
+export async function checkSshAccess(
+  selection: SshSelection,
+): Promise<SshAccessReport> {
+  const value = await call("check_ssh_access", { selection });
+  if (
+    !record(value) ||
+    !record(value.selection) ||
+    value.selection.alias !== selection.alias ||
+    value.selection.configPath !== selection.configPath ||
+    value.selection.useDefaultConfig !== selection.useDefaultConfig ||
+    typeof value.status !== "string" ||
+    !Object.hasOwn(sshAccessHelp, value.status) ||
+    !(value.sshError === null || text(value.sshError, 256))
+  )
+    throw new IpcError("invalid_response");
+  return value as SshAccessReport;
+}

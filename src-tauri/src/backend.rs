@@ -85,6 +85,39 @@ impl Backend {
         .await
         .map_err(|_| AppError::new(ErrorCode::Internal))?
     }
+    pub async fn check_ssh_access(
+        &self,
+        request: ResolveSshRequest,
+    ) -> Result<SshAccessReport, AppError> {
+        let permit = self
+            .diagnostic_slot
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        self.require_live_mode()?;
+        crate::ssh::validate_alias(&request.selection.alias)?;
+        let path = crate::ssh::discovery::config_path(
+            &self.config_home,
+            Some(&request.selection.config_path),
+        )?;
+        if request.selection.use_default_config
+            && path != crate::ssh::discovery::config_path(&self.config_home, None)?
+        {
+            return Err(AppError::new(ErrorCode::InvalidConfigPath));
+        }
+        let preferences = self.preferences()?.preferences;
+        let executable = preferences
+            .ssh_executable_override
+            .unwrap_or_else(|| crate::diagnostics::DEFAULT_SSH.into());
+        let runner = self.process_runner.clone();
+        // The owner keeps its permit through bounded completion/reaping even if the IPC caller disappears.
+        tauri::async_runtime::spawn(async move {
+            let _permit = permit;
+            crate::ssh::auth::probe(&runner, &executable, request.selection).await
+        })
+        .await
+        .map_err(|_| AppError::new(ErrorCode::Internal))?
+    }
     pub async fn discover_hosts(
         &self,
         request: DiscoverHostsRequest,
@@ -600,6 +633,56 @@ mod tests {
         assert_eq!(
             backend
                 .resolve_ssh(ResolveSshRequest {
+                    selection: selected
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+    }
+
+    #[tokio::test]
+    async fn access_check_rejects_invalid_default_references_and_demo_before_spawn() {
+        let backend = Backend::default();
+        let mut selected = backend
+            .select_alias(SelectSshAliasRequest {
+                config_path: None,
+                alias: "fixture".into(),
+            })
+            .unwrap();
+        assert!(selected.use_default_config);
+        selected.config_path = "/tmp/forged-default-config".into();
+        assert_eq!(
+            backend
+                .check_ssh_access(ResolveSshRequest {
+                    selection: selected.clone()
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::InvalidConfigPath
+        );
+        let permit = backend.diagnostic_slot.try_acquire().unwrap();
+        assert_eq!(
+            backend
+                .check_ssh_access(ResolveSshRequest {
+                    selection: selected.clone()
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::ResourceLimit
+        );
+        drop(permit);
+        backend
+            .switch_workspace(SwitchWorkspaceRequest::Demo {
+                scenario: DemoScenario::Standard,
+            })
+            .unwrap();
+        assert_eq!(
+            backend
+                .check_ssh_access(ResolveSshRequest {
                     selection: selected
                 })
                 .await

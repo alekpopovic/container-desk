@@ -736,3 +736,25 @@ pub struct EffectiveSshConfig {
     pub proxy_jump: Option<String>,
     pub has_proxy_command: bool,
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum SshAccessStatus {
+    Verified,
+    UnknownHostKey,
+    ChangedHostKey,
+    HostKeyRejected,
+    AuthenticationFailed,
+    TimedOut,
+    OutputLimit,
+    ConnectionFailed,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SshAccessReport {
+    pub selection: SshSelection,
+    pub status: SshAccessStatus,
+    pub ssh_error: Option<String>,
+}

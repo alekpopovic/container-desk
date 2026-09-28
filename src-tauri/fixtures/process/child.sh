@@ -20,6 +20,9 @@ case "$scenario" in
   empty)
     if [ -t 0 ] || [ -t 1 ] || [ -t 2 ]; then exit 9; fi
     if read -r ignored; then exit 8; fi
+    if (exec 3<>/dev/tty) 2>/dev/null; then exit 7; fi
+    if [ "${SSH_ASKPASS_REQUIRE:-}" != never ]; then exit 6; fi
+    if [ -n "${SSH_ASKPASS:-}${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then exit 5; fi
     exit 0
     ;;
   exit) exit 0 ;;

@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T20:01:28+00:00
+Updated: 2026-09-28T20:25:18+00:00
 
-blocked: **0** | done: **12** | in_progress: **0** | pending: **48**
+blocked: **0** | done: **13** | in_progress: **0** | pending: **47**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -22,7 +22,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 010 | 02 SSH transport | Effective SSH configuration resolution | high | done | codex/tracking/evidence/010.md |
 | 011 | 02 SSH transport | OpenSSH subprocess runner | high | done | codex/tracking/evidence/011.md |
 | 012 | 02 SSH transport | Remote argument quoting and Docker command builders | high | done | codex/tracking/evidence/012.md |
-| 013 | 02 SSH transport | SSH authentication and host trust flow | high | pending | — |
+| 013 | 02 SSH transport | SSH authentication and host trust flow | high | done | codex/tracking/evidence/013.md |
 | 014 | 02 SSH transport | Host connection state machine | high | pending | — |
 | 015 | 02 SSH transport | Connection reuse and child ownership | high | pending | — |
 | 016 | 02 SSH transport | Remote Docker capability probe | high | pending | — |
@@ -97,3 +97,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T19:49:28+00:00 — 011: done; 51 Rust tests and 19 frontend IPC checks passed; targeted runner tests also passed under strace; Native timeout/cancellation/output-limit/partial-output/reaping and OpenSSH option checks passed; Clippy, formatting and native Linux release build passed
 - 2026-09-28T19:49:44+00:00 — 012: start;
 - 2026-09-28T20:01:28+00:00 — 012: done; 56 Rust tests and 19 frontend IPC tests passed; final 3 Docker-builder and 2 quoting tests passed; Native inert POSIX harness preserved hostile arguments exactly without executing injected commands; Clippy, formatting and native Linux release build passed
+- 2026-09-28T20:02:36+00:00 — 013: start;
+- 2026-09-28T20:25:18+00:00 — 013: done; Native disposable SSH lab: 14 direct/ProxyJump trust and authentication cases passed; no askpass or config/trust changes; 60 Rust tests, 20 IPC tests, 6 browser presentation checks, clippy and native release build passed

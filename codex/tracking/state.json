@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T20:01:28+00:00",
+  "updated_at": "2026-09-28T20:25:18+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -409,6 +409,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T20:02:36+00:00",
+      "id": "013",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T20:25:18+00:00",
+      "id": "013",
+      "action": "done",
+      "note": "Native disposable SSH lab: 14 direct/ProxyJump trust and authentication cases passed; no askpass or config/trust changes; 60 Rust tests, 20 IPC tests, 6 browser presentation checks, clippy and native release build passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T20:02:36+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -576,12 +610,15 @@
       "note": ""
     },
     "013": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T20:02:36+00:00",
+      "finished_at": "2026-09-28T20:25:18+00:00",
+      "evidence": "codex/tracking/evidence/013.md",
+      "evidence_sha256": "266b1e0dc2527dbe00a6d8b3606cad2c05f2e6d92270fc01533b202b934bee55",
+      "checks": [
+        "Native disposable SSH lab: 14 direct/ProxyJump trust and authentication cases passed; no askpass or config/trust changes",
+        "60 Rust tests, 20 IPC tests, 6 browser presentation checks, clippy and native release build passed"
+      ],
       "commit": "",
       "note": ""
     },

@@ -1,4 +1,5 @@
 //! Native SSH configuration boundaries. Discovery never invokes a subprocess.
+pub mod auth;
 pub mod discovery;
 pub mod quoting;
 pub mod resolver;
