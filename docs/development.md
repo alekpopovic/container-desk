@@ -9,6 +9,7 @@ Run from the repository root. Use the pinned Node 24.21.0/npm 11.19.0 (`.nvmrc`)
 | `npm run desktop:dev` | Start Vite on loopback port 1420 and launch the native Tauri window; Ctrl-C stops development |
 | `npm run dev` | Frontend-only Vite server; a browser explicitly reports that the desktop version bridge is unavailable |
 | `npm run check` | Strict TypeScript, Biome lint/format and focused Node IPC contract tests |
+| `npm run test:ui` | 18 browser checks for routes, responsive layout, themes, keyboard focus, contrast and isolated state fixtures |
 | `npm run format` | Format frontend/configuration files without touching historical prompts or tracker files |
 | `npm run rust:format:check` | Check Rust formatting |
 | `npm run rust:check` | Locked native Cargo check; requires platform development libraries |
@@ -47,3 +48,9 @@ env -u LD_LIBRARY_PATH -u LD_PRELOAD -u GTK_PATH -u GIO_MODULE_DIR GDK_BACKEND=x
 ```
 
 This evidence covers GTK on X11/XWayland. It does not establish native Wayland or macOS behavior. Prefer a normal host terminal with the project toolchain selected for everyday development.
+
+## Workspace interface
+
+Prompt 003 adds six hash routes, an empty host sidebar, connection context and responsive inventory/details. Appearance controls are functional for the current window; remote features remain explicitly unavailable. See [design system](design-system.md) for tokens and accessibility behavior.
+
+UI checks use pinned Playwright 1.63.0. Run `npm exec playwright -- install chromium` once if its browser is missing, then `npm run test:ui`. The runner starts and stops a dedicated development server on loopback port 1431. Screenshots/traces under test-results are ignored; curated verification images are committed separately. Isolated synthetic fixtures are excluded from the production entry point and never represent real SSH/native results.

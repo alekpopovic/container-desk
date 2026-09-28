@@ -9,7 +9,9 @@
       "tsconfig.json",
       "biome.json",
       "src-tauri/tauri.conf.json",
-      "src-tauri/capabilities/**"
+      "src-tauri/capabilities/**",
+      "tests/ui/**",
+      "playwright.config.ts"
     ]
   },
   "formatter": {

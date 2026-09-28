@@ -24,7 +24,8 @@
     "typescript": "7.0.2",
     "vite": "8.3.1",
     "@biomejs/biome": "2.5.14",
-    "@types/node": "24.19.0"
+    "@types/node": "24.19.0",
+    "@playwright/test": "1.63.0"
   },
   "scripts": {
     "dev": "vite",
@@ -42,6 +43,7 @@
     "rust:check": "cargo check --manifest-path src-tauri/Cargo.toml --locked",
     "rust:lint": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings",
     "rust:format": "cargo fmt --manifest-path src-tauri/Cargo.toml",
-    "rust:format:check": "cargo fmt --manifest-path src-tauri/Cargo.toml --check"
+    "rust:format:check": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
+    "test:ui": "playwright test"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T17:22:30+00:00",
+  "updated_at": "2026-09-28T17:38:23+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -69,6 +69,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T17:24:46+00:00",
+      "id": "003",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T17:38:23+00:00",
+      "id": "003",
+      "action": "done",
+      "note": "npm run check: PASS; strict TypeScript, lint, formatting and 3 IPC tests; npm run test:ui: 18 passed in light/dark at 1280x800, 800x700 and 640x480; routes, keyboard, contrast and synthetic states checked; npm run desktop:build: PASS; native wide and verified narrower Linux windows visually inspected and captured; owned processes reaped; Production fixture exclusion, documentation links, tracker integrity and git diff --check: PASS; platform/fixture limits recorded",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T17:24:46+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -103,12 +137,17 @@
       "note": ""
     },
     "003": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T17:24:46+00:00",
+      "finished_at": "2026-09-28T17:38:23+00:00",
+      "evidence": "codex/tracking/evidence/003.md",
+      "evidence_sha256": "c0b57644d5f93250d0a0a7a14cdbf504fd656d1e8b896fd6a4804dfb1dc3763a",
+      "checks": [
+        "npm run check: PASS; strict TypeScript, lint, formatting and 3 IPC tests",
+        "npm run test:ui: 18 passed in light/dark at 1280x800, 800x700 and 640x480; routes, keyboard, contrast and synthetic states checked",
+        "npm run desktop:build: PASS; native wide and verified narrower Linux windows visually inspected and captured; owned processes reaped",
+        "Production fixture exclusion, documentation links, tracker integrity and git diff --check: PASS; platform/fixture limits recorded"
+      ],
       "commit": "",
       "note": ""
     },

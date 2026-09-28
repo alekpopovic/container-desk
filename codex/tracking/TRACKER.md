@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T17:22:30+00:00
+Updated: 2026-09-28T17:38:23+00:00
 
-blocked: **0** | done: **2** | in_progress: **0** | pending: **58**
+blocked: **0** | done: **3** | in_progress: **0** | pending: **57**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -12,7 +12,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 |---|---|---|---|---|---|
 | 001 | 01 Foundations | Repository audit and implementation contract | high | done | codex/tracking/evidence/001.md |
 | 002 | 01 Foundations | Tauri React TypeScript scaffold | medium | done | codex/tracking/evidence/002.md |
-| 003 | 01 Foundations | Application layout and design tokens | medium | pending | — |
+| 003 | 01 Foundations | Application layout and design tokens | medium | done | codex/tracking/evidence/003.md |
 | 004 | 01 Foundations | Typed domain models and IPC boundary | high | pending | — |
 | 005 | 01 Foundations | Local settings and host metadata store | high | pending | — |
 | 006 | 01 Foundations | Native dependency diagnostics | medium | pending | — |
@@ -77,3 +77,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T17:09:10+00:00 — 001: done; npm ci --ignore-scripts and npm ls --depth=0: PASS with Node 24.21.0/npm 11.19.0; 11 exact direct pins; cargo generate-lockfile, locked offline metadata and fmt --check: PASS with Rust 1.98.1; no native compilation claimed; python3 -m unittest discover -s codex/tests -v: 14 tests passed after tracker renderer whitespace fix; Manifest/lock/toolchain consistency, architecture review, local Markdown links, tracker validate and git diff --check: PASS; native/platform limits recorded
 - 2026-09-28T17:10:13+00:00 — 002: start;
 - 2026-09-28T17:22:30+00:00 — 002: done; npm run check and npm run build: PASS; strict TypeScript, Biome, 3 IPC tests and production Vite build; cargo check --locked, Clippy all targets with -D warnings, and Rust formatting: PASS with installed GTK/WebKitGTK libraries; npm run desktop:build: PASS; real Linux release window captured showing Rust-provided Version 0.1.0 after process-local Snap environment cleanup; Generated local main-window ACL and 13 npm pins verified; tracker validate, Markdown links and git diff --check passed; other native platforms unverified
+- 2026-09-28T17:24:46+00:00 — 003: start;
+- 2026-09-28T17:38:23+00:00 — 003: done; npm run check: PASS; strict TypeScript, lint, formatting and 3 IPC tests; npm run test:ui: 18 passed in light/dark at 1280x800, 800x700 and 640x480; routes, keyboard, contrast and synthetic states checked; npm run desktop:build: PASS; native wide and verified narrower Linux windows visually inspected and captured; owned processes reaped; Production fixture exclusion, documentation links, tracker integrity and git diff --check: PASS; platform/fixture limits recorded
