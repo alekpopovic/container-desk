@@ -992,6 +992,17 @@ export async function inspectContainer(
     !record(result) ||
     !container(result.summary, request.scope) ||
     result.summary.id !== request.containerId ||
+    ![result.healthcheckConfigured, result.oomKilled].every(
+      (v) => v === null || typeof v === "boolean",
+    ) ||
+    !Array.isArray(result.exposedPorts) ||
+    result.exposedPorts.length > 128 ||
+    !result.exposedPorts.every(
+      (p) =>
+        record(p) &&
+        portNumber(p.privatePort) &&
+        ["tcp", "udp", "sctp"].includes(String(p.protocol)),
+    ) ||
     result.environmentValuesMasked !== !request.revealSensitive ||
     !strings(result.environmentNames, 1024) ||
     !secretValues(result.environment) ||

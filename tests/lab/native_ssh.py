@@ -60,6 +60,10 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
             node = element(f'//button[normalize-space(.)="{text}"]')
             command("POST", f"/element/{node}/click", {})
 
+        def tab(text):
+            node = element(f'//button[@role="tab" and normalize-space(.)="{text}"]')
+            command("POST", f"/element/{node}/click", {})
+
         def fill(label, value):
             node = element(f'//label[normalize-space(text())="{label}"]/input')
             command("POST", f"/element/{node}/clear", {})
@@ -150,12 +154,33 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                                 time.sleep(.1)
                             raise AssertionError("Native inspect did not reach expected state")
                         text = wait_inspect("Sensitive values masked")
+                        assert "Not configured" in text
+                        copy_node = element('//button[@aria-label="Copy container id"]')
+                        command("POST", f"/element/{copy_node}/click", {})
+                        wait_inspect("Copied container id.")
+                        expected_id = script('return document.querySelector(".selected-container code").textContent')
+                        search = element('//label[normalize-space(text())="Search containers"]/input')
+                        command("POST", f"/element/{search}/click", {})
+                        command("POST", "/actions", {"actions": [{"type": "key", "id": "clipboard-check", "actions": [
+                            {"type": "keyDown", "value": "\ue009"}, {"type": "keyDown", "value": "v"},
+                            {"type": "keyUp", "value": "v"}, {"type": "keyUp", "value": "\ue009"}
+                        ]}]})
+                        command("DELETE", "/actions")
+                        assert script('return document.querySelector("input[type=search]").value') == expected_id, "Native paste must contain the copied safe ID"
+                        command("POST", f"/element/{search}/clear", {})
+                        tab("Ports")
+                        text = wait_inspect("Exposed container ports")
+                        assert "8080/tcp" in text and "No active host bindings reported." in text
+                        tab("Environment")
+                        text = wait_inspect("Sensitive values masked")
                         assert "CHECKPOINT_TOKEN" in text
                         assert "synthetic-inspect-021-secret" not in text
                         assert "synthetic-label-021-secret" not in text
                         button("Reveal sensitive values")
                         text = wait_inspect("Sensitive values revealed")
                         assert "synthetic-inspect-021-secret" in text
+                        tab("Labels")
+                        text = inspect_text()
                         assert "synthetic-label-021-secret" in text
                         button("Hide sensitive values")
                         text = wait_inspect("Sensitive values masked")
@@ -171,7 +196,7 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                         script("Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Reveal sensitive values').scrollIntoView({block: 'center'})")
                         command("POST", "/execute/async", {"script": "const done = arguments[arguments.length - 1]; requestAnimationFrame(() => requestAnimationFrame(() => done(true)));", "args": []})
                         (artifacts / f"native-inspect-{alias}.png").write_bytes(base64.b64decode(command("GET", "/screenshot"), validate=True))
-                        print(f"PASS native inspect {alias}: real fields, Rust default redaction, explicit reveal and hide", flush=True)
+                        print(f"PASS native inspect {alias}: tabbed real fields, not-configured health, exposure versus bindings, clipboard ID readback, Rust redaction, reveal/hide", flush=True)
                     node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
                     command("POST", f"/element/{node}/click", {})
                 button("Disconnect saved host")

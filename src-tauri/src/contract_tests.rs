@@ -53,6 +53,7 @@ fn generated_contract_is_current() {
         ContainerSummary,
         ContainerListDisplay,
         ContainerDetail,
+        ExposedPort,
         DetailValue,
         DetailMount,
         DetailNetwork,

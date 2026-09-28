@@ -1,3 +1,4 @@
+import "./inspect-fixture.css";
 import { useMemo, useRef, useState } from "react";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { ContainerDetails } from "../../src/features/containers/ContainerDetails";
@@ -24,6 +25,35 @@ export function InspectFixture() {
     detail.summary.id = request.containerId;
     detail.imageId = `sha256:${"c".repeat(64)}`;
     detail.exitCode = 137;
+    detail.oomKilled = true;
+    detail.healthcheckConfigured = true;
+    detail.summary.state = "running";
+    detail.summary.health = "unhealthy";
+    detail.exposedPorts = [
+      { privatePort: 80, protocol: "tcp" },
+      { privatePort: 53, protocol: "udp" },
+    ];
+    detail.summary.ports = [
+      { privatePort: 80, protocol: "tcp", hostIp: "0.0.0.0", publicPort: 8080 },
+      { privatePort: 80, protocol: "tcp", hostIp: "::", publicPort: 8080 },
+      {
+        privatePort: 80,
+        protocol: "tcp",
+        hostIp: "127.0.0.1",
+        publicPort: 18080,
+      },
+      { privatePort: 53, protocol: "udp", hostIp: null, publicPort: null },
+    ];
+    detail.mounts = [
+      {
+        kind: "bind",
+        name: null,
+        source: "/fixture/" + "long-directory-".repeat(30),
+        destination: "/data/" + "long-destination-".repeat(20),
+        readWrite: false,
+        propagation: "rprivate",
+      },
+    ];
     detail.networks = [
       {
         name: "<img src=x onerror=alert(1)>",
@@ -39,7 +69,9 @@ export function InspectFixture() {
     detail.environment = [
       {
         name: "SYNTHETIC_TOKEN",
-        value: request.revealSensitive ? "synthetic-ui-secret" : null,
+        value: request.revealSensitive
+          ? "synthetic-ui-secret <img src=x onerror=alert(1)> https://example.invalid"
+          : null,
         masked: !request.revealSensitive,
       },
     ];
@@ -47,10 +79,14 @@ export function InspectFixture() {
     detail.labels = [
       {
         name: "innocent",
-        value: request.revealSensitive ? "synthetic-ui-label" : null,
+        value: request.revealSensitive
+          ? 'synthetic-ui-label <a href="https://example.invalid">link</a>'
+          : null,
         masked: !request.revealSensitive,
       },
     ];
+    if (new URLSearchParams(location.search).has("emptyLabels"))
+      detail.labels = [];
     if (request.revealSensitive && deferred.current === null) {
       setPending(true);
       return new Promise((resolve) => {
@@ -70,7 +106,7 @@ export function InspectFixture() {
     [epoch],
   );
   return (
-    <div className="container-split">
+    <div className="container-split inspect-fixture-shell">
       <button
         type="button"
         onClick={() => {
@@ -94,7 +130,9 @@ export function InspectFixture() {
         Delete fixture container
       </button>
       <p>{pending ? "Fixture reveal pending" : "Fixture ready"}</p>
-      <ContainerDetails key={`${id}-${epoch}`} scope={scope} id={id} />
+      <div className="detail-panel inspect-fixture-panel">
+        <ContainerDetails key={`${id}-${epoch}`} scope={scope} id={id} />
+      </div>
     </div>
   );
 }

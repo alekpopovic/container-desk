@@ -30,6 +30,15 @@ struct Config {
     image: Option<String>,
     env: Option<Vec<String>>,
     labels: Option<BTreeMap<String, String>>,
+    healthcheck: Option<Healthcheck>,
+    exposed_ports: Option<BTreeMap<String, Option<Empty>>>,
+}
+#[derive(Deserialize)]
+struct Empty {}
+#[derive(Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct Healthcheck {
+    test: Option<Vec<String>>,
 }
 #[derive(Default, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -39,6 +48,8 @@ struct State {
     finished_at: Option<String>,
     exit_code: Option<i32>,
     health: Option<Health>,
+    #[serde(rename = "OOMKilled")]
+    oom_killed: Option<bool>,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -158,6 +169,22 @@ pub fn parse(
     if r.image.as_ref().is_some_and(|id| id.validate().is_err()) {
         return Err(err(scope, ErrorCode::InvalidResponse));
     }
+    let healthcheck_configured = r
+        .config
+        .as_ref()
+        .and_then(|config| match &config.healthcheck {
+            None => Some(false),
+            Some(check) => {
+                check
+                    .test
+                    .as_ref()
+                    .and_then(|test| match test.first().map(String::as_str) {
+                        Some("NONE") => Some(false),
+                        Some("CMD" | "CMD-SHELL") => Some(true),
+                        _ => None,
+                    })
+            }
+        });
     let config = r.config.unwrap_or_default();
     let state = r.state.unwrap_or_default();
     let host = r.host_config.unwrap_or_default();
@@ -216,21 +243,23 @@ pub fn parse(
             aliases,
         });
     }
+    let exposed = config.exposed_ports.unwrap_or_default();
+    count(scope, exposed.len(), 128)?;
+    let exposed_ports = exposed
+        .keys()
+        .map(|key| {
+            let (private_port, protocol) = port_key(scope, key)?;
+            Ok(ExposedPort {
+                private_port,
+                protocol: protocol.into(),
+            })
+        })
+        .collect::<Result<Vec<_>, AppError>>()?;
     let mut ports = Vec::new();
     let port_map = raw_network.ports.unwrap_or_default();
     count(scope, port_map.len(), 128)?;
     for (key, bindings) in port_map {
-        let (number, protocol) = key
-            .split_once('/')
-            .ok_or_else(|| err(scope, ErrorCode::InvalidResponse))?;
-        let private_port = number
-            .parse::<u16>()
-            .ok()
-            .filter(|n| *n > 0)
-            .ok_or_else(|| err(scope, ErrorCode::InvalidResponse))?;
-        if !["tcp", "udp", "sctp"].contains(&protocol) {
-            return Err(err(scope, ErrorCode::InvalidResponse));
-        }
+        let (private_port, protocol) = port_key(scope, &key)?;
         let bindings = bindings.unwrap_or_default();
         count(scope, bindings.len(), 128)?;
         if bindings.is_empty() {
@@ -262,6 +291,9 @@ pub fn parse(
     }
     let status = small(scope, state.status)?.unwrap_or_else(|| "unknown".into());
     Ok(ContainerDetail {
+        healthcheck_configured,
+        oom_killed: state.oom_killed,
+        exposed_ports,
         summary: ContainerSummary {
             scope: scope.clone(),
             id: id.clone(),
@@ -303,6 +335,20 @@ pub fn parse(
             read_only_rootfs: host.readonly_rootfs,
         },
     })
+}
+fn port_key<'a>(scope: &SessionScope, key: &'a str) -> Result<(u16, &'a str), AppError> {
+    let (number, protocol) = key
+        .split_once('/')
+        .ok_or_else(|| err(scope, ErrorCode::InvalidResponse))?;
+    let port = number
+        .parse::<u16>()
+        .ok()
+        .filter(|p| *p > 0)
+        .ok_or_else(|| err(scope, ErrorCode::InvalidResponse))?;
+    if !["tcp", "udp", "sctp"].contains(&protocol) {
+        return Err(err(scope, ErrorCode::InvalidResponse));
+    }
+    Ok((port, protocol))
 }
 fn decode(
     scope: &SessionScope,

@@ -243,7 +243,7 @@ def main():
                 for name in ("listing-first", "listing-second"):
                     expected.append(dc("exec", names[-1], "docker", "create", "--network", "none", "--name", name,
                                        "--label", "dev.containerdesk.fixture=019", "--label", "test.value=comma,equals=next",
-                                       *(["--env", "CHECKPOINT_TOKEN=synthetic-inspect-021-secret", "--label", "innocent=synthetic-label-021-secret"] if args.inspect else []),
+                                       *(["--env", "CHECKPOINT_TOKEN=synthetic-inspect-021-secret", "--label", "innocent=synthetic-label-021-secret", "--expose", "8080/tcp", "--expose", "53/udp"] if args.inspect else []),
                                        "containerdesk-empty:019", capture_output=True).stdout.strip())
                 current = json.loads(manifest.read_text())
                 current["expectedContainerIds"] = expected

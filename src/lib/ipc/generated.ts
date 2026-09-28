@@ -33,11 +33,12 @@ names: Array<string>, ports: string | null, createdAt: string | null, runningFor
  * Missing field is unknown. Label values never cross default list IPC.
  */
 labelsPresent: boolean | null, };
-export type ContainerDetail = { summary: ContainerSummary,
+export type ContainerDetail = { healthcheckConfigured: boolean | null, oomKilled: boolean | null, exposedPorts: Array<ExposedPort>, summary: ContainerSummary,
 /**
  * No environment values or unrestricted inspect JSON cross default IPC.
  */
 environmentNames: Array<string>, environmentValuesMasked: boolean, environment: Array<DetailValue>, labels: Array<DetailValue>, createdAt: string | null, startedAt: string | null, finishedAt: string | null, exitCode: number | null, restartCount: number | null, restartPolicy: string | null, restartMaximumRetryCount: number | null, imageId: ImageId | null, mounts: Array<DetailMount>, networks: Array<DetailNetwork>, resources: ResourceConfiguration, };
+export type ExposedPort = { privatePort: number, protocol: string, };
 export type DetailValue = { name: string, value: string | null, masked: boolean, };
 export type DetailMount = { kind: string | null, name: string | null, source: string | null, destination: string | null, readWrite: boolean | null, propagation: string | null, };
 export type DetailNetwork = { name: string, networkId: string | null, ipv4: string | null, ipv6: string | null, gateway: string | null, macAddress: string | null, aliases: Array<string>, };

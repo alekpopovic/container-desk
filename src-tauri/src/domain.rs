@@ -275,6 +275,9 @@ pub struct ContainerSummary {
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct ContainerDetail {
+    pub healthcheck_configured: Option<bool>,
+    pub oom_killed: Option<bool>,
+    pub exposed_ports: Vec<ExposedPort>,
     pub summary: ContainerSummary,
     /// No environment values or unrestricted inspect JSON cross default IPC.
     pub environment_names: Vec<String>,
@@ -292,6 +295,13 @@ pub struct ContainerDetail {
     pub mounts: Vec<DetailMount>,
     pub networks: Vec<DetailNetwork>,
     pub resources: ResourceConfiguration,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ExposedPort {
+    pub private_port: u16,
+    pub protocol: String,
 }
 /// Debug never includes even explicitly revealed values.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]

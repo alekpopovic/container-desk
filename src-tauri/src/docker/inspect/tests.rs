@@ -160,3 +160,48 @@ fn failed_empty_output_is_not_a_valid_inspect_or_raw_error() {
         assert!(!format!("{error:?}").contains("synthetic"));
     }
 }
+
+#[test]
+fn health_configuration_oom_and_exposure_are_distinct_from_state_and_bindings() {
+    let mut value = fixture();
+    value[0]["Config"]["ExposedPorts"] = json!({"80/tcp":{},"53/udp":{}});
+    value[0]["Config"]["Healthcheck"] =
+        json!({"Test":["CMD-SHELL","echo synthetic-health-secret"]});
+    value[0]["State"]["Status"] = json!("running");
+    value[0]["State"]["OOMKilled"] = json!(true);
+    value[0]["State"]["Health"] = json!({"Status":"unhealthy"});
+    value[0]["NetworkSettings"]["Ports"]["80/tcp"] = json!([{"HostIp":"0.0.0.0","HostPort":"8080"},{"HostIp":"::","HostPort":"8080"},{"HostIp":"127.0.0.1","HostPort":"18080"}]);
+    let detail = parsed(value.clone(), false).unwrap();
+    assert_eq!(detail.healthcheck_configured, Some(true));
+    assert_eq!(detail.oom_killed, Some(true));
+    assert_eq!(detail.summary.state, "running");
+    assert_eq!(detail.summary.health.as_deref(), Some("unhealthy"));
+    assert_eq!(detail.exposed_ports.len(), 2);
+    assert_eq!(
+        detail
+            .summary
+            .ports
+            .iter()
+            .filter(|p| p.public_port.is_some())
+            .count(),
+        3
+    );
+    assert!(
+        !serde_json::to_string(&detail)
+            .unwrap()
+            .contains("synthetic-health-secret")
+    );
+    for (check, expected) in [
+        (serde_json::Value::Null, Some(false)),
+        (json!({"Test":["NONE"]}), Some(false)),
+        (json!({"Test":[]}), None),
+    ] {
+        value[0]["Config"]["Healthcheck"] = check;
+        assert_eq!(
+            parsed(value.clone(), false).unwrap().healthcheck_configured,
+            expected
+        );
+    }
+    value[0]["Config"] = serde_json::Value::Null;
+    assert_eq!(parsed(value, false).unwrap().healthcheck_configured, None);
+}

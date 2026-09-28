@@ -595,6 +595,10 @@ async fn checkpoint021_live_inspect_redacts_reveals_and_rejects_disconnected_sco
         assert!(masked.image_id.is_some());
         assert!(masked.created_at.is_some());
         assert_eq!(masked.summary.health, None);
+        assert_eq!(masked.healthcheck_configured, Some(false));
+        assert_eq!(masked.oom_killed, Some(false));
+        assert_eq!(masked.exposed_ports.len(), 2);
+        assert!(masked.summary.ports.iter().all(|p| p.public_port.is_none()));
         let wire = serde_json::to_string(&masked).unwrap();
         for secret in secrets {
             assert!(!wire.contains(secret));

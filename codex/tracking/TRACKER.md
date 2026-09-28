@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T23:22:57+00:00
+Updated: 2026-09-28T23:34:41+00:00
 
-blocked: **0** | done: **21** | in_progress: **0** | pending: **39**
+blocked: **0** | done: **22** | in_progress: **0** | pending: **38**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -31,7 +31,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 019 | 03 Read-only MVP | Container listing adapter | high | done | codex/tracking/evidence/019.md |
 | 020 | 03 Read-only MVP | Container table and host-scoped cache | medium | done | codex/tracking/evidence/020.md |
 | 021 | 03 Read-only MVP | Container inspect adapter and details | high | done | codex/tracking/evidence/021.md |
-| 022 | 03 Read-only MVP | Health, ports, mounts and environment panels | medium | pending | — |
+| 022 | 03 Read-only MVP | Health, ports, mounts and environment panels | medium | done | codex/tracking/evidence/022.md |
 | 023 | 03 Read-only MVP | Bounded log snapshot retrieval | high | pending | — |
 | 024 | 03 Read-only MVP | Live log subscriptions and cancellation | high | pending | — |
 | 025 | 03 Read-only MVP | Log viewer usability and export | medium | pending | — |
@@ -115,3 +115,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T23:05:22+00:00 — 020: done; PASS: 82 Rust tests, 29 IPC tests, 30 targeted browser checks; real direct/ProxyJump Engine reads and native release UI, cancellation and identity-drift revocation
 - 2026-09-28T23:05:44+00:00 — 021: start;
 - 2026-09-28T23:22:57+00:00 — 021: done; PASS 86 Rust, 32 IPC, 42 browser checks plus 12 final inspect checks; real direct/ProxyJump inspect and release UI reveal/hide; logs/storage secret scan clean
+- 2026-09-28T23:23:53+00:00 — 022: start;
+- 2026-09-28T23:34:41+00:00 — 022: done; PASS 87 Rust, 32 IPC, 18 UI checks; actual direct/ProxyJump native tabs, exposure/health fields, clipboard paste and redaction; no persisted synthetic values

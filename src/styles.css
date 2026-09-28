@@ -936,3 +936,43 @@ legend {
 .container-split .inspect-detail ul {
   padding-left: 16px;
 }
+
+.detail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 12px 0;
+}
+.detail-tabs button {
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--foreground);
+}
+.detail-tabs button[aria-selected="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.copy-field {
+  display: block;
+  margin-top: 6px;
+}
+.copy-field .button {
+  min-height: 30px;
+  padding: 4px 8px;
+}
+.copy-field [role="status"] {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.inspect-item {
+  border-bottom: 1px solid var(--border);
+  margin: 12px 0;
+  padding-bottom: 8px;
+}
+.inspect-warning {
+  color: var(--danger);
+}

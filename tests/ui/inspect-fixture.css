@@ -1,0 +1,7 @@
+.inspect-fixture-shell {
+  padding: 16px;
+}
+.inspect-fixture-panel {
+  width: min(100%, 280px);
+  margin: 16px auto;
+}
