@@ -6,6 +6,8 @@ No ports are published; the local host reaches only the owned bridge addresses.
 import argparse
 import hashlib
 import ipaddress
+import io
+import tarfile
 import json
 import os
 from pathlib import Path
@@ -23,12 +25,21 @@ def run(args, **kwargs):
     return subprocess.run(args, check=True, text=True, timeout=kwargs.pop("timeout", 30), **kwargs)
 
 
+def native_test(executable, name, env):
+    listed = run([executable, name, "--ignored", "--list"], env=env, capture_output=True).stdout
+    assert sum(line.endswith(": test") for line in listed.splitlines()) == 1, "Expected exactly one native checkpoint test"
+    run([executable, name, "--ignored", "--nocapture"], env=env, timeout=60)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", action="store_true", help="Run a real isolated empty Docker Engine in the SSH target")
+    parser.add_argument("--listing", action="store_true", help="Seed two metadata-only containers in the private Engine for listing checks")
     parser.add_argument("--native-driver", type=Path, help="Optional external tauri-driver executable for the real native UI journey")
     parser.add_argument("--webkit-driver", type=Path, help="WebKitWebDriver executable, required with --native-driver")
     args = parser.parse_args()
+    if args.listing and not args.engine:
+        parser.error("--listing requires --engine")
     if args.native_driver and (not args.engine or not args.webkit_driver):
         parser.error("--native-driver requires --engine and --webkit-driver")
     with tempfile.TemporaryDirectory(prefix="containerdesk-auth-lab-") as directory:
@@ -80,6 +91,7 @@ def main():
                                   "AllowTcpForwarding yes\nAllowAgentForwarding yes\nLogLevel ERROR\n")
                 name = network + "-" + role
                 dc("run", "-d", "--name", name, "--label", "dev.containerdesk.lab=013", "--network", network,
+                   *(["--cap-add", "SYS_ADMIN", "--security-opt", "apparmor=unconfined"] if args.listing and role == "target" else []),
                    "--network-alias", role, "--read-only", "--tmpfs", "/run", "--tmpfs", "/tmp",
                    "--mount", f"type=bind,source={config},target=/lab/sshd_config,readonly",
                    "--mount", f"type=bind,source={root / (role + '-host')},target=/lab/host_key,readonly",
@@ -109,7 +121,7 @@ def main():
                 time.sleep(0.05)
             engine = {}
             if args.engine:
-                # Separate Engine: private filesystem/socket, no host socket, no privileged container.
+                # Separate Engine: private filesystem/socket, no host socket or --privileged flag.
                 dc("exec", "-d", names[-1], "sh", "-c",
                    "exec dockerd --host unix:///run/docker.sock --data-root /tmp/engine-data "
                    "--exec-root /tmp/engine-exec --pidfile /tmp/engine.pid --storage-driver vfs "
@@ -202,8 +214,33 @@ def main():
                 artifacts = [json.loads(line) for line in build.stdout.splitlines() if line.startswith("{")]
                 executable = next(item["executable"] for item in artifacts
                                   if item.get("reason") == "compiler-artifact" and item.get("profile", {}).get("test") and item.get("executable"))
-                run([executable, "checkpoint018_real_engine", "--ignored", "--nocapture"],
-                    env={**test_env, "PATH": "/nonexistent"}, timeout=60)
+                native_test(executable, "checkpoint018_real_engine", {**test_env, "PATH": "/nonexistent"})
+            if args.listing:
+                # A zero-layer fixture image needs no download or workload execution. Docker load
+                # still needs a mount namespace: --listing alone gives the owned target SYS_ADMIN
+                # and an AppArmor exception. Default seccomp and all host-resource boundaries stay.
+                # These containers are metadata only; running/exited states use parser fixtures.
+                image_config = json.dumps({"architecture": "amd64", "os": "linux", "rootfs": {"type": "layers", "diff_ids": []},
+                                           "config": {"Cmd": ["/bin/true"]}}).encode()
+                config_name = hashlib.sha256(image_config).hexdigest() + ".json"
+                archive = io.BytesIO()
+                with tarfile.open(fileobj=archive, mode="w") as tar:
+                    for name, data in ((config_name, image_config), ("manifest.json", json.dumps([
+                        {"Config": config_name, "RepoTags": ["containerdesk-empty:019"], "Layers": []}]).encode())):
+                        info = tarfile.TarInfo(name)
+                        info.size = len(data)
+                        tar.addfile(info, io.BytesIO(data))
+                subprocess.run(docker + ["exec", "-i", names[-1], "docker", "load"], input=archive.getvalue(),
+                               env=env, check=True, timeout=30, stdout=subprocess.DEVNULL)
+                expected = []
+                for name in ("listing-first", "listing-second"):
+                    expected.append(dc("exec", names[-1], "docker", "create", "--network", "none", "--name", name,
+                                       "--label", "dev.containerdesk.fixture=019", "--label", "test.value=comma,equals=next",
+                                       "containerdesk-empty:019", capture_output=True).stdout.strip())
+                current = json.loads(manifest.read_text())
+                current["expectedContainerIds"] = expected
+                manifest.write_text(json.dumps(current))
+                native_test(executable, "checkpoint019_real_listing", {**test_env, "PATH": "/nonexistent"})
             if args.native_driver:
                 from native_ssh import verify
                 verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine)

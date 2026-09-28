@@ -2,6 +2,7 @@
   "inventory": {
     "containers": [
       {
+        "cli": null,
         "compose": {
           "project": "demo-stack",
           "service": "web"
@@ -31,6 +32,7 @@
         "status": "Up (healthy)"
       },
       {
+        "cli": null,
         "compose": {
           "project": "demo-stack",
           "service": "job"
@@ -53,6 +55,7 @@
         "status": "Exited (0)"
       },
       {
+        "cli": null,
         "compose": {
           "project": "demo-stack",
           "service": "api"
@@ -75,6 +78,7 @@
         "status": "Restarting (1)"
       },
       {
+        "cli": null,
         "compose": {
           "project": "demo-stack",
           "service": "worker"

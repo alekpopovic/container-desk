@@ -23,7 +23,16 @@ export type ContainerSummary = { scope: SessionScope, id: ContainerId, name: str
 /**
  * Preserve unknown Docker states as untrusted text.
  */
-state: string, status: string, health: string | null, ports: Array<ContainerPort>, compose: ComposeLabels | null, };
+state: string, status: string, health: string | null, ports: Array<ContainerPort>, compose: ComposeLabels | null, cli: ContainerListDisplay | null, };
+export type ContainerListDisplay = {
+/**
+ * CLI name aliases and display strings; never precise inspect/authorization data.
+ */
+names: Array<string>, ports: string | null, createdAt: string | null, runningFor: string | null,
+/**
+ * Missing field is unknown. Label values never cross default list IPC.
+ */
+labelsPresent: boolean | null, };
 export type ContainerDetail = { summary: ContainerSummary,
 /**
  * No environment values or unrestricted inspect JSON cross default IPC.

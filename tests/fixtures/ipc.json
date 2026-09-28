@@ -43,6 +43,7 @@
     ],
     "environmentValuesMasked": true,
     "summary": {
+      "cli": null,
       "compose": null,
       "health": null,
       "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -186,6 +187,7 @@
   "success": {
     "containers": [
       {
+        "cli": null,
         "compose": null,
         "health": null,
         "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

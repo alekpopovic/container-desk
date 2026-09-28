@@ -51,6 +51,7 @@ fn generated_contract_is_current() {
         HostCapabilities,
         HostSummary,
         ContainerSummary,
+        ContainerListDisplay,
         ContainerDetail,
         ListHostsResponse,
         ConnectHostRequest,
@@ -148,6 +149,7 @@ fn serialized_fixtures_are_current() {
         health: None,
         ports: vec![],
         compose: None,
+        cli: None,
     };
     let detail = ContainerDetail {
         summary: summary.clone(),

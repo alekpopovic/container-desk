@@ -71,13 +71,6 @@ pub(crate) struct VerifiedDocker {
     report: DockerProbeReport,
 }
 impl VerifiedDocker {
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "Resource dispatch integration follows in prompt 019"
-        )
-    )]
     pub fn prepare(
         &self,
         plan: CommandPlan,

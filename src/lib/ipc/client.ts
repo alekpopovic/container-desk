@@ -236,6 +236,16 @@ function container(
         portNumber(port.privatePort) &&
         ["tcp", "udp", "sctp"].includes(String(port.protocol)),
     ) &&
+    (value.cli === null ||
+      (record(value.cli) &&
+        Array.isArray(value.cli.names) &&
+        value.cli.names.length <= 128 &&
+        value.cli.names.every((name) => text(name)) &&
+        (value.cli.ports === null || text(value.cli.ports, 16384)) &&
+        (value.cli.createdAt === null || text(value.cli.createdAt)) &&
+        (value.cli.runningFor === null || text(value.cli.runningFor)) &&
+        (value.cli.labelsPresent === null ||
+          typeof value.cli.labelsPresent === "boolean"))) &&
     (value.compose === null ||
       (record(value.compose) &&
         text(value.compose.project, 256) &&

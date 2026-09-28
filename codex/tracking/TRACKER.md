@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T22:20:14+00:00
+Updated: 2026-09-28T22:32:41+00:00
 
-blocked: **0** | done: **18** | in_progress: **0** | pending: **42**
+blocked: **0** | done: **19** | in_progress: **0** | pending: **41**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -28,7 +28,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 016 | 02 SSH transport | Remote Docker capability probe | high | done | codex/tracking/evidence/016.md |
 | 017 | 02 SSH transport | Host inventory screen and groups | medium | done | codex/tracking/evidence/017.md |
 | 018 | 02 SSH transport | SSH vertical slice checkpoint | high | done | codex/tracking/evidence/018.md |
-| 019 | 03 Read-only MVP | Container listing adapter | high | pending | — |
+| 019 | 03 Read-only MVP | Container listing adapter | high | done | codex/tracking/evidence/019.md |
 | 020 | 03 Read-only MVP | Container table and host-scoped cache | medium | pending | — |
 | 021 | 03 Read-only MVP | Container inspect adapter and details | high | pending | — |
 | 022 | 03 Read-only MVP | Health, ports, mounts and environment panels | medium | pending | — |
@@ -109,3 +109,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T22:04:23+00:00 — 017: done; 77 Rust tests, clippy/fmt and 24 IPC tests passed; 72 browser regression checks plus final 12 targeted inventory checks passed; native Linux release build passed; Seven native SSH lab tests passed, including saved-host direct/ProxyJump lifecycle and persistence with explicitly synthetic Docker API
 - 2026-09-28T22:04:55+00:00 — 018: start;
 - 2026-09-28T22:20:14+00:00 — 018: done; Native Linux UI + isolated real Engine direct/ProxyJump and bounded JSONL list passed; 7 SSH lab tests, 77 Rust, 24 IPC, 12 browser tests; build/clippy/fmt/tracker passed
+- 2026-09-28T22:21:18+00:00 — 019: start;
+- 2026-09-28T22:32:41+00:00 — 019: done; 82 Rust and 25 IPC tests passed; 18 browser regressions and Linux build passed; actual Docker populated/empty lists match full IDs/counts over direct and ProxyJump SSH with client PATH=/nonexistent; clippy/fmt passed

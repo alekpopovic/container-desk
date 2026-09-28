@@ -261,3 +261,36 @@ test("tagged confirmation request uses the generated Rust/TypeScript shape", () 
   };
   assert.deepEqual(request, fixtures.confirmationRequest);
 });
+
+test("CLI display fields stay separate from inspect fields and are bounded at IPC", async () => {
+  const cli = {
+    names: ["web"],
+    ports: "0.0.0.0:8080->80/tcp",
+    createdAt: "2026-09-29 00:00:00 +0000 UTC",
+    runningFor: "3 minutes ago",
+    labelsPresent: true,
+  };
+  const result = (value: unknown) => ({
+    ...fixtures.success,
+    containers: [{ ...fixtures.success.containers[0], cli: value }],
+  });
+  mockIPC(() => result(cli));
+  const response = await listContainers(expected, () => expected);
+  const row = response.containers[0];
+  assert.ok(row);
+  assert.deepEqual(row.cli, cli);
+  assert.deepEqual(row.ports, []);
+  for (const malformed of [
+    { ...cli, labelsPresent: "secret" },
+    { ...cli, names: [null] },
+    { ...cli, ports: "x".repeat(16385) },
+  ]) {
+    mockIPC(() => result(malformed));
+    await assert.rejects(
+      listContainers(expected, () => expected),
+      {
+        code: "invalid_response",
+      },
+    );
+  }
+});

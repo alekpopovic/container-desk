@@ -241,6 +241,18 @@ pub struct HostSummary {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ContainerListDisplay {
+    /// CLI name aliases and display strings; never precise inspect/authorization data.
+    pub names: Vec<String>,
+    pub ports: Option<String>,
+    pub created_at: Option<String>,
+    pub running_for: Option<String>,
+    /// Missing field is unknown. Label values never cross default list IPC.
+    pub labels_present: Option<bool>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
 pub struct ContainerSummary {
     pub scope: SessionScope,
     pub id: ContainerId,
@@ -252,6 +264,8 @@ pub struct ContainerSummary {
     pub health: Option<String>,
     pub ports: Vec<ContainerPort>,
     pub compose: Option<ComposeLabels>,
+    #[serde(default)]
+    pub cli: Option<ContainerListDisplay>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

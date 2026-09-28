@@ -86,6 +86,7 @@ pub fn parse(scope: &SessionScope, bytes: &[u8]) -> Result<ListContainersRespons
             health: record.health,
             ports: record.ports,
             compose,
+            cli: None,
         });
     }
     Ok(ListContainersResponse {
