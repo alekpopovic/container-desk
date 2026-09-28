@@ -88,7 +88,13 @@ fn generated_contract_is_current() {
         TerminalResponse,
         InspectContainerRequest,
         ContainerLogsRequest,
-        LogSnapshot
+        LogSnapshot,
+        ContainerPort,
+        ComposeLabels,
+        WorkspaceMode,
+        DemoScenario,
+        SwitchWorkspaceRequest,
+        WorkspaceModeSnapshot
     );
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/generated.ts"),
@@ -106,6 +112,8 @@ fn serialized_fixtures_are_current() {
         state: "running".into(),
         status: "Up".into(),
         health: None,
+        ports: vec![],
+        compose: None,
     };
     let detail = ContainerDetail {
         summary: summary.clone(),
@@ -113,6 +121,7 @@ fn serialized_fixtures_are_current() {
         environment_values_masked: true,
     };
     let fixtures = json!({
+        "liveWorkspace": WorkspaceModeSnapshot { mode: WorkspaceMode::Live, scenario: None, scope: None, host: None },
         "confirmationRequest": PrepareConfirmationRequest { scope: scope(), operation: ConfirmationOperation::Mutation(MutationSpec { operation: MutationOperation::Stop, container_ids: vec![ContainerId("a".repeat(64))], timeout_seconds: 10 }) },
         "policyError": AppError::new(ErrorCode::PermissionDenied).in_scope(&scope()),
         "mutationRequest": MutationRequest { scope: scope(), intent_id: IntentId(format!("i_{}", "f".repeat(32))), spec: MutationSpec { operation: MutationOperation::Stop, container_ids: vec![ContainerId("a".repeat(64))], timeout_seconds: 10 } },
@@ -133,6 +142,32 @@ fn serialized_fixtures_are_current() {
     assert_eq!(error.code, ErrorCode::SessionNotFound);
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../tests/fixtures/ipc.json"),
+        &content,
+    );
+}
+
+#[test]
+fn generated_demo_snapshot_is_current() {
+    let host = crate::transport::demo_host();
+    let mut demo_scope = scope();
+    demo_scope.selection.host_id = host.id.clone();
+    demo_scope.daemon_id = "demo-fixture-daemon".into();
+    let response = crate::transport::fixtures::parse(
+        &demo_scope,
+        include_bytes!("../fixtures/demo/containers.jsonl"),
+    )
+    .unwrap();
+    let workspace = WorkspaceModeSnapshot {
+        mode: WorkspaceMode::Demo,
+        scenario: Some(DemoScenario::Standard),
+        scope: Some(demo_scope),
+        host: Some(host),
+    };
+    let content =
+        serde_json::to_string_pretty(&json!({"workspace":workspace,"inventory":response})).unwrap()
+            + "\n";
+    check_or_update(
+        &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/demo/workspace.generated.json"),
         &content,
     );
 }

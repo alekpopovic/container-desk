@@ -1,0 +1,131 @@
+{
+  "inventory": {
+    "containers": [
+      {
+        "compose": {
+          "project": "demo-stack",
+          "service": "web"
+        },
+        "health": "healthy",
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image": "containerdesk-demo/a:fixture",
+        "name": "demo-web",
+        "ports": [
+          {
+            "hostIp": "::1",
+            "privatePort": 80,
+            "protocol": "tcp",
+            "publicPort": 8080
+          }
+        ],
+        "scope": {
+          "daemonId": "demo-fixture-daemon",
+          "selection": {
+            "hostId": "h_00000000000000000000000000d00800",
+            "selectionGeneration": 7
+          },
+          "sessionGeneration": 3,
+          "sessionId": "s_22222222222222222222222222222222"
+        },
+        "state": "running",
+        "status": "Up (healthy)"
+      },
+      {
+        "compose": {
+          "project": "demo-stack",
+          "service": "job"
+        },
+        "health": null,
+        "id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "image": "containerdesk-demo/b:fixture",
+        "name": "demo-job",
+        "ports": [],
+        "scope": {
+          "daemonId": "demo-fixture-daemon",
+          "selection": {
+            "hostId": "h_00000000000000000000000000d00800",
+            "selectionGeneration": 7
+          },
+          "sessionGeneration": 3,
+          "sessionId": "s_22222222222222222222222222222222"
+        },
+        "state": "exited",
+        "status": "Exited (0)"
+      },
+      {
+        "compose": {
+          "project": "demo-stack",
+          "service": "api"
+        },
+        "health": null,
+        "id": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "image": "containerdesk-demo/c:fixture",
+        "name": "demo-api",
+        "ports": [],
+        "scope": {
+          "daemonId": "demo-fixture-daemon",
+          "selection": {
+            "hostId": "h_00000000000000000000000000d00800",
+            "selectionGeneration": 7
+          },
+          "sessionGeneration": 3,
+          "sessionId": "s_22222222222222222222222222222222"
+        },
+        "state": "restarting",
+        "status": "Restarting (1)"
+      },
+      {
+        "compose": {
+          "project": "demo-stack",
+          "service": "worker"
+        },
+        "health": "unhealthy",
+        "id": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "image": "containerdesk-demo/d:fixture",
+        "name": "worker <img src=x onerror=alert(1)>",
+        "ports": [],
+        "scope": {
+          "daemonId": "demo-fixture-daemon",
+          "selection": {
+            "hostId": "h_00000000000000000000000000d00800",
+            "selectionGeneration": 7
+          },
+          "sessionGeneration": 3,
+          "sessionId": "s_22222222222222222222222222222222"
+        },
+        "state": "running",
+        "status": "Up (unhealthy)"
+      }
+    ],
+    "scope": {
+      "daemonId": "demo-fixture-daemon",
+      "selection": {
+        "hostId": "h_00000000000000000000000000d00800",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    }
+  },
+  "workspace": {
+    "host": {
+      "alias": "demo-local",
+      "connectionState": "connected",
+      "displayName": "Demo Linux host",
+      "group": "Demo",
+      "id": "h_00000000000000000000000000d00800",
+      "readOnly": true
+    },
+    "mode": "demo",
+    "scenario": "standard",
+    "scope": {
+      "daemonId": "demo-fixture-daemon",
+      "selection": {
+        "hostId": "h_00000000000000000000000000d00800",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    }
+  }
+}

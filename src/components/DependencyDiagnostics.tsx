@@ -14,11 +14,13 @@ import type {
 export function DependencyDiagnostics({
   preferences,
   onSaved,
+  demo = false,
 }: {
   preferences: PreferencesSnapshot | null;
+  demo?: boolean;
   onSaved: (preferences: PreferencesSnapshot) => void;
 }) {
-  const native = isTauri();
+  const native = isTauri() && !demo;
   const [report, setReport] = useState<Report | null>(null);
   const [ssh, setSsh] = useState<SshDiagnostic | null>(null);
   const [path, setPath] = useState("");
@@ -91,7 +93,9 @@ export function DependencyDiagnostics({
       </p>
       {!native && (
         <p className="muted">
-          Open the desktop app to inspect native dependencies.
+          {demo
+            ? "SSH checks are disabled while DEMO is active."
+            : "Open the desktop app to inspect native dependencies."}
         </p>
       )}
       <button

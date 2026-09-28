@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T18:40:41+00:00
+Updated: 2026-09-28T19:12:13+00:00
 
-blocked: **0** | done: **7** | in_progress: **0** | pending: **53**
+blocked: **0** | done: **8** | in_progress: **0** | pending: **52**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -17,7 +17,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 005 | 01 Foundations | Local settings and host metadata store | high | done | codex/tracking/evidence/005.md |
 | 006 | 01 Foundations | Native dependency diagnostics | medium | done | codex/tracking/evidence/006.md |
 | 007 | 01 Foundations | Backend operation policy and command registry | high | done | codex/tracking/evidence/007.md |
-| 008 | 01 Foundations | Synthetic fixtures and offline development mode | medium | pending | — |
+| 008 | 01 Foundations | Synthetic fixtures and offline development mode | medium | done | codex/tracking/evidence/008.md |
 | 009 | 02 SSH transport | SSH config discovery and host candidates | high | pending | — |
 | 010 | 02 SSH transport | Effective SSH configuration resolution | high | pending | — |
 | 011 | 02 SSH transport | OpenSSH subprocess runner | high | pending | — |
@@ -87,3 +87,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T18:23:17+00:00 — 006: done; 18 Rust tests, 11 IPC tests, 36 browser tests, Clippy and native minimal-PATH diagnostics passed
 - 2026-09-28T18:23:48+00:00 — 007: start;
 - 2026-09-28T18:40:41+00:00 — 007: done; 26 Rust tests including direct read-only IPC denial and one-use scoped intents, 13 IPC tests, Clippy and Linux release build passed
+- 2026-09-28T18:41:44+00:00 — 008: start;
+- 2026-09-28T19:12:13+00:00 — 008: done; 34 Rust tests passed, including native executable marker and Tauri command DTO checks; Frontend check passed: 16 Node tests; 54 Playwright component checks passed; Native Linux build and startup passed; native demo input not confirmed and recorded separately

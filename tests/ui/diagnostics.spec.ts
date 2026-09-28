@@ -13,6 +13,7 @@ test("native diagnostics view explains runtime requirements and invalid override
       async invoke(command: string) {
         if (command === "app_version") return { version: "fixture-006" };
         if (command === "get_preferences") return fixtures.preferences;
+        if (command === "get_workspace_mode") return fixtures.liveWorkspace;
         if (command === "dependency_diagnostics") return fixtures.diagnostics;
         if (command === "set_ssh_executable")
           return {

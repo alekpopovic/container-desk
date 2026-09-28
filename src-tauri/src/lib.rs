@@ -1,6 +1,7 @@
 mod diagnostics;
 pub mod policy;
 mod storage;
+pub mod transport;
 use tauri::Manager;
 mod backend;
 mod commands;
@@ -28,7 +29,9 @@ pub fn run() {
             commands::container_logs,
             commands::prepare_confirmation,
             commands::mutate_container,
-            commands::open_container_terminal
+            commands::open_container_terminal,
+            commands::get_workspace_mode,
+            commands::switch_workspace
         ])
         .run(tauri::generate_context!())
         .expect("failed to run ContainerDesk");

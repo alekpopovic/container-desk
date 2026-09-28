@@ -1,5 +1,6 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
+import { useWorkspaceMode } from "./features/workspace/useWorkspaceMode";
 import { DependencyDiagnostics } from "./components/DependencyDiagnostics";
 import { WorkspaceShell } from "./components/WorkspaceShell";
 import { getPreferences, setTheme, IpcError } from "./lib/ipc/client";
@@ -21,6 +22,7 @@ const notices: Record<StorageNotice, string> = {
 };
 export default function App() {
   const native = isTauri();
+  const workspace = useWorkspaceMode(native);
   const [snapshot, setSnapshot] = useState<PreferencesSnapshot | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,9 +77,22 @@ export default function App() {
   const message = error ?? (snapshot?.notice ? notices[snapshot.notice] : null);
   return (
     <WorkspaceShell
-      state={{ kind: "empty" }}
+      state={workspace.state}
+      demo={{
+        active: workspace.mode.mode === "demo",
+        busy: workspace.busy,
+        scenario: workspace.mode.scenario ?? "standard",
+        onEnter: workspace.enterDemo,
+        onExit: workspace.exitDemo,
+        onScenario: workspace.scenario,
+        message: workspace.message,
+      }}
       settingsExtra={
-        <DependencyDiagnostics preferences={snapshot} onSaved={setSnapshot} />
+        <DependencyDiagnostics
+          preferences={snapshot}
+          onSaved={setSnapshot}
+          demo={workspace.mode.mode === "demo"}
+        />
       }
       preferences={
         native

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T18:40:41+00:00",
+  "updated_at": "2026-09-28T19:12:13+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -239,6 +239,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T18:41:44+00:00",
+      "id": "008",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T19:12:13+00:00",
+      "id": "008",
+      "action": "done",
+      "note": "34 Rust tests passed, including native executable marker and Tauri command DTO checks; Frontend check passed: 16 Node tests; 54 Playwright component checks passed; Native Linux build and startup passed; native demo input not confirmed and recorded separately",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T18:41:44+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -336,12 +370,16 @@
       "note": ""
     },
     "008": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T18:41:44+00:00",
+      "finished_at": "2026-09-28T19:12:13+00:00",
+      "evidence": "codex/tracking/evidence/008.md",
+      "evidence_sha256": "92dcd23b936d573f19a37df7da0b8d66fb83a9012da28bc600f22df9a9680071",
+      "checks": [
+        "34 Rust tests passed, including native executable marker and Tauri command DTO checks",
+        "Frontend check passed: 16 Node tests; 54 Playwright component checks passed",
+        "Native Linux build and startup passed; native demo input not confirmed and recorded separately"
+      ],
       "commit": "",
       "note": ""
     },

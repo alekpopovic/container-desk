@@ -30,6 +30,8 @@ for (const failSave of [false, true]) {
           ) {
             if (command === "app_version") return { version: "fixture-005" };
             if (command === "get_preferences") return snapshot;
+            if (command === "get_workspace_mode")
+              return { mode: "live", scenario: null, scope: null, host: null };
             if (command !== "set_theme" || !args.request)
               throw new Error("Unexpected fixture command");
             if (failSave) throw { code: "storage_unavailable" };

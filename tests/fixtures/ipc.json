@@ -43,10 +43,12 @@
     ],
     "environmentValuesMasked": true,
     "summary": {
+      "compose": null,
       "health": null,
       "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       "image": "example:fixture",
       "name": "example",
+      "ports": [],
       "scope": {
         "daemonId": "fixture-daemon",
         "selection": {
@@ -100,6 +102,12 @@
       }
     ]
   },
+  "liveWorkspace": {
+    "host": null,
+    "mode": "live",
+    "scenario": null,
+    "scope": null
+  },
   "mutationRequest": {
     "intentId": "i_ffffffffffffffffffffffffffffffff",
     "scope": {
@@ -148,10 +156,12 @@
   "success": {
     "containers": [
       {
+        "compose": null,
         "health": null,
         "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "image": "example:fixture",
         "name": "example",
+        "ports": [],
         "scope": {
           "daemonId": "fixture-daemon",
           "selection": {

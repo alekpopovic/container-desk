@@ -13,7 +13,7 @@ export type SessionScope = { selection: HostSelection, sessionId: SessionId,
  * Backend-issued epoch; changes after reconnect or daemon/context changes.
  */
 sessionGeneration: number, daemonId: string, };
-export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired";
+export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out";
 export type AppError = { code: ErrorCode, message: string, scope: SessionScope | null, };
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting" | "failed";
 export type HostCapabilities = { docker: boolean, compose: boolean, management: boolean, terminal: boolean, };
@@ -22,7 +22,7 @@ export type ContainerSummary = { scope: SessionScope, id: ContainerId, name: str
 /**
  * Preserve unknown Docker states as untrusted text.
  */
-state: string, status: string, health: string | null, };
+state: string, status: string, health: string | null, ports: Array<ContainerPort>, compose: ComposeLabels | null, };
 export type ContainerDetail = { summary: ContainerSummary,
 /**
  * No environment values or unrestricted inspect JSON cross default IPC.
@@ -70,3 +70,9 @@ export type TerminalResponse = { scope: SessionScope, terminalId: SubscriptionId
 export type InspectContainerRequest = { scope: SessionScope, containerId: ContainerId, };
 export type ContainerLogsRequest = { scope: SessionScope, containerId: ContainerId, tail: number, timeoutSeconds: number, };
 export type LogSnapshot = { scope: SessionScope, containerId: ContainerId, text: string, truncated: boolean, };
+export type ContainerPort = { hostIp: string | null, publicPort: number | null, privatePort: number, protocol: string, };
+export type ComposeLabels = { project: string, service: string | null, };
+export type WorkspaceMode = "live" | "demo";
+export type DemoScenario = "standard" | "empty" | "permission_failure" | "invalid_json" | "huge_record" | "disconnect" | "timeout";
+export type SwitchWorkspaceRequest = { "mode": "live" } | { "mode": "demo", scenario: DemoScenario, };
+export type WorkspaceModeSnapshot = { mode: WorkspaceMode, scenario: DemoScenario | null, scope: SessionScope | null, host: HostSummary | null, };

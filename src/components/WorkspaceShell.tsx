@@ -1,4 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
+import type {
+  ContainerSummary,
+  DemoScenario,
+  ContainerPort,
+} from "../lib/ipc/generated";
 import { VersionInfo } from "./VersionInfo";
 
 // Presentation-only inputs; backend identity/authorization is enforced separately.
@@ -10,7 +15,8 @@ export interface DisplayHost {
 export type WorkspaceState =
   | { kind: "empty" }
   | { kind: "loading" | "offline"; host: DisplayHost }
-  | { kind: "error"; host: DisplayHost; message: string };
+  | { kind: "error"; host: DisplayHost; message: string }
+  | { kind: "ready"; host: DisplayHost; containers: ContainerSummary[] };
 
 type Theme = "system" | "light" | "dark";
 const resources = {
@@ -81,6 +87,7 @@ const connectionLabels = {
   loading: "Connecting",
   offline: "Offline",
   error: "Connection error",
+  ready: "Data available",
 };
 
 export interface WorkspacePreferences {
@@ -90,17 +97,42 @@ export interface WorkspacePreferences {
   message: string | null;
   error: boolean;
 }
+export interface DemoControls {
+  active: boolean;
+  busy: boolean;
+  scenario: DemoScenario;
+  message: string | null;
+  onEnter: () => void;
+  onExit: () => void;
+  onScenario: (scenario: DemoScenario) => void;
+}
+const scenarioNames: Record<DemoScenario, string> = {
+  standard: "Container states",
+  empty: "Empty inventory",
+  permission_failure: "Permission failure",
+  invalid_json: "Invalid JSON",
+  huge_record: "Oversized record",
+  disconnect: "Disconnected",
+  timeout: "Command timeout",
+};
+
 export function WorkspaceShell({
   state,
   preferences,
   settingsExtra,
+  demo,
 }: {
   state: WorkspaceState;
   preferences?: WorkspacePreferences | undefined;
   settingsExtra?: ReactNode;
+  demo?: DemoControls;
 }) {
   const [route, setRoute] = useState<Route>(readRoute);
-  const [group, setGroup] = useState("All hosts");
+  const [chosenGroup, setGroup] = useState("All hosts");
+  const groups = demo?.active
+    ? ["All hosts", "Demo"]
+    : ["All hosts", "Ungrouped"];
+  const group = groups.includes(chosenGroup) ? chosenGroup : "All hosts";
   const [previewTheme, setPreviewTheme] = useState<Theme>("system");
   const theme = preferences?.theme ?? previewTheme;
   const setTheme = preferences?.onThemeChange ?? setPreviewTheme;
@@ -118,6 +150,11 @@ export function WorkspaceShell({
   const title = route === "settings" ? "Settings" : resources[route].title;
   return (
     <div className="workspace-shell">
+      {demo?.active && (
+        <div className="demo-badge" role="status" aria-label="Demo mode">
+          DEMO · Synthetic data · No SSH
+        </div>
+      )}
       <button
         type="button"
         className="skip-link"
@@ -142,7 +179,7 @@ export function WorkspaceShell({
           <p className="eyebrow">Workspace</p>
           <h2>Hosts</h2>
           <nav className="host-groups" aria-label="Host groups">
-            {["All hosts", "Ungrouped"].map((name) => (
+            {groups.map((name) => (
               <button
                 type="button"
                 key={name}
@@ -150,14 +187,18 @@ export function WorkspaceShell({
                 onClick={() => setGroup(name)}
               >
                 <span>{name}</span>
-                <span className="count">0</span>
+                <span className="count">{demo?.active ? 1 : 0}</span>
               </button>
             ))}
           </nav>
           <div className="sidebar-empty">
             <span className="eyebrow">{group}</span>
-            <p>No hosts added</p>
-            <p className="muted">Your saved SSH hosts will appear here.</p>
+            <p>{demo?.active ? "Demo Linux host" : "No hosts added"}</p>
+            <p className="muted">
+              {demo?.active
+                ? "Synthetic host · demo-local"
+                : "Your saved SSH hosts will appear here."}
+            </p>
           </div>
           <button
             className="button"
@@ -170,6 +211,47 @@ export function WorkspaceShell({
           <p id="host-setup-note" className="supporting-text">
             Host setup is not available in this build.
           </p>
+          {demo && (
+            <div className="demo-controls">
+              {demo.active ? (
+                <>
+                  <label htmlFor="demo-scenario">Demo scenario</label>
+                  <select
+                    id="demo-scenario"
+                    value={demo.scenario}
+                    disabled={demo.busy}
+                    onChange={(event) =>
+                      demo.onScenario(event.target.value as DemoScenario)
+                    }
+                  >
+                    {Object.entries(scenarioNames).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className="button"
+                    type="button"
+                    disabled={demo.busy}
+                    onClick={demo.onExit}
+                  >
+                    Exit demo
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="button"
+                  type="button"
+                  disabled={demo.busy}
+                  onClick={demo.onEnter}
+                >
+                  Open demo
+                </button>
+              )}
+              {demo.message && <p role="alert">{demo.message}</p>}
+            </div>
+          )}
         </div>
         <footer className="sidebar-footer">
           <span className="eyebrow">Local workspace</span>
@@ -287,7 +369,11 @@ export function WorkspaceShell({
             <span className="status-dot" aria-hidden="true" />
             {connectionLabels[state.kind]}
           </span>
-          <span>No remote operations available</span>
+          <span>
+            {demo?.active
+              ? "DEMO — no SSH connections"
+              : "No remote operations available"}
+          </span>
         </footer>
       </div>
     </div>
@@ -319,8 +405,20 @@ function ResourceWorkspace({
       title: "Could not load host resources",
       body: state.kind === "error" ? state.message : "",
     },
+    ready: {
+      title:
+        route === "containers"
+          ? "No containers in this snapshot"
+          : `${resource.title} are not available yet`,
+      body:
+        route === "containers"
+          ? "The selected inventory is empty."
+          : "This view has no implemented data adapter yet.",
+    },
   };
   const message = messages[state.kind];
+  const rows =
+    state.kind === "ready" && route === "containers" ? state.containers : [];
   return (
     <div className="resource-split">
       <section
@@ -330,7 +428,11 @@ function ResourceWorkspace({
       >
         <div className="panel-heading">
           <h3>{resource.title}</h3>
-          <span className="muted">No live data</span>
+          <span className="muted">
+            {state.kind === "ready" && route === "containers"
+              ? `${rows.length} containers`
+              : "No live data"}
+          </span>
         </div>
         <table>
           <caption className="sr-only">
@@ -347,25 +449,51 @@ function ResourceWorkspace({
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td colSpan={4}>
-                <div
-                  className="resource-notice"
-                  data-state={state.kind}
-                  role={state.kind === "error" ? "alert" : "status"}
-                >
-                  <span className="notice-symbol" aria-hidden="true">
-                    {state.kind === "error"
-                      ? "!"
-                      : state.kind === "loading"
-                        ? "…"
-                        : "▥"}
-                  </span>
-                  <h3>{message.title}</h3>
-                  <p>{message.body}</p>
-                </div>
-              </td>
-            </tr>
+            {rows.length > 0 ? (
+              rows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{row.name}</strong>
+                    {row.compose && (
+                      <small className="container-compose">
+                        {row.compose.project}
+                        {row.compose.service ? ` / ${row.compose.service}` : ""}
+                      </small>
+                    )}
+                  </td>
+                  <td>{row.image}</td>
+                  <td>
+                    {row.state}
+                    {row.health ? ` · ${row.health}` : ""}
+                  </td>
+                  <td>
+                    {row.ports.length
+                      ? row.ports.map(formatPort).join(", ")
+                      : "No published ports"}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4}>
+                  <div
+                    className="resource-notice"
+                    data-state={state.kind}
+                    role={state.kind === "error" ? "alert" : "status"}
+                  >
+                    <span className="notice-symbol" aria-hidden="true">
+                      {state.kind === "error"
+                        ? "!"
+                        : state.kind === "loading"
+                          ? "…"
+                          : "▥"}
+                    </span>
+                    <h3>{message.title}</h3>
+                    <p>{message.body}</p>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>
@@ -389,4 +517,13 @@ function ResourceWorkspace({
       </aside>
     </div>
   );
+}
+
+function formatPort(port: ContainerPort): string {
+  const target = `${port.privatePort}/${port.protocol}`;
+  if (port.publicPort === null) return target;
+  const address = port.hostIp?.includes(":")
+    ? `[${port.hostIp}]`
+    : (port.hostIp ?? "*");
+  return `${address}:${port.publicPort} → ${target}`;
 }

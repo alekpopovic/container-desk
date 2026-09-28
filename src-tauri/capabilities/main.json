@@ -14,6 +14,8 @@
     "allow-dependency-diagnostics",
     "allow-set-ssh-executable",
     "allow-inspect-container",
-    "allow-container-logs"
+    "allow-container-logs",
+    "allow-get-workspace-mode",
+    "allow-switch-workspace"
   ]
 }

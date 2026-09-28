@@ -12,7 +12,8 @@
       "src-tauri/capabilities/**",
       "tests/ui/**",
       "playwright.config.ts",
-      "!src/lib/ipc/generated.ts"
+      "!src/lib/ipc/generated.ts",
+      "!src/demo/workspace.generated.json"
     ]
   },
   "formatter": {

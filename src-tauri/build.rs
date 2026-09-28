@@ -15,6 +15,8 @@ fn main() {
             "prepare_confirmation",
             "mutate_container",
             "open_container_terminal",
+            "get_workspace_mode",
+            "switch_workspace",
         ]),
     ))
     .expect("failed to build ContainerDesk application context");

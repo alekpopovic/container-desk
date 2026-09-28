@@ -692,3 +692,43 @@ legend {
   padding: 8px 16px;
   background: var(--canvas);
 }
+
+.demo-badge {
+  position: fixed;
+  right: 16px;
+  bottom: 12px;
+  z-index: 30;
+  max-width: calc(100vw - 24px);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 2px 8px #0002;
+}
+.demo-controls {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  font-size: 12px;
+}
+.demo-controls select {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  color: var(--foreground);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.container-compose {
+  display: block;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.resource-panel td {
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}

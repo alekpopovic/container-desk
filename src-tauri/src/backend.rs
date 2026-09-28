@@ -1,15 +1,18 @@
 use crate::policy::{PolicyEngine, registry::ReadOperation};
+use crate::transport::{WorkspaceTransport, demo_host, fixtures::FixtureTransport};
 use crate::{
     domain::*,
     storage::{FileStorage, SettingsStore},
 };
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 /// Resource operations remain behind identity gates. Local version probes are separately bounded.
 pub struct Backend {
     policy: Mutex<PolicyEngine>,
     settings: Mutex<Result<SettingsStore, AppError>>,
     diagnostic_slot: tokio::sync::Semaphore,
+    workspace: Mutex<WorkspaceTransport>,
+    read_slots: tokio::sync::Semaphore,
 }
 impl Backend {
     pub fn new(app_data: &std::path::Path) -> Self {
@@ -20,6 +23,8 @@ impl Backend {
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(settings),
             diagnostic_slot: tokio::sync::Semaphore::new(1),
+            workspace: Mutex::new(WorkspaceTransport::default()),
+            read_slots: tokio::sync::Semaphore::new(4),
         }
     }
     pub fn preferences(&self) -> Result<PreferencesSnapshot, AppError> {
@@ -43,6 +48,7 @@ impl Backend {
             .diagnostic_slot
             .try_acquire()
             .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        self.require_live_mode()?;
         let preferences = self.preferences()?;
         let path = preferences
             .preferences
@@ -70,6 +76,7 @@ impl Backend {
             .diagnostic_slot
             .try_acquire()
             .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        self.require_live_mode()?;
         let mut preferences = self.preferences()?.preferences;
         if preferences.revision != request.expected_revision {
             return Err(AppError::new(ErrorCode::StorageConflict));
@@ -101,7 +108,108 @@ impl Backend {
         })
     }
 
+    fn require_live_mode(&self) -> Result<(), AppError> {
+        if self
+            .workspace
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .snapshot
+            .mode
+            == WorkspaceMode::Demo
+        {
+            return Err(AppError::new(ErrorCode::PermissionDenied));
+        }
+        Ok(())
+    }
+    pub fn workspace_mode(&self) -> Result<WorkspaceModeSnapshot, AppError> {
+        Ok(self
+            .workspace
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .snapshot
+            .clone())
+    }
+    pub fn switch_workspace(
+        &self,
+        request: SwitchWorkspaceRequest,
+    ) -> Result<WorkspaceModeSnapshot, AppError> {
+        // Mode transitions cannot race an already-running local SSH version probe.
+        let _permit = self
+            .diagnostic_slot
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let _reads = self
+            .read_slots
+            .try_acquire_many(4)
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let mut workspace = self
+            .workspace
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?;
+        let mut policy = self
+            .policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?;
+        let generation = workspace
+            .generation
+            .checked_add(1)
+            .ok_or_else(|| AppError::new(ErrorCode::ResourceLimit))?;
+        let (snapshot, active): (
+            WorkspaceModeSnapshot,
+            Arc<dyn crate::transport::ReadTransport>,
+        ) = match request {
+            SwitchWorkspaceRequest::Live => (
+                WorkspaceModeSnapshot {
+                    mode: WorkspaceMode::Live,
+                    scenario: None,
+                    scope: None,
+                    host: None,
+                },
+                workspace.live.clone(),
+            ),
+            SwitchWorkspaceRequest::Demo { scenario } => {
+                let host = demo_host();
+                let mut bytes = [0u8; 16];
+                getrandom::fill(&mut bytes).map_err(|_| AppError::new(ErrorCode::Internal))?;
+                let scope = SessionScope {
+                    selection: HostSelection {
+                        host_id: host.id.clone(),
+                        selection_generation: generation,
+                    },
+                    session_id: SessionId(format!(
+                        "s_{}",
+                        bytes.iter().map(|b| format!("{b:02x}")).collect::<String>()
+                    )),
+                    session_generation: generation,
+                    daemon_id: "demo-fixture-daemon".into(),
+                };
+                scope.validate()?;
+                (
+                    WorkspaceModeSnapshot {
+                        mode: WorkspaceMode::Demo,
+                        scenario: Some(scenario.clone()),
+                        scope: Some(scope),
+                        host: Some(host),
+                    },
+                    Arc::new(FixtureTransport::new(scenario)),
+                )
+            }
+        };
+        // No live SSH sessions exist in this increment. Later mode switching must cancel/reap them first.
+        *policy = PolicyEngine::default();
+        if let Some(scope) = &snapshot.scope {
+            policy.register(scope.clone())?;
+        }
+        workspace.generation = generation;
+        workspace.active = active;
+        workspace.snapshot = snapshot.clone();
+        Ok(snapshot)
+    }
+
     pub fn list_hosts(&self) -> Result<ListHostsResponse, AppError> {
+        if let Some(host) = self.workspace_mode()?.host {
+            return Ok(ListHostsResponse { hosts: vec![host] });
+        }
         Ok(ListHostsResponse {
             hosts: self
                 .preferences()?
@@ -125,6 +233,7 @@ impl Backend {
         request: ConnectHostRequest,
     ) -> Result<ConnectHostResponse, AppError> {
         request.selection.validate()?;
+        self.require_live_mode()?;
         if !self
             .preferences()?
             .preferences
@@ -144,15 +253,45 @@ impl Backend {
             .require_session(scope)
     }
 
-    pub fn list_containers(
+    pub async fn list_containers(
         &self,
         request: ListContainersRequest,
     ) -> Result<ListContainersResponse, AppError> {
-        self.policy
+        let _permit = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let authorized = self
+            .policy
             .lock()
             .map_err(|_| AppError::new(ErrorCode::Internal))?
             .authorize_read(&request.scope, &ReadOperation::ListContainers)?;
-        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
+        let transport = {
+            let workspace = self
+                .workspace
+                .lock()
+                .map_err(|_| AppError::new(ErrorCode::Internal))?;
+            if workspace.snapshot.mode == WorkspaceMode::Demo
+                && workspace.snapshot.scope.as_ref() != Some(&request.scope)
+            {
+                return Err(AppError::new(ErrorCode::StaleSession).in_scope(&request.scope));
+            }
+            workspace.active.clone()
+        };
+        let result = transport
+            .list_containers(request.scope.clone(), authorized.into_plan())
+            .await;
+        self.require_session(&request.scope)?;
+        let response = result?;
+        if response.scope != request.scope
+            || response
+                .containers
+                .iter()
+                .any(|row| row.scope != request.scope)
+        {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(response)
     }
 
     pub fn inspect_container(
@@ -244,6 +383,8 @@ impl Default for Backend {
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
             diagnostic_slot: tokio::sync::Semaphore::new(1),
+            workspace: Mutex::new(WorkspaceTransport::default()),
+            read_slots: tokio::sync::Semaphore::new(4),
         }
     }
 }
@@ -252,6 +393,231 @@ impl Default for Backend {
 mod tests {
     use super::*;
     use crate::contract_tests::scope;
+
+    struct SpyLive {
+        calls: Arc<std::sync::atomic::AtomicUsize>,
+    }
+    impl crate::transport::ReadTransport for SpyLive {
+        fn list_containers(
+            &self,
+            scope: SessionScope,
+            _command: crate::policy::registry::CommandPlan,
+        ) -> crate::transport::SnapshotFuture<'_> {
+            self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Box::pin(
+                async move { Err(AppError::new(ErrorCode::PermissionDenied).in_scope(&scope)) },
+            )
+        }
+    }
+    #[tokio::test]
+    async fn explicit_demo_never_uses_live_transport_and_live_failure_never_uses_fixtures() {
+        let backend = Backend::default();
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let spy: Arc<dyn crate::transport::ReadTransport> = Arc::new(SpyLive {
+            calls: calls.clone(),
+        });
+        {
+            let mut workspace = backend.workspace.lock().unwrap();
+            workspace.live = spy.clone();
+            workspace.active = spy;
+        }
+        backend.register_test_session(scope());
+        assert_eq!(
+            backend
+                .list_containers(ListContainersRequest { scope: scope() })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+        assert_eq!(backend.workspace_mode().unwrap().mode, WorkspaceMode::Live);
+        let demo = backend
+            .switch_workspace(SwitchWorkspaceRequest::Demo {
+                scenario: DemoScenario::Standard,
+            })
+            .unwrap();
+        let demo_scope = demo.scope.unwrap();
+        let snapshot = backend
+            .list_containers(ListContainersRequest {
+                scope: demo_scope.clone(),
+            })
+            .await
+            .unwrap();
+        assert_eq!(snapshot.containers.len(), 4);
+        assert_eq!(
+            calls.load(std::sync::atomic::Ordering::SeqCst),
+            1,
+            "demo cannot call the live provider"
+        );
+        assert_eq!(
+            backend.diagnostics().await.unwrap_err().code,
+            ErrorCode::PermissionDenied
+        );
+        assert_eq!(
+            backend
+                .set_ssh_executable(SetSshExecutableRequest {
+                    expected_revision: 0,
+                    path: Some("/usr/bin/ssh".into())
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+        backend
+            .switch_workspace(SwitchWorkspaceRequest::Live)
+            .unwrap();
+        assert_eq!(
+            backend
+                .list_containers(ListContainersRequest { scope: demo_scope })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::SessionNotFound
+        );
+        backend.register_test_session(scope());
+        assert_eq!(
+            backend
+                .list_containers(ListContainersRequest { scope: scope() })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+    }
+    #[tokio::test]
+    async fn demo_blocks_native_executable_before_any_spawn() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = std::env::temp_dir().join(format!(
+            "containerdesk-demo-spawn-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir(&directory).unwrap();
+        std::fs::set_permissions(&directory, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let executable = directory.join("ssh-fixture");
+        std::fs::write(
+            &executable,
+            b"#!/bin/sh\n: > \"${0%/*}/spawned\"\nprintf 'OpenSSH_fixture\\n' >&2\n",
+        )
+        .unwrap();
+        std::fs::set_permissions(&executable, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let path = executable.to_str().unwrap().to_string();
+        assert_eq!(
+            crate::diagnostics::inspect_ssh(&path).await.status,
+            SshStatus::Ready,
+            "positive control must create marker"
+        );
+        let marker = directory.join("spawned");
+        assert!(marker.exists());
+        std::fs::remove_file(&marker).unwrap();
+        let backend = Backend::default();
+        let preferences = Preferences {
+            ssh_executable_override: Some(path.clone()),
+            ..Preferences::default()
+        };
+        backend
+            .settings
+            .lock()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .replace(preferences, 0)
+            .unwrap();
+        backend
+            .switch_workspace(SwitchWorkspaceRequest::Demo {
+                scenario: DemoScenario::Standard,
+            })
+            .unwrap();
+        assert_eq!(
+            backend.diagnostics().await.unwrap_err().code,
+            ErrorCode::PermissionDenied
+        );
+        assert_eq!(
+            backend
+                .set_ssh_executable(SetSshExecutableRequest {
+                    expected_revision: 1,
+                    path: Some(path)
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+        assert!(!marker.exists(), "no version probe may run in demo mode");
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[tokio::test]
+    async fn demo_switch_waits_for_no_native_probes_or_reads_and_invalidates_old_scenarios() {
+        let backend = Backend::default();
+        let probe = backend.diagnostic_slot.try_acquire().unwrap();
+        assert_eq!(
+            backend
+                .switch_workspace(SwitchWorkspaceRequest::Demo {
+                    scenario: DemoScenario::Standard
+                })
+                .unwrap_err()
+                .code,
+            ErrorCode::ResourceLimit
+        );
+        drop(probe);
+        let reads = backend.read_slots.try_acquire_many(4).unwrap();
+        assert_eq!(
+            backend
+                .switch_workspace(SwitchWorkspaceRequest::Demo {
+                    scenario: DemoScenario::Standard
+                })
+                .unwrap_err()
+                .code,
+            ErrorCode::ResourceLimit
+        );
+        assert_eq!(
+            backend
+                .list_containers(ListContainersRequest { scope: scope() })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::ResourceLimit
+        );
+        drop(reads);
+        let old = backend
+            .switch_workspace(SwitchWorkspaceRequest::Demo {
+                scenario: DemoScenario::Standard,
+            })
+            .unwrap()
+            .scope
+            .unwrap();
+        let new = backend
+            .switch_workspace(SwitchWorkspaceRequest::Demo {
+                scenario: DemoScenario::Empty,
+            })
+            .unwrap()
+            .scope
+            .unwrap();
+        assert_ne!(old.session_id, new.session_id);
+        assert_eq!(
+            backend
+                .list_containers(ListContainersRequest { scope: old })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::SessionNotFound
+        );
+        assert!(
+            backend
+                .list_containers(ListContainersRequest { scope: new })
+                .await
+                .unwrap()
+                .containers
+                .is_empty()
+        );
+        assert_eq!(backend.workspace_mode().unwrap().mode, WorkspaceMode::Demo);
+    }
 
     #[tokio::test]
     async fn diagnostics_are_single_flight_and_invalid_override_is_not_persisted() {
@@ -340,12 +706,13 @@ mod tests {
         assert!(ContainerId("a".repeat(64)).validate().is_ok());
     }
 
-    #[test]
-    fn missing_and_stale_sessions_never_return_inventory_or_cancel_other_work() {
+    #[tokio::test]
+    async fn missing_and_stale_sessions_never_return_inventory_or_cancel_other_work() {
         let backend = Backend::default();
         assert_eq!(
             backend
                 .list_containers(ListContainersRequest { scope: scope() })
+                .await
                 .unwrap_err()
                 .code,
             ErrorCode::SessionNotFound
@@ -362,6 +729,7 @@ mod tests {
                     .list_containers(ListContainersRequest {
                         scope: stale.clone()
                     })
+                    .await
                     .unwrap_err()
                     .code,
                 ErrorCode::StaleSession
@@ -380,6 +748,7 @@ mod tests {
         assert_eq!(
             backend
                 .list_containers(ListContainersRequest { scope: scope() })
+                .await
                 .unwrap_err()
                 .code,
             ErrorCode::FeatureUnavailable

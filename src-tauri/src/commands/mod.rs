@@ -18,11 +18,11 @@ pub fn connect_host(
     backend.connect_host(request)
 }
 #[tauri::command]
-pub fn list_containers(
+pub async fn list_containers(
     backend: tauri::State<'_, Backend>,
     request: ListContainersRequest,
 ) -> Result<ListContainersResponse, AppError> {
-    backend.list_containers(request)
+    backend.list_containers(request).await
 }
 #[tauri::command]
 pub fn cancel_subscription(
@@ -37,6 +37,71 @@ mod tests {
     use super::*;
     use serde_json::{Value, json};
     use tauri::test::{get_ipc_response, mock_builder, mock_context, noop_assets};
+
+    #[test]
+    fn native_ipc_demo_returns_the_same_dtos_and_clears_old_scope_on_exit() {
+        let app = mock_builder()
+            .manage(Backend::default())
+            .invoke_handler(tauri::generate_handler![
+                get_workspace_mode,
+                switch_workspace,
+                list_containers
+            ])
+            .build(mock_context(noop_assets()))
+            .unwrap();
+        let window = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+            .build()
+            .unwrap();
+        let invoke = |command: &str, body: Value| {
+            get_ipc_response(
+                &window,
+                tauri::webview::InvokeRequest {
+                    cmd: command.into(),
+                    callback: tauri::ipc::CallbackFn(0),
+                    error: tauri::ipc::CallbackFn(1),
+                    url: "tauri://localhost".parse().unwrap(),
+                    body: tauri::ipc::InvokeBody::Json(body),
+                    headers: Default::default(),
+                    invoke_key: tauri::test::INVOKE_KEY.into(),
+                },
+            )
+            .map(|response| response.deserialize::<Value>().unwrap())
+        };
+        assert_eq!(
+            invoke("get_workspace_mode", json!({})).unwrap()["mode"],
+            "live"
+        );
+        let mode = invoke(
+            "switch_workspace",
+            json!({"request":{"mode":"demo","scenario":"standard"}}),
+        )
+        .unwrap();
+        assert_eq!(mode["mode"], "demo");
+        let response = invoke(
+            "list_containers",
+            json!({"request":{"scope":mode["scope"]}}),
+        )
+        .unwrap();
+        let decoded: ListContainersResponse = serde_json::from_value(response.clone()).unwrap();
+        assert_eq!(decoded.containers.len(), 4);
+        assert_eq!(
+            decoded.containers[0].ports[0].host_ip.as_deref(),
+            Some("::1")
+        );
+        assert!(!response.to_string().contains("SYNTHETIC_VALUE_NOT_FOR_IPC"));
+        assert_eq!(
+            invoke("switch_workspace", json!({"request":{"mode":"live"}})).unwrap()["mode"],
+            "live"
+        );
+        assert_eq!(
+            invoke(
+                "list_containers",
+                json!({"request":{"scope":mode["scope"]}})
+            )
+            .unwrap_err()["code"],
+            "session_not_found"
+        );
+    }
 
     #[test]
     fn direct_ipc_mutation_is_denied_in_read_only_and_bad_arguments_cannot_dispatch() {
@@ -252,4 +317,18 @@ pub fn open_container_terminal(
     request: TerminalRequest,
 ) -> Result<TerminalResponse, AppError> {
     backend.open_container_terminal(request)
+}
+
+#[tauri::command]
+pub fn get_workspace_mode(
+    backend: tauri::State<'_, Backend>,
+) -> Result<WorkspaceModeSnapshot, AppError> {
+    backend.workspace_mode()
+}
+#[tauri::command]
+pub fn switch_workspace(
+    backend: tauri::State<'_, Backend>,
+    request: SwitchWorkspaceRequest,
+) -> Result<WorkspaceModeSnapshot, AppError> {
+    backend.switch_workspace(request)
 }

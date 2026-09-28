@@ -121,6 +121,8 @@ pub enum ErrorCode {
     InvalidLimits,
     InvalidIntent,
     IntentExpired,
+    Disconnected,
+    OperationTimedOut,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -156,6 +158,8 @@ impl AppError {
                 "This confirmation does not match the operation or was already used."
             }
             ErrorCode::IntentExpired => "This confirmation expired. Review the operation again.",
+            ErrorCode::Disconnected => "The connection closed. Reconnect before refreshing.",
+            ErrorCode::OperationTimedOut => "The command exceeded its deadline.",
         };
         Self {
             code,
@@ -211,6 +215,8 @@ pub struct ContainerSummary {
     pub state: String,
     pub status: String,
     pub health: Option<String>,
+    pub ports: Vec<ContainerPort>,
+    pub compose: Option<ComposeLabels>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -553,4 +559,56 @@ pub struct LogSnapshot {
     pub container_id: ContainerId,
     pub text: String,
     pub truncated: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ContainerPort {
+    pub host_ip: Option<String>,
+    pub public_port: Option<u16>,
+    pub private_port: u16,
+    pub protocol: String,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ComposeLabels {
+    pub project: String,
+    pub service: Option<String>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum WorkspaceMode {
+    Live,
+    Demo,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum DemoScenario {
+    Standard,
+    Empty,
+    PermissionFailure,
+    InvalidJson,
+    HugeRecord,
+    Disconnect,
+    Timeout,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "mode", rename_all = "snake_case", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum SwitchWorkspaceRequest {
+    Live,
+    Demo { scenario: DemoScenario },
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct WorkspaceModeSnapshot {
+    pub mode: WorkspaceMode,
+    pub scenario: Option<DemoScenario>,
+    pub scope: Option<SessionScope>,
+    pub host: Option<HostSummary>,
 }

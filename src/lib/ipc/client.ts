@@ -34,6 +34,8 @@ const messages: Record<ErrorCode, string> = {
   invalid_intent:
     "This confirmation does not match the operation or was already used.",
   intent_expired: "This confirmation expired. Review the operation again.",
+  disconnected: "The connection closed. Reconnect before refreshing.",
+  operation_timed_out: "The command exceeded its deadline.",
 };
 
 export class IpcError extends Error implements AppError {
@@ -187,6 +189,15 @@ export async function connectHost(
   return result as ConnectHostResponse;
 }
 
+function portNumber(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value > 0 &&
+    value <= 65535
+  );
+}
+
 function container(
   value: unknown,
   expected: SessionScope,
@@ -201,7 +212,21 @@ function container(
     text(value.image) &&
     text(value.state) &&
     text(value.status) &&
-    (value.health === null || text(value.health))
+    (value.health === null || text(value.health)) &&
+    Array.isArray(value.ports) &&
+    value.ports.length <= 128 &&
+    value.ports.every(
+      (port) =>
+        record(port) &&
+        (port.hostIp === null || text(port.hostIp, 64)) &&
+        (port.publicPort === null || portNumber(port.publicPort)) &&
+        portNumber(port.privatePort) &&
+        ["tcp", "udp", "sctp"].includes(String(port.protocol)),
+    ) &&
+    (value.compose === null ||
+      (record(value.compose) &&
+        text(value.compose.project, 256) &&
+        (value.compose.service === null || text(value.compose.service, 256))))
   );
 }
 
@@ -373,4 +398,53 @@ export async function setSshExecutable(
   )
     throw new IpcError("invalid_response");
   return result as import("./generated.ts").SetSshExecutableResponse;
+}
+
+function workspaceMode(
+  value: unknown,
+): value is import("./generated.ts").WorkspaceModeSnapshot {
+  if (!record(value)) return false;
+  if (value.mode === "live")
+    return (
+      value.scenario === null && value.scope === null && value.host === null
+    );
+  return (
+    value.mode === "demo" &&
+    scope(value.scope) &&
+    record(value.host) &&
+    value.host.id === value.scope.selection.hostId &&
+    text(value.host.alias, 256) &&
+    text(value.host.displayName, 256) &&
+    text(value.host.group, 128) &&
+    value.host.readOnly === true &&
+    value.host.connectionState === "connected" &&
+    [
+      "standard",
+      "empty",
+      "permission_failure",
+      "invalid_json",
+      "huge_record",
+      "disconnect",
+      "timeout",
+    ].includes(String(value.scenario))
+  );
+}
+export async function getWorkspaceMode(): Promise<
+  import("./generated.ts").WorkspaceModeSnapshot
+> {
+  const result = await call("get_workspace_mode");
+  if (!workspaceMode(result)) throw new IpcError("invalid_response");
+  return result;
+}
+export async function switchWorkspace(
+  request: import("./generated.ts").SwitchWorkspaceRequest,
+): Promise<import("./generated.ts").WorkspaceModeSnapshot> {
+  const result = await call("switch_workspace", request);
+  if (
+    !workspaceMode(result) ||
+    result.mode !== request.mode ||
+    (request.mode === "demo" && result.scenario !== request.scenario)
+  )
+    throw new IpcError("invalid_response");
+  return result;
 }
