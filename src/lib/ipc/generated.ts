@@ -38,7 +38,7 @@ export type CancelSubscriptionRequest = { scope: SessionScope, subscriptionId: S
 export type CancelSubscriptionResponse = { scope: SessionScope, subscriptionId: SubscriptionId, };
 export type AppVersion = { version: string, };
 export type Theme = "system" | "light" | "dark";
-export type SavedHost = { id: HostId, alias: string, displayName: string, group: string, labels: Array<string>, readOnly: boolean, };
+export type SavedHost = { id: HostId, alias: string, displayName: string, group: string, labels: Array<string>, readOnly: boolean, favorite: boolean, ssh: SshSelection | null, docker: DockerOptions, };
 export type Preferences = { schemaVersion: number, revision: number, theme: Theme, selectedHostId: HostId | null, hosts: Array<SavedHost>,
 /**
  * References only. The app never copies SSH config/key contents.
@@ -95,7 +95,14 @@ export type ConnectionToken = { sessionId: SessionId, sessionGeneration: number,
 export type ConnectionRequest = { token: ConnectionToken, };
 export type StageDuration = { stage: ConnectionStage, durationMs: number, };
 export type ConnectionDiagnostic = { stage: ConnectionStage, code: ConnectionDiagnosticCode, };
-export type ConnectionSnapshot = { token: ConnectionToken, selection: SshSelection, state: ConnectionState, durations: Array<StageDuration>, diagnostic: ConnectionDiagnostic | null, hasJump: boolean, transportMode: SshTransportMode, dockerOptions: DockerOptions, docker: DockerProbeReport | null, };
+export type ConnectionSnapshot = { hostId: HostId | null, effective: EffectiveSshConfig | null, token: ConnectionToken, selection: SshSelection, state: ConnectionState, durations: Array<StageDuration>, diagnostic: ConnectionDiagnostic | null, hasJump: boolean, transportMode: SshTransportMode, dockerOptions: DockerOptions, docker: DockerProbeReport | null, };
+export type HostDraft = { ssh: SshSelection, docker: DockerOptions, displayName: string, group: string, labels: Array<string>, favorite: boolean, };
+export type InventoryModeRequest = { mode: WorkspaceMode, };
+export type SaveHostRequest = { mode: WorkspaceMode, expectedRevision: number, id: HostId | null, draft: HostDraft, };
+export type RemoveHostRequest = { mode: WorkspaceMode, expectedRevision: number, hostId: HostId, };
+export type InventoryConnectRequest = { mode: WorkspaceMode, hostId: HostId, };
+export type InventoryDisconnectRequest = { mode: WorkspaceMode, hostId: HostId, token: ConnectionToken, };
+export type HostInventory = { mode: WorkspaceMode, saved: PreferencesSnapshot, connection: ConnectionSnapshot | null, };
 export type SshTransportMode = "unconnected" | "multiplexed" | "direct_fallback";
 export type DockerOptions = { executable: string | null, context: string | null, sudo: boolean, };
 export type BeginSshRequest = { selection: SshSelection, docker: DockerOptions, };

@@ -19,3 +19,5 @@ Verification covers controlled slow resolution, duplicate clicks, cancellation, 
 [Owned multiplex transport](ssh-multiplexing.md) adds channel reuse, visible fallback, connection-loss observation, idle bounds and native shutdown cleanup.
 
 Docker executable/context/sudo choices are captured in the attempt identity. A change invalidates the old generation even for the same alias; transient capability reports are never persisted. Native Ready state was verified via real SSH/CLI with an explicitly synthetic Docker API, not real Engine readiness.
+
+Prompt 017 binds saved attempts to a stable HostId and carries the effective resolved destination/route in transient snapshots. [Inventory](host-inventory.md) validates that owner against the saved target, preserves selection after errors and observes state across routes. Metadata/target changes have separate cleanup behavior; no resource SessionScope is issued yet.

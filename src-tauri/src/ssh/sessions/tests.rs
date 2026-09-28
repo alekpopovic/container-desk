@@ -38,7 +38,10 @@ impl StageDriver for Controlled {
             };
             self.gates[index].acquire().await.unwrap().forget();
             match stage {
-                ConnectionStage::Resolve => StageOutcome::Resolved { has_jump: true },
+                ConnectionStage::Resolve => StageOutcome::Resolved {
+                    has_jump: true,
+                    effective: None,
+                },
                 ConnectionStage::Authenticate => {
                     StageOutcome::Authenticated(SshTransportMode::DirectFallback)
                 }

@@ -3,6 +3,7 @@ import type {
   ContainerSummary,
   DemoScenario,
   ContainerPort,
+  SavedHost,
 } from "../lib/ipc/generated";
 import { VersionInfo } from "./VersionInfo";
 
@@ -14,7 +15,7 @@ export interface DisplayHost {
 }
 export type WorkspaceState =
   | { kind: "empty" }
-  | { kind: "loading" | "offline"; host: DisplayHost }
+  | { kind: "loading" | "offline" | "connected"; host: DisplayHost }
   | { kind: "error"; host: DisplayHost; message: string }
   | { kind: "ready"; host: DisplayHost; containers: ContainerSummary[] };
 
@@ -52,8 +53,12 @@ const resources = {
   },
 } as const;
 type Resource = keyof typeof resources;
-type Route = Resource | "settings";
-const routes: Route[] = [...(Object.keys(resources) as Resource[]), "settings"];
+type Route = Resource | "settings" | "hosts";
+const routes: Route[] = [
+  "hosts",
+  ...(Object.keys(resources) as Resource[]),
+  "settings",
+];
 function readRoute(): Route {
   const route = window.location.hash.replace(/^#\/?/, "");
   return routes.find((item) => item === route) ?? "containers";
@@ -88,6 +93,7 @@ const connectionLabels = {
   offline: "Offline",
   error: "Connection error",
   ready: "Data available",
+  connected: "Connected · read-only",
 };
 
 export interface WorkspacePreferences {
@@ -120,18 +126,26 @@ export function WorkspaceShell({
   state,
   preferences,
   settingsExtra,
+  hostsExtra,
+  savedHosts = [],
   demo,
 }: {
   state: WorkspaceState;
   preferences?: WorkspacePreferences | undefined;
   settingsExtra?: ReactNode;
+  hostsExtra?: ReactNode;
+  savedHosts?: SavedHost[];
   demo?: DemoControls;
 }) {
   const [route, setRoute] = useState<Route>(readRoute);
   const [chosenGroup, setGroup] = useState("All hosts");
-  const groups = demo?.active
-    ? ["All hosts", "Demo"]
-    : ["All hosts", "Ungrouped"];
+  const groups = [
+    ...new Set([
+      "All hosts",
+      "Ungrouped",
+      ...savedHosts.map((host) => host.group || "Ungrouped"),
+    ]),
+  ];
   const group = groups.includes(chosenGroup) ? chosenGroup : "All hosts";
   const [previewTheme, setPreviewTheme] = useState<Theme>("system");
   const theme = preferences?.theme ?? previewTheme;
@@ -147,7 +161,12 @@ export function WorkspaceShell({
       delete document.documentElement.dataset.theme;
     };
   }, [theme]);
-  const title = route === "settings" ? "Settings" : resources[route].title;
+  const title =
+    route === "settings"
+      ? "Settings"
+      : route === "hosts"
+        ? "Hosts"
+        : resources[route].title;
   return (
     <div className="workspace-shell">
       {demo?.active && (
@@ -187,13 +206,40 @@ export function WorkspaceShell({
                 onClick={() => setGroup(name)}
               >
                 <span>{name}</span>
-                <span className="count">{demo?.active ? 1 : 0}</span>
+                <span className="count">
+                  {
+                    savedHosts.filter(
+                      (host) =>
+                        name === "All hosts" ||
+                        (host.group || "Ungrouped") === name,
+                    ).length
+                  }
+                </span>
               </button>
             ))}
           </nav>
           <div className="sidebar-empty">
             <span className="eyebrow">{group}</span>
-            <p>{demo?.active ? "Demo Linux host" : "No hosts added"}</p>
+            <p>
+              {savedHosts.length
+                ? `${savedHosts.length} saved hosts`
+                : demo?.active
+                  ? "Demo Linux host"
+                  : "No hosts added"}
+            </p>
+            {savedHosts
+              .filter(
+                (host) =>
+                  group === "All hosts" ||
+                  (host.group || "Ungrouped") === group,
+              )
+              .slice(0, 20)
+              .map((host) => (
+                <p key={host.id}>
+                  {host.favorite ? "★ " : ""}
+                  {host.displayName} · {host.alias}
+                </p>
+              ))}
             <p className="muted">
               {demo?.active
                 ? "Synthetic host · demo-local"
@@ -203,13 +249,15 @@ export function WorkspaceShell({
           <button
             className="button"
             type="button"
-            disabled
+            onClick={() => {
+              window.location.hash = "/hosts";
+            }}
             aria-describedby="host-setup-note"
           >
             Add host
           </button>
           <p id="host-setup-note" className="supporting-text">
-            Host setup is not available in this build.
+            Manage saved aliases, groups and explicit connections.
           </p>
           {demo && (
             <div className="demo-controls">
@@ -283,7 +331,11 @@ export function WorkspaceShell({
               href={`#/${item}`}
               aria-current={route === item ? "page" : undefined}
             >
-              {item === "settings" ? "Settings" : resources[item].title}
+              {item === "settings"
+                ? "Settings"
+                : item === "hosts"
+                  ? "Hosts"
+                  : resources[item].title}
             </a>
           ))}
         </nav>
@@ -305,7 +357,9 @@ export function WorkspaceShell({
               <p className="muted">
                 {route === "settings"
                   ? "Make this workspace comfortable for you."
-                  : resources[route].description}
+                  : route === "hosts"
+                    ? "Organize trusted SSH aliases and review their connection identity."
+                    : resources[route].description}
               </p>
             </div>
             <span className="context-label">
@@ -314,7 +368,8 @@ export function WorkspaceShell({
                 : state.host.alias}
             </span>
           </div>
-          {route === "settings" ? (
+          <div hidden={route !== "hosts"}>{hostsExtra}</div>
+          {route === "hosts" ? null : route === "settings" ? (
             <section
               className="settings-panel"
               aria-label="Appearance settings"
@@ -355,8 +410,9 @@ export function WorkspaceShell({
               <div className="settings-note">
                 <h3>Connections & permissions</h3>
                 <p className="muted">
-                  Host setup, management permissions and terminal access are not
-                  available yet. No server is connected.
+                  Manage aliases and connection status in Hosts. Sessions remain
+                  read-only; management and terminal actions are not available
+                  yet.
                 </p>
               </div>
             </section>
@@ -372,7 +428,7 @@ export function WorkspaceShell({
           <span>
             {demo?.active
               ? "DEMO — no SSH connections"
-              : "No remote operations available"}
+              : "Explicit SSH connections · read-only"}
           </span>
         </footer>
       </div>
@@ -391,7 +447,11 @@ function ResourceWorkspace({
   const messages = {
     empty: {
       title: "Select a host to get started",
-      body: `${resource.title} will appear here after a host is connected. Host connections are not available in this build.`,
+      body: `Choose an SSH alias in Hosts. No ${resource.title.toLowerCase()} snapshot is loaded.`,
+    },
+    connected: {
+      title: "Host connection verified",
+      body: "No resource snapshot has been loaded for this session.",
     },
     loading: {
       title: "Connecting to host",

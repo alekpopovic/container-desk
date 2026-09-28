@@ -335,6 +335,12 @@ pub struct SavedHost {
     pub group: String,
     pub labels: Vec<String>,
     pub read_only: bool,
+    #[serde(default)]
+    pub favorite: bool,
+    #[serde(default)]
+    pub ssh: Option<SshSelection>,
+    #[serde(default)]
+    pub docker: DockerOptions,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -353,7 +359,7 @@ pub struct Preferences {
 impl Default for Preferences {
     fn default() -> Self {
         Self {
-            schema_version: 2,
+            schema_version: 3,
             revision: 0,
             theme: Theme::System,
             selected_host_id: None,
@@ -829,6 +835,8 @@ pub struct ConnectionDiagnostic {
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct ConnectionSnapshot {
+    pub host_id: Option<HostId>,
+    pub effective: Option<EffectiveSshConfig>,
     pub token: ConnectionToken,
     pub selection: SshSelection,
     pub state: ConnectionState,
@@ -917,4 +925,62 @@ pub struct DockerProbeReport {
     pub compose: ComposeAvailability,
     pub compose_version: Option<String>,
     pub sudo: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct HostDraft {
+    pub ssh: SshSelection,
+    pub docker: DockerOptions,
+    pub display_name: String,
+    pub group: String,
+    pub labels: Vec<String>,
+    pub favorite: bool,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct InventoryModeRequest {
+    pub mode: WorkspaceMode,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SaveHostRequest {
+    pub mode: WorkspaceMode,
+    pub expected_revision: u32,
+    pub id: Option<HostId>,
+    pub draft: HostDraft,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct RemoveHostRequest {
+    pub mode: WorkspaceMode,
+    pub expected_revision: u32,
+    pub host_id: HostId,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct InventoryConnectRequest {
+    pub mode: WorkspaceMode,
+    pub host_id: HostId,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct InventoryDisconnectRequest {
+    pub mode: WorkspaceMode,
+    pub host_id: HostId,
+    pub token: ConnectionToken,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct HostInventory {
+    pub mode: WorkspaceMode,
+    pub saved: PreferencesSnapshot,
+    pub connection: Option<ConnectionSnapshot>,
 }

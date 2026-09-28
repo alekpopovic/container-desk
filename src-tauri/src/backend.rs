@@ -5,9 +5,12 @@ use crate::{
     storage::{FileStorage, SettingsStore},
 };
 use std::sync::{Arc, Mutex};
+mod inventory;
 
 /// Resource operations remain behind identity gates. Local version probes are separately bounded.
 pub struct Backend {
+    inventory_control: tokio::sync::Mutex<()>,
+    demo_inventory: Mutex<Preferences>,
     process_runner: crate::ssh::runner::Runner,
     sessions: crate::ssh::sessions::Sessions,
     shutting_down: std::sync::atomic::AtomicBool,
@@ -24,6 +27,8 @@ impl Backend {
             .map_err(|_| AppError::new(ErrorCode::StorageUnavailable))
             .and_then(|adapter| SettingsStore::load(Box::new(adapter)));
         Self {
+            inventory_control: Default::default(),
+            demo_inventory: Mutex::new(Preferences::default()),
             process_runner: crate::ssh::runner::Runner::default(),
             sessions: crate::ssh::sessions::Sessions::default(),
             shutting_down: std::sync::atomic::AtomicBool::new(false),
@@ -132,6 +137,10 @@ impl Backend {
         &self,
         request: BeginSshRequest,
     ) -> Result<ConnectionSnapshot, AppError> {
+        let _control = self
+            .inventory_control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
         self.require_live_mode()?;
         crate::ssh::resolver::arguments(&request.selection)?;
         if request.selection.use_default_config
@@ -305,6 +314,10 @@ impl Backend {
         request: SwitchWorkspaceRequest,
     ) -> Result<WorkspaceModeSnapshot, AppError> {
         // Mode transitions cannot race an already-running local SSH version probe.
+        let _control = self
+            .inventory_control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
         let _permit = self
             .diagnostic_slot
             .try_acquire()
@@ -382,6 +395,7 @@ impl Backend {
         if let Some(host) = self.workspace_mode()?.host {
             return Ok(ListHostsResponse { hosts: vec![host] });
         }
+        let active = self.sessions.current()?;
         Ok(ListHostsResponse {
             hosts: self
                 .preferences()?
@@ -389,12 +403,16 @@ impl Backend {
                 .hosts
                 .into_iter()
                 .map(|host| HostSummary {
+                    connection_state: active
+                        .as_ref()
+                        .filter(|c| c.host_id.as_ref() == Some(&host.id))
+                        .map(|c| c.state.clone())
+                        .unwrap_or(ConnectionState::Disconnected),
                     id: host.id,
                     alias: host.alias,
                     display_name: host.display_name,
                     group: host.group,
                     read_only: host.read_only,
-                    connection_state: ConnectionState::Disconnected,
                 })
                 .collect(),
         })
@@ -552,6 +570,8 @@ impl Backend {
 impl Default for Backend {
     fn default() -> Self {
         Self {
+            inventory_control: Default::default(),
+            demo_inventory: Mutex::new(Preferences::default()),
             process_runner: crate::ssh::runner::Runner::default(),
             sessions: crate::ssh::sessions::Sessions::default(),
             shutting_down: std::sync::atomic::AtomicBool::new(false),

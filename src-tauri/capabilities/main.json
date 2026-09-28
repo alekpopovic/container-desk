@@ -24,6 +24,11 @@
     "allow-check-ssh-access",
     "allow-begin-ssh-session",
     "allow-get-ssh-session",
-    "allow-disconnect-ssh-session"
+    "allow-disconnect-ssh-session",
+    "allow-get-host-inventory",
+    "allow-save-host",
+    "allow-remove-host",
+    "allow-connect-inventory-host",
+    "allow-disconnect-inventory-host"
   ]
 }

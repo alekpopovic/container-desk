@@ -1,5 +1,6 @@
 // Explicit browser demo provider. Native failures never call this provider.
 import fixture from "./workspace.generated.json" with { type: "json" };
+import { hasActiveInventoryConnection } from "./host-inventory.ts";
 import { IpcError, sameScope } from "../lib/ipc/client.ts";
 import type {
   DemoScenario,
@@ -30,6 +31,7 @@ export async function getWorkspaceMode(): Promise<WorkspaceModeSnapshot> {
 export async function switchWorkspace(
   request: SwitchWorkspaceRequest,
 ): Promise<WorkspaceModeSnapshot> {
+  if (hasActiveInventoryConnection()) throw new IpcError("resource_limit");
   generation += 1;
   if (generation > 0xffffffff) throw new IpcError("resource_limit");
   if (request.mode === "live")

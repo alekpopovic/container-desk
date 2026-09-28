@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T21:40:21+00:00",
+  "updated_at": "2026-09-28T22:04:23+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -545,6 +545,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T21:40:54+00:00",
+      "id": "017",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T22:04:23+00:00",
+      "id": "017",
+      "action": "done",
+      "note": "77 Rust tests, clippy/fmt and 24 IPC tests passed; 72 browser regression checks plus final 12 targeted inventory checks passed; native Linux release build passed; Seven native SSH lab tests passed, including saved-host direct/ProxyJump lifecycle and persistence with explicitly synthetic Docker API",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T21:40:54+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -766,12 +800,16 @@
       "note": ""
     },
     "017": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T21:40:54+00:00",
+      "finished_at": "2026-09-28T22:04:23+00:00",
+      "evidence": "codex/tracking/evidence/017.md",
+      "evidence_sha256": "89b723e8a403ccaf6e276448d2e3bc57d38eb42f561b48ea133f68a510547db1",
+      "checks": [
+        "77 Rust tests, clippy/fmt and 24 IPC tests passed",
+        "72 browser regression checks plus final 12 targeted inventory checks passed; native Linux release build passed",
+        "Seven native SSH lab tests passed, including saved-host direct/ProxyJump lifecycle and persistence with explicitly synthetic Docker API"
+      ],
       "commit": "",
       "note": ""
     },

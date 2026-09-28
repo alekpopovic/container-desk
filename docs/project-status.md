@@ -1,6 +1,6 @@
 # ContainerDesk project status
 
-Updated 2026-09-28 after prompt 016. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations, remote command preparation and transient SSH connection state through 016 are implemented; live remote Docker management is not available yet.
+Updated 2026-09-29 after prompt 017. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations, remote command preparation and transient SSH connection state through 017 are implemented; live remote Docker management is not available yet.
 
 ## Current implementation
 
@@ -28,9 +28,11 @@ Updated 2026-09-28 after prompt 016. ContainerDesk is a working native Tauri v2 
 
 - Remote Docker context/endpoint/version/daemon/rootless/Compose diagnostics, explicit sudo -n mode and pinned command configuration; actual remote CLI verified with a synthetic API, not a live Engine.
 
-Design: [Docker capabilities](docker-capabilities.md), [SSH multiplexing](ssh-multiplexing.md), [connection state](connection-state.md), [SSH authentication](ssh-authentication.md), [remote commands](remote-commands.md), [SSH runner](ssh-runner.md), [SSH resolution](ssh-resolution.md), [SSH discovery](ssh-discovery.md), [demo mode](demo-mode.md), [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
+- Saved host inventory with stable IDs, labels/groups/favorites, versioned per-host config/Docker references, explicit connection controls and owner-scoped live status; demo metadata remains in memory.
 
-Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md), [008](../codex/tracking/evidence/008.md), [009](../codex/tracking/evidence/009.md), [010](../codex/tracking/evidence/010.md), [011](../codex/tracking/evidence/011.md), [012](../codex/tracking/evidence/012.md), [013](../codex/tracking/evidence/013.md), [014](../codex/tracking/evidence/014.md), [015](../codex/tracking/evidence/015.md), [016](../codex/tracking/evidence/016.md).
+Design: [host inventory](host-inventory.md), [Docker capabilities](docker-capabilities.md), [SSH multiplexing](ssh-multiplexing.md), [connection state](connection-state.md), [SSH authentication](ssh-authentication.md), [remote commands](remote-commands.md), [SSH runner](ssh-runner.md), [SSH resolution](ssh-resolution.md), [SSH discovery](ssh-discovery.md), [demo mode](demo-mode.md), [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
+
+Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md), [008](../codex/tracking/evidence/008.md), [009](../codex/tracking/evidence/009.md), [010](../codex/tracking/evidence/010.md), [011](../codex/tracking/evidence/011.md), [012](../codex/tracking/evidence/012.md), [013](../codex/tracking/evidence/013.md), [014](../codex/tracking/evidence/014.md), [015](../codex/tracking/evidence/015.md), [016](../codex/tracking/evidence/016.md), [017](../codex/tracking/evidence/017.md).
 
 ## Actual platform status
 
@@ -42,9 +44,9 @@ Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evid
 | Ubuntu 24.04 baseline / native Wayland | Not verified |
 | macOS arm64 / Intel | Not built or executed |
 | Installers, signing, notarization | Not performed; native unbundled Linux builds only |
-| SSH authentication | Real native direct/ProxyJump lab verified; no persisted host sessions yet |
+| SSH authentication | Real native direct/ProxyJump lab and saved-host metadata lifecycle verified; connection state is transient |
 | Docker resource reads / mutations / terminal | Not implemented or exercised live yet |
 
 No browser fixture, mock runtime or build is counted as native server-operation proof. Existing bundle-identifier warning and GitHub moderate dependency alert remain open for the relevant later review. [Checkpoints](checkpoints.md) still require actual lab/platform evidence.
 
-Next prompt: **017 — Host inventory screen and groups**. Continue sequentially under the user's [execution authorization](execution.md).
+Next prompt: **018 — SSH vertical slice checkpoint**. Continue sequentially under the user's [execution authorization](execution.md).

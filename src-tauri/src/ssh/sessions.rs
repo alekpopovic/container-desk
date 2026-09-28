@@ -11,6 +11,7 @@ type StageFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 pub(crate) enum StageOutcome {
     Resolved {
         has_jump: bool,
+        effective: Option<Box<EffectiveSshConfig>>,
     },
     Authenticated(SshTransportMode),
     #[cfg(test)]
@@ -54,6 +55,7 @@ impl StageDriver for NativeDriver {
                 {
                     Ok(config) => StageOutcome::Resolved {
                         has_jump: config.proxy_jump.is_some() || config.has_proxy_command,
+                        effective: Some(Box::new(config)),
                     },
                     Err(error) => {
                         StageOutcome::Failed(if error.code == ErrorCode::OperationTimedOut {
@@ -170,6 +172,19 @@ impl Sessions {
         docker_options: DockerOptions,
         factory: impl FnOnce() -> Result<Arc<dyn StageDriver>, AppError>,
     ) -> Result<ConnectionSnapshot, AppError> {
+        self.begin_owned(selection, docker_options, None, factory)
+            .await
+    }
+    pub(crate) async fn begin_owned(
+        &self,
+        selection: SshSelection,
+        docker_options: DockerOptions,
+        host_id: Option<HostId>,
+        factory: impl FnOnce() -> Result<Arc<dyn StageDriver>, AppError>,
+    ) -> Result<ConnectionSnapshot, AppError> {
+        if let Some(id) = &host_id {
+            id.validate()?;
+        }
         super::resolver::arguments(&selection)?;
         crate::docker::DockerCommandConfig::from_options(&docker_options)?;
         let mut control = self
@@ -182,6 +197,7 @@ impl Sessions {
                 .lock()
                 .map_err(|_| AppError::new(ErrorCode::Internal))?;
             if let Some(snapshot) = &state.snapshot
+                && snapshot.host_id == host_id
                 && snapshot.selection == selection
                 && snapshot.docker_options == docker_options
                 && matches!(
@@ -207,6 +223,8 @@ impl Sessions {
             let mut bytes = [0; 16];
             getrandom::fill(&mut bytes).map_err(|_| AppError::new(ErrorCode::Internal))?;
             let snapshot = ConnectionSnapshot {
+                host_id,
+                effective: None,
                 token: ConnectionToken {
                     session_id: SessionId(format!(
                         "s_{}",
@@ -253,6 +271,14 @@ impl Sessions {
             snapshot.docker = None;
         }
         Ok(())
+    }
+    pub fn current(&self) -> Result<Option<ConnectionSnapshot>, AppError> {
+        Ok(self
+            .state
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .snapshot
+            .clone())
     }
     pub fn snapshot(&self, token: &ConnectionToken) -> Result<ConnectionSnapshot, AppError> {
         token.validate()?;
@@ -333,8 +359,15 @@ async fn drive(
             duration_ms: started.elapsed().as_millis().min(u32::MAX as u128) as u32,
         });
         match (stage, outcome) {
-            (ConnectionStage::Resolve, StageOutcome::Resolved { has_jump }) => {
+            (
+                ConnectionStage::Resolve,
+                StageOutcome::Resolved {
+                    has_jump,
+                    effective,
+                },
+            ) => {
                 current.has_jump = has_jump;
+                current.effective = effective.map(|config| *config);
                 current.state = ConnectionState::Connecting;
             }
             (ConnectionStage::Authenticate, StageOutcome::Authenticated(mode)) => {

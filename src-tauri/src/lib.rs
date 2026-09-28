@@ -23,6 +23,11 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::app_version,
+            commands::get_host_inventory,
+            commands::save_host,
+            commands::remove_host,
+            commands::connect_inventory_host,
+            commands::disconnect_inventory_host,
             commands::list_hosts,
             commands::connect_host,
             commands::list_containers,

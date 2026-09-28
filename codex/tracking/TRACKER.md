@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T21:40:21+00:00
+Updated: 2026-09-28T22:04:23+00:00
 
-blocked: **0** | done: **16** | in_progress: **0** | pending: **44**
+blocked: **0** | done: **17** | in_progress: **0** | pending: **43**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -26,7 +26,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 014 | 02 SSH transport | Host connection state machine | high | done | codex/tracking/evidence/014.md |
 | 015 | 02 SSH transport | Connection reuse and child ownership | high | done | codex/tracking/evidence/015.md |
 | 016 | 02 SSH transport | Remote Docker capability probe | high | done | codex/tracking/evidence/016.md |
-| 017 | 02 SSH transport | Host inventory screen and groups | medium | pending | — |
+| 017 | 02 SSH transport | Host inventory screen and groups | medium | done | codex/tracking/evidence/017.md |
 | 018 | 02 SSH transport | SSH vertical slice checkpoint | high | pending | — |
 | 019 | 03 Read-only MVP | Container listing adapter | high | pending | — |
 | 020 | 03 Read-only MVP | Container table and host-scoped cache | medium | pending | — |
@@ -105,3 +105,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T21:23:45+00:00 — 015: done; 68 Rust tests passed; clippy/fmt and 21 IPC tests passed; Real SSH lab: 5 tests including direct/ProxyJump reuse, cancellation, shutdown ownership, fallback, death and idle expiry passed; 12 browser tests and native Linux release build passed
 - 2026-09-28T21:24:28+00:00 — 016: start;
 - 2026-09-28T21:40:21+00:00 — 016: done; 74 Rust tests passed; final five Docker parser/binding tests, clippy and native Linux release build passed; 22 IPC and 12 browser checks passed; Six native SSH lab tests passed; real Docker CLI verified ten capability cases against explicitly synthetic API/socket fixtures
+- 2026-09-28T21:40:54+00:00 — 017: start;
+- 2026-09-28T22:04:23+00:00 — 017: done; 77 Rust tests, clippy/fmt and 24 IPC tests passed; 72 browser regression checks plus final 12 targeted inventory checks passed; native Linux release build passed; Seven native SSH lab tests passed, including saved-host direct/ProxyJump lifecycle and persistence with explicitly synthetic Docker API

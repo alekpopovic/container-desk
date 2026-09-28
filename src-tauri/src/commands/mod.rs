@@ -43,6 +43,9 @@ mod tests {
         let app = mock_builder()
             .manage(Backend::default())
             .invoke_handler(tauri::generate_handler![
+                get_host_inventory,
+                save_host,
+                remove_host,
                 get_workspace_mode,
                 switch_workspace,
                 begin_ssh_session,
@@ -80,6 +83,21 @@ mod tests {
         )
         .unwrap();
         assert_eq!(mode["mode"], "demo");
+        let added = invoke("save_host", json!({"request":{"mode":"demo","expectedRevision":0,"id":null,"draft":{"ssh":{"alias":"demo-direct","configPath":"/demo/config","useDefaultConfig":false},"docker":{"executable":null,"context":null,"sudo":false},"displayName":"IPC host","group":"dev","labels":[],"favorite":true}}})).unwrap();
+        let inventory = invoke("get_host_inventory", json!({"request":{"mode":"demo"}})).unwrap();
+        assert_eq!(
+            inventory["saved"]["preferences"]["hosts"][0]["favorite"],
+            true
+        );
+        assert!(inventory["connection"].is_null());
+        let removed = invoke("remove_host", json!({"request":{"mode":"demo","expectedRevision":1,"hostId":added["saved"]["preferences"]["hosts"][0]["id"]}})).unwrap();
+        assert!(
+            removed["saved"]["preferences"]["hosts"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
+
         assert_eq!(invoke("begin_ssh_session", json!({"request":{"selection":{"alias":"fixture","configPath":"/fixture/config","useDefaultConfig":false}}})).unwrap_err()["code"], "permission_denied");
         for command in ["get_ssh_session", "disconnect_ssh_session"] {
             assert_eq!(invoke(command, json!({"request":{"token":{"sessionId":format!("s_{}", "1".repeat(32)),"sessionGeneration":1}}})).unwrap_err()["code"], "permission_denied");
@@ -396,4 +414,40 @@ pub async fn disconnect_ssh_session(
     request: ConnectionRequest,
 ) -> Result<ConnectionSnapshot, AppError> {
     backend.disconnect_ssh_session(request).await
+}
+
+#[tauri::command]
+pub fn get_host_inventory(
+    backend: tauri::State<'_, Backend>,
+    request: InventoryModeRequest,
+) -> Result<HostInventory, AppError> {
+    backend.host_inventory(request)
+}
+#[tauri::command]
+pub async fn save_host(
+    backend: tauri::State<'_, Backend>,
+    request: SaveHostRequest,
+) -> Result<HostInventory, AppError> {
+    backend.save_host(request).await
+}
+#[tauri::command]
+pub async fn remove_host(
+    backend: tauri::State<'_, Backend>,
+    request: RemoveHostRequest,
+) -> Result<HostInventory, AppError> {
+    backend.remove_host(request).await
+}
+#[tauri::command]
+pub async fn connect_inventory_host(
+    backend: tauri::State<'_, Backend>,
+    request: InventoryConnectRequest,
+) -> Result<HostInventory, AppError> {
+    backend.connect_inventory_host(request).await
+}
+#[tauri::command]
+pub async fn disconnect_inventory_host(
+    backend: tauri::State<'_, Backend>,
+    request: InventoryDisconnectRequest,
+) -> Result<HostInventory, AppError> {
+    backend.disconnect_inventory_host(request).await
 }

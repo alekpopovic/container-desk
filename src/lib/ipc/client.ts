@@ -304,7 +304,7 @@ function preferencesSnapshot(
     return false;
   const p = value.preferences;
   return (
-    p.schemaVersion === 2 &&
+    p.schemaVersion === 3 &&
     typeof p.revision === "number" &&
     Number.isInteger(p.revision) &&
     p.revision >= 0 &&
@@ -327,6 +327,10 @@ function preferencesSnapshot(
         text(host.displayName, 256) &&
         text(host.group, 128) &&
         typeof host.readOnly === "boolean" &&
+        typeof host.favorite === "boolean" &&
+        validDockerOptions(host.docker) &&
+        (host.ssh === null ||
+          (validSshSelection(host.ssh) && host.ssh.alias === host.alias)) &&
         Array.isArray(host.labels) &&
         host.labels.length <= 32 &&
         host.labels.every((label) => text(label, 128)),
@@ -540,7 +544,15 @@ import type { EffectiveSshConfig } from "./generated.ts";
 export async function resolveSshConfig(
   selection: SshSelection,
 ): Promise<EffectiveSshConfig> {
-  const value = await call("resolve_ssh_config", { selection });
+  return decodeEffective(
+    await call("resolve_ssh_config", { selection }),
+    selection,
+  );
+}
+function decodeEffective(
+  value: unknown,
+  selection: SshSelection,
+): EffectiveSshConfig {
   if (
     !record(value) ||
     !record(value.selection) ||
@@ -645,7 +657,7 @@ const connectionStages: ConnectionStage[] = [
   "authenticate",
   "probe",
 ];
-function decodeConnection(
+export function decodeConnection(
   value: unknown,
   expected: SshSelection,
   token?: ConnectionToken,
@@ -702,6 +714,14 @@ function decodeConnection(
     )
   )
     throw new IpcError("invalid_response");
+  if (
+    !(
+      value.hostId === null ||
+      (text(value.hostId, 34) && /^h_[a-f0-9]{32}$/.test(value.hostId))
+    )
+  )
+    throw new IpcError("invalid_response");
+  if (value.effective !== null) decodeEffective(value.effective, expected);
   return value as ConnectionSnapshot;
 }
 export async function beginSshSession(
@@ -813,4 +833,124 @@ function validDockerReport(value: unknown): value is DockerProbeReport {
       value.clientVersion !== null &&
       value.serverVersion !== null)
   );
+}
+
+function validSshSelection(value: unknown): value is SshSelection {
+  return (
+    record(value) &&
+    typeof value.alias === "string" &&
+    isConcreteAlias(value.alias) &&
+    text(value.configPath, 4096) &&
+    value.configPath.startsWith("/") &&
+    typeof value.useDefaultConfig === "boolean"
+  );
+}
+import type {
+  HostInventory,
+  WorkspaceMode,
+  SaveHostRequest,
+  RemoveHostRequest,
+  InventoryConnectRequest,
+  InventoryDisconnectRequest,
+} from "./generated.ts";
+export function decodeInventory(
+  value: unknown,
+  mode: WorkspaceMode,
+): HostInventory {
+  if (
+    !record(value) ||
+    value.mode !== mode ||
+    !preferencesSnapshot(value.saved)
+  )
+    throw new IpcError("invalid_response");
+  const ids = value.saved.preferences.hosts.map((h) => h.id);
+  if (new Set(ids).size !== ids.length) throw new IpcError("invalid_response");
+  if (value.connection !== null) {
+    if (
+      !record(value.connection) ||
+      !validSshSelection(value.connection.selection)
+    )
+      throw new IpcError("invalid_response");
+    const connection = decodeConnection(
+      value.connection,
+      value.connection.selection,
+    );
+    const host = value.saved.preferences.hosts.find(
+      (h) => h.id === connection.hostId,
+    );
+    if (
+      !host ||
+      host.alias !== connection.selection.alias ||
+      host.docker.context !== connection.dockerOptions.context ||
+      host.docker.executable !== connection.dockerOptions.executable ||
+      host.docker.sudo !== connection.dockerOptions.sudo ||
+      (host.ssh &&
+        (host.ssh.configPath !== connection.selection.configPath ||
+          host.ssh.useDefaultConfig !== connection.selection.useDefaultConfig))
+    )
+      throw new IpcError("invalid_response");
+  }
+  return value as HostInventory;
+}
+export async function getHostInventory(
+  mode: WorkspaceMode,
+): Promise<HostInventory> {
+  return decodeInventory(await call("get_host_inventory", { mode }), mode);
+}
+export async function saveHost(
+  request: SaveHostRequest,
+): Promise<HostInventory> {
+  const result = decodeInventory(
+    await call("save_host", request),
+    request.mode,
+  );
+  if (
+    result.saved.preferences.revision !== request.expectedRevision + 1 ||
+    (request.id &&
+      !result.saved.preferences.hosts.some((h) => h.id === request.id))
+  )
+    throw new IpcError("invalid_response");
+  return result;
+}
+export async function removeHost(
+  request: RemoveHostRequest,
+): Promise<HostInventory> {
+  const result = decodeInventory(
+    await call("remove_host", request),
+    request.mode,
+  );
+  if (
+    result.saved.preferences.revision !== request.expectedRevision + 1 ||
+    result.saved.preferences.hosts.some((h) => h.id === request.hostId)
+  )
+    throw new IpcError("invalid_response");
+  return result;
+}
+export async function connectInventoryHost(
+  request: InventoryConnectRequest,
+): Promise<HostInventory> {
+  const result = decodeInventory(
+    await call("connect_inventory_host", request),
+    request.mode,
+  );
+  if (result.connection?.hostId !== request.hostId)
+    throw new IpcError("invalid_response");
+  return result;
+}
+export async function disconnectInventoryHost(
+  request: InventoryDisconnectRequest,
+): Promise<HostInventory> {
+  const result = decodeInventory(
+    await call("disconnect_inventory_host", request),
+    request.mode,
+  );
+  if (
+    result.connection?.hostId !== request.hostId ||
+    result.connection.state !== "disconnected" ||
+    result.connection.token.sessionGeneration <=
+      request.token.sessionGeneration ||
+    result.connection.token.sessionId !== request.token.sessionId
+  )
+    throw new IpcError("invalid_response");
+  return result;
 }

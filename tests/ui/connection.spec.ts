@@ -50,6 +50,8 @@ test("switching during probe and cancellation reject old completions", async ({
             durations: [],
             diagnostic: null,
             hasJump: true,
+            hostId: null,
+            effective: null,
             transportMode: "direct_fallback",
             dockerOptions: args?.request?.docker,
             docker: null,

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-connect-inventory-host"
+description = "Enables the connect_inventory_host command without any pre-configured scope."
+commands.allow = ["connect_inventory_host"]
+
+[[permission]]
+identifier = "deny-connect-inventory-host"
+description = "Denies the connect_inventory_host command without any pre-configured scope."
+commands.deny = ["connect_inventory_host"]

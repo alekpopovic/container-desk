@@ -2,6 +2,11 @@ fn main() {
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
         tauri_build::AppManifest::new().commands(&[
             "app_version",
+            "get_host_inventory",
+            "save_host",
+            "remove_host",
+            "connect_inventory_host",
+            "disconnect_inventory_host",
             "list_hosts",
             "connect_host",
             "list_containers",

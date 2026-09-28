@@ -175,7 +175,7 @@
     "preferences": {
       "hosts": [],
       "revision": 0,
-      "schemaVersion": 2,
+      "schemaVersion": 3,
       "selectedHostId": null,
       "sshExecutableOverride": null,
       "theme": "system",

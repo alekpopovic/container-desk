@@ -49,6 +49,9 @@ fn preferences() -> Preferences {
                 alias: "lab-one".into(),
                 display_name: "First".into(),
                 group: "Lab".into(),
+                favorite: true,
+                ssh: None,
+                docker: Default::default(),
                 labels: vec!["test".into()],
                 read_only: true,
             },
@@ -57,6 +60,9 @@ fn preferences() -> Preferences {
                 alias: "lab-two".into(),
                 display_name: "Second".into(),
                 group: "Other".into(),
+                favorite: false,
+                ssh: None,
+                docker: Default::default(),
                 labels: vec![],
                 read_only: false,
             },
@@ -310,4 +316,31 @@ fn symlinks_and_orphan_partial_writes_do_not_replace_valid_settings() {
     .unwrap();
     assert!(SettingsStore::load(Box::new(FileStorage::open(&dir.0).unwrap())).is_err());
     assert!(dir.0.join("original.json").exists());
+}
+
+#[test]
+fn schema_two_hosts_migrate_without_changing_ids_or_original_bytes() {
+    let adapter = MemoryStorage::default();
+    let mut old = serde_json::to_value(preferences()).unwrap();
+    old["schemaVersion"] = 2.into();
+    for host in old["hosts"].as_array_mut().unwrap() {
+        for field in ["favorite", "ssh", "docker"] {
+            host.as_object_mut().unwrap().remove(field);
+        }
+    }
+    let original = serde_json::to_vec(&old).unwrap();
+    adapter
+        .0
+        .lock()
+        .unwrap()
+        .values
+        .insert(false, original.clone());
+    let store = SettingsStore::load(Box::new(adapter.clone())).unwrap();
+    assert_eq!(store.snapshot().notice, Some(StorageNotice::Migrated));
+    let saved = store.snapshot().preferences;
+    assert_eq!(saved.schema_version, 3);
+    assert_eq!(saved.hosts[0].id, preferences().hosts[0].id);
+    assert!(!saved.hosts[0].favorite);
+    assert!(saved.hosts[0].ssh.is_none());
+    assert_eq!(adapter.read(true).unwrap().unwrap(), original);
 }

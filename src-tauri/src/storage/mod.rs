@@ -29,7 +29,7 @@ fn invalid() -> AppError {
 
 pub fn validate(preferences: &Preferences) -> Result<(), AppError> {
     let safe_text = |s: &str, max: usize| s.len() <= max && !s.chars().any(char::is_control);
-    if preferences.schema_version != 2 || preferences.hosts.len() > 1000 {
+    if preferences.schema_version != 3 || preferences.hosts.len() > 1000 {
         return Err(invalid());
     }
     let mut ids = HashSet::new();
@@ -38,7 +38,16 @@ pub fn validate(preferences: &Preferences) -> Result<(), AppError> {
         host.id.validate().map_err(|_| invalid())?;
         if crate::ssh::validate_alias(&host.alias).is_err()
             || !ids.insert(&host.id)
-            || !aliases.insert(&host.alias)
+            || !aliases.insert((
+                &host.alias,
+                host.ssh
+                    .as_ref()
+                    .map(|s| (&s.config_path, s.use_default_config)),
+            ))
+            || crate::docker::DockerCommandConfig::from_options(&host.docker).is_err()
+            || host.ssh.as_ref().is_some_and(|selection| {
+                selection.alias != host.alias || crate::ssh::resolver::arguments(selection).is_err()
+            })
             || host.display_name.is_empty()
             || !safe_text(&host.display_name, 256)
             || !safe_text(&host.group, 128)
@@ -93,14 +102,20 @@ fn decode(bytes: &[u8]) -> Decoded {
         return Decoded::Corrupt;
     };
     let decoded = match value.get("schemaVersion").and_then(|v| v.as_u64()) {
-        Some(2) => serde_json::from_value::<Preferences>(value)
+        Some(3) => serde_json::from_value::<Preferences>(value)
             .ok()
             .map(|v| (v, false)),
+        Some(2) => serde_json::from_value::<Preferences>(value)
+            .ok()
+            .map(|mut p| {
+                p.schema_version = 3;
+                (p, true)
+            }),
         Some(1) => serde_json::from_value::<V1>(value).ok().map(|v| {
             debug_assert_eq!(v.schema_version, 1);
             (
                 Preferences {
-                    schema_version: 2,
+                    schema_version: 3,
                     revision: 0,
                     theme: v.theme,
                     hosts: v.hosts,
@@ -111,7 +126,7 @@ fn decode(bytes: &[u8]) -> Decoded {
                 true,
             )
         }),
-        Some(version) if version > 2 => return Decoded::Unsupported,
+        Some(version) if version > 3 => return Decoded::Unsupported,
         _ => None,
     };
     match decoded {

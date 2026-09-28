@@ -1,5 +1,8 @@
 import { isTauri } from "@tauri-apps/api/core";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { HostInventory } from "./features/hosts/HostInventory";
+import type { WorkspaceState } from "./components/WorkspaceShell";
+import type { HostInventory as Inventory } from "./lib/ipc/generated";
 import { SshDiscovery } from "./features/hosts/SshDiscovery";
 import { useWorkspaceMode } from "./features/workspace/useWorkspaceMode";
 import { DependencyDiagnostics } from "./components/DependencyDiagnostics";
@@ -25,6 +28,11 @@ export default function App() {
   const native = isTauri();
   const workspace = useWorkspaceMode(native);
   const [snapshot, setSnapshot] = useState<PreferencesSnapshot | null>(null);
+  const [inventory, setInventory] = useState<Inventory | null>(null);
+  const inventoryChanged = useCallback((value: Inventory) => {
+    setInventory(value);
+    if (value.mode === "live") setSnapshot(value.saved);
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mounted = useRef(false);
@@ -76,9 +84,50 @@ export default function App() {
     }
   };
   const message = error ?? (snapshot?.notice ? notices[snapshot.notice] : null);
+  let displayState: WorkspaceState = workspace.state;
+  const currentInventory =
+    inventory?.mode === workspace.mode.mode ? inventory : null;
+  const connection = currentInventory?.connection;
+  const selectedHost =
+    connection &&
+    currentInventory?.saved.preferences.hosts.find(
+      (h) => h.id === connection.hostId,
+    );
+  if (workspace.mode.mode === "live" && selectedHost && connection) {
+    const host = {
+      name: selectedHost.displayName,
+      alias: selectedHost.alias,
+      endpoint: connection.docker?.endpoint ?? "Not verified",
+    };
+    displayState =
+      connection.state === "ready"
+        ? { kind: "connected", host }
+        : connection.state === "disconnected"
+          ? { kind: "offline", host }
+          : ["error", "degraded"].includes(connection.state)
+            ? {
+                kind: "error",
+                host,
+                message: "Review this host's connection diagnostics in Hosts.",
+              }
+            : { kind: "loading", host };
+  }
   return (
     <WorkspaceShell
-      state={workspace.state}
+      state={displayState}
+      savedHosts={
+        currentInventory?.saved.preferences.hosts ??
+        (workspace.mode.mode === "live"
+          ? (snapshot?.preferences.hosts ?? [])
+          : [])
+      }
+      hostsExtra={
+        <HostInventory
+          key={workspace.mode.mode}
+          mode={workspace.mode.mode}
+          onChange={inventoryChanged}
+        />
+      }
       demo={{
         active: workspace.mode.mode === "demo",
         busy: workspace.busy,
