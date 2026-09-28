@@ -15,6 +15,10 @@ import type {
 
 const messages: Record<ErrorCode, string> = {
   invalid_id: "Invalid resource identifier.",
+  ssh_unavailable:
+    "The selected OpenSSH executable is unavailable or untrusted. Check native dependency settings.",
+  ssh_resolution_failed:
+    "OpenSSH could not resolve this alias. Check the trusted configuration in your terminal.",
   invalid_alias:
     "Use a concrete SSH alias: letters, digits, dots, underscores or dashes, starting with a letter or digit (maximum 256 bytes).",
   invalid_config_path:
@@ -518,9 +522,39 @@ export async function selectSshAlias(
   if (
     !record(value) ||
     value.alias !== alias ||
+    typeof value.useDefaultConfig !== "boolean" ||
+    (configPath !== null && value.configPath !== configPath) ||
     !text(value.configPath) ||
     !value.configPath.startsWith("/")
   )
     throw new IpcError("invalid_response");
   return value as SshSelection;
+}
+
+import type { EffectiveSshConfig } from "./generated.ts";
+export async function resolveSshConfig(
+  selection: SshSelection,
+): Promise<EffectiveSshConfig> {
+  const value = await call("resolve_ssh_config", { selection });
+  if (
+    !record(value) ||
+    !record(value.selection) ||
+    value.selection.alias !== selection.alias ||
+    value.selection.configPath !== selection.configPath ||
+    value.selection.useDefaultConfig !== selection.useDefaultConfig ||
+    !text(value.executablePath) ||
+    !value.executablePath.startsWith("/") ||
+    !text(value.hostname, 1024) ||
+    value.hostname.length === 0 ||
+    !text(value.user, 1024) ||
+    value.user.length === 0 ||
+    typeof value.port !== "number" ||
+    !Number.isInteger(value.port) ||
+    value.port < 1 ||
+    value.port > 65535 ||
+    !(value.proxyJump === null || text(value.proxyJump, 1024)) ||
+    typeof value.hasProxyCommand !== "boolean"
+  )
+    throw new IpcError("invalid_response");
+  return value as EffectiveSshConfig;
 }

@@ -13,7 +13,7 @@ export type SessionScope = { selection: HostSelection, sessionId: SessionId,
  * Backend-issued epoch; changes after reconnect or daemon/context changes.
  */
 sessionGeneration: number, daemonId: string, };
-export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "invalid_alias" | "invalid_config_path";
+export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "invalid_alias" | "invalid_config_path" | "ssh_unavailable" | "ssh_resolution_failed";
 export type AppError = { code: ErrorCode, message: string, scope: SessionScope | null, };
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting" | "failed";
 export type HostCapabilities = { docker: boolean, compose: boolean, management: boolean, terminal: boolean, };
@@ -83,4 +83,6 @@ export type DiscoveryWarning = { code: DiscoveryWarningCode, source: string, lin
 export type DiscoveryWarningCode = "missing_file" | "unreadable_file" | "unsupported_syntax" | "patterns_skipped" | "conditional_include" | "match_skipped" | "include_cycle" | "limit_reached";
 export type HostDiscovery = { configPath: string, candidates: Array<SshCandidate>, warnings: Array<DiscoveryWarning>, };
 export type SelectSshAliasRequest = { configPath: string | null, alias: string, };
-export type SshSelection = { configPath: string, alias: string, };
+export type SshSelection = { useDefaultConfig: boolean, configPath: string, alias: string, };
+export type ResolveSshRequest = { selection: SshSelection, };
+export type EffectiveSshConfig = { selection: SshSelection, executablePath: string, hostname: string, user: string, port: number, proxyJump: string | null, hasProxyCommand: boolean, };

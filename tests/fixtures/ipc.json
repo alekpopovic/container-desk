@@ -94,6 +94,19 @@
       }
     ]
   },
+  "effectiveSsh": {
+    "executablePath": "/usr/bin/ssh",
+    "hasProxyCommand": false,
+    "hostname": "192.0.2.10",
+    "port": 2222,
+    "proxyJump": "fixture-jump",
+    "selection": {
+      "alias": "fixture-host",
+      "configPath": "/fixture/.ssh/config",
+      "useDefaultConfig": false
+    },
+    "user": "fixture-user"
+  },
   "error": {
     "code": "session_not_found",
     "message": "Connection session does not exist.",

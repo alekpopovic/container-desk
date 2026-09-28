@@ -7,6 +7,7 @@ import {
   selectSshAlias,
   getSshConfigPath,
   isConcreteAlias,
+  resolveSshConfig,
 } from "./client.ts";
 const fixtures = JSON.parse(
   readFileSync(
@@ -38,7 +39,11 @@ test("discovery decodes Rust shape and manual selection is explicit without conn
     assert.deepEqual(args, {
       request: { configPath: null, alias: "manual-01" },
     });
-    return { configPath: fixtures.discovery.configPath, alias: "manual-01" };
+    return {
+      configPath: fixtures.discovery.configPath,
+      alias: "manual-01",
+      useDefaultConfig: true,
+    };
   });
   assert.equal((await getSshConfigPath()).path, "/fixture/.ssh/config");
   assert.equal(
@@ -84,4 +89,25 @@ test("option injection and malformed candidates are rejected without exposing ra
     (error: unknown) =>
       error instanceof Error && !error.message.includes("PRIVATE_CONTENT"),
   );
+});
+
+test("effective diagnostics retain the selected alias and reject cross-selection or bad ports", async () => {
+  const selection = fixtures.effectiveSsh.selection;
+  mockIPC((command, args) => {
+    assert.equal(command, "resolve_ssh_config");
+    assert.deepEqual(args, { request: { selection } });
+    return fixtures.effectiveSsh;
+  });
+  assert.equal((await resolveSshConfig(selection)).hostname, "192.0.2.10");
+  mockIPC(() => ({
+    ...fixtures.effectiveSsh,
+    selection: { ...selection, alias: "other-host" },
+  }));
+  await assert.rejects(resolveSshConfig(selection), {
+    code: "invalid_response",
+  });
+  mockIPC(() => ({ ...fixtures.effectiveSsh, port: 0 }));
+  await assert.rejects(resolveSshConfig(selection), {
+    code: "invalid_response",
+  });
 });

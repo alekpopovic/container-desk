@@ -14,7 +14,17 @@ test("discovery waits for explicit browse and accepts a selected or manual alias
     Reflect.set(window, "__TAURI_INTERNALS__", {
       async invoke(
         command: string,
-        args?: { request?: { configPath?: string; alias?: string } },
+        args?: {
+          request?: {
+            configPath?: string;
+            alias?: string;
+            selection?: {
+              alias: string;
+              configPath: string;
+              useDefaultConfig: boolean;
+            };
+          };
+        },
       ) {
         calls.push(command);
         if (command === "app_version") return { version: "fixture-009" };
@@ -36,11 +46,17 @@ test("discovery waits for explicit browse and accepts a selected or manual alias
                 ],
               }
             : fixtures.discovery;
+        if (command === "resolve_ssh_config")
+          return {
+            ...fixtures.effectiveSsh,
+            selection: args?.request?.selection,
+          };
         if (command === "select_ssh_alias")
           return {
             configPath:
               args?.request?.configPath || fixtures.discovery.configPath,
             alias: args?.request?.alias,
+            useDefaultConfig: !args?.request?.configPath,
           };
         throw new Error("Unexpected fixture command");
       },
@@ -61,9 +77,26 @@ test("discovery waits for explicit browse and accepts a selected or manual alias
   await expect(
     page.getByRole("status").filter({ hasText: "Selected fixture-host" }),
   ).toContainText("No connection was made");
+  expect(
+    await page.evaluate(() => Reflect.get(window, "discoveryCalls")),
+  ).not.toContain("resolve_ssh_config");
+  await expect(
+    page.getByText("OpenSSH -G evaluates Match", { exact: false }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Resolve selected alias" }).click();
+  await expect(page.getByLabel("Effective SSH configuration")).toContainText(
+    "192.0.2.10",
+  );
+  await expect(page.getByLabel("Effective SSH configuration")).toContainText(
+    "fixture-host",
+  );
+  await expect(page.getByLabel("Effective SSH configuration")).toContainText(
+    "fixture-jump",
+  );
   await page
     .getByLabel("SSH config path", { exact: true })
     .fill("/missing/config");
+  await expect(page.getByLabel("Effective SSH configuration")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Select fixture-host", exact: true }),
   ).toHaveCount(0);

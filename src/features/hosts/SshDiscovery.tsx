@@ -5,10 +5,12 @@ import {
   getSshConfigPath,
   selectSshAlias,
   isConcreteAlias,
+  resolveSshConfig,
   IpcError,
 } from "../../lib/ipc/client";
 import type {
   DiscoveryWarningCode,
+  EffectiveSshConfig,
   HostDiscovery,
   SshSelection,
 } from "../../lib/ipc/generated";
@@ -33,6 +35,7 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
   const [defaultPath, setDefaultPath] = useState<string | null>(null);
   const [alias, setAlias] = useState("");
   const [report, setReport] = useState<HostDiscovery | null>(null);
+  const [resolved, setResolved] = useState<EffectiveSshConfig | null>(null);
   const [selected, setSelected] = useState<SshSelection | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -42,6 +45,7 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
     const request = ++sequence.current;
     setReport(null);
     setSelected(null);
+    setResolved(null);
     setMessage(null);
     if (native)
       getSshConfigPath()
@@ -85,10 +89,12 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
   const discover = () => {
     setReport(null);
     setSelected(null);
+    setResolved(null);
     void execute(() => discoverSshHosts(path || null), setReport);
   };
   const choose = (value: string) => {
     setSelected(null);
+    setResolved(null);
     void execute(() => selectSshAlias(path || null, value), setSelected);
   };
   return (
@@ -134,6 +140,7 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
             setPath(event.target.value);
             setReport(null);
             setSelected(null);
+            setResolved(null);
           }}
         />
         <p className="muted">
@@ -205,6 +212,7 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
           onChange={(event) => {
             setAlias(event.target.value);
             setSelected(null);
+            setResolved(null);
           }}
           aria-describedby="manual-alias-help"
         />
@@ -225,8 +233,76 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
       {selected && (
         <p role="status" className="config-path">
           Selected {selected.alias} from {selected.configPath}. No connection
-          was made. Effective configuration resolution is not available yet.
+          was made.
         </p>
+      )}
+      {selected && (
+        <div>
+          <p className="muted">
+            Resolve only configuration you trust. OpenSSH -G evaluates Match
+            exec and may run local commands. ProxyCommand is trusted executable
+            configuration too; its contents are not displayed. Identity contents
+            are never read by ContainerDesk.
+          </p>
+          <button
+            className="button"
+            type="button"
+            disabled={!native || busy}
+            onClick={() => {
+              setResolved(null);
+              void execute(() => resolveSshConfig(selected), setResolved);
+            }}
+          >
+            Resolve selected alias
+          </button>
+        </div>
+      )}
+      {resolved && (
+        <dl
+          className="diagnostics-facts"
+          aria-label="Effective SSH configuration"
+        >
+          <div>
+            <dt>Original alias</dt>
+            <dd>{resolved.selection.alias}</dd>
+          </div>
+          <div>
+            <dt>Effective host</dt>
+            <dd>{resolved.hostname}</dd>
+          </div>
+          <div>
+            <dt>Remote user</dt>
+            <dd>{resolved.user}</dd>
+          </div>
+          <div>
+            <dt>Port</dt>
+            <dd>{resolved.port}</dd>
+          </div>
+          <div>
+            <dt>Jump hosts</dt>
+            <dd>{resolved.proxyJump ?? "None"}</dd>
+          </div>
+          <div>
+            <dt>ProxyCommand</dt>
+            <dd>
+              {resolved.hasProxyCommand
+                ? "Configured (contents hidden)"
+                : "None"}
+            </dd>
+          </div>
+          <div>
+            <dt>OpenSSH executable</dt>
+            <dd>{resolved.executablePath}</dd>
+          </div>
+          <div>
+            <dt>Config policy</dt>
+            <dd>
+              {resolved.selection.useDefaultConfig
+                ? "Native user and system defaults"
+                : "Explicit user config (-F); system config excluded"}
+            </dd>
+          </div>
+        </dl>
       )}
       {message && <p role="alert">{message}</p>}
     </section>

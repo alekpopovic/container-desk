@@ -19,6 +19,7 @@
     "allow-switch-workspace",
     "allow-get-ssh-config-path",
     "allow-discover-ssh-hosts",
-    "allow-select-ssh-alias"
+    "allow-select-ssh-alias",
+    "allow-resolve-ssh-config"
   ]
 }

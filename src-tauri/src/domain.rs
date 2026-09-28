@@ -125,6 +125,8 @@ pub enum ErrorCode {
     OperationTimedOut,
     InvalidAlias,
     InvalidConfigPath,
+    SshUnavailable,
+    SshResolutionFailed,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -162,6 +164,12 @@ impl AppError {
             ErrorCode::IntentExpired => "This confirmation expired. Review the operation again.",
             ErrorCode::Disconnected => "The connection closed. Reconnect before refreshing.",
             ErrorCode::OperationTimedOut => "The command exceeded its deadline.",
+            ErrorCode::SshUnavailable => {
+                "The selected OpenSSH executable is unavailable or untrusted. Check native dependency settings."
+            }
+            ErrorCode::SshResolutionFailed => {
+                "OpenSSH could not resolve this alias. Check the trusted configuration in your terminal."
+            }
             ErrorCode::InvalidAlias => {
                 "Use a concrete SSH alias: letters, digits, dots, underscores or dashes, starting with a letter or digit (maximum 256 bytes)."
             }
@@ -674,6 +682,7 @@ pub struct SelectSshAliasRequest {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct SshSelection {
+    pub use_default_config: bool,
     pub config_path: String,
     pub alias: String,
 }
@@ -690,4 +699,23 @@ pub enum DiscoveryWarningCode {
     MatchSkipped,
     IncludeCycle,
     LimitReached,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ResolveSshRequest {
+    pub selection: SshSelection,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct EffectiveSshConfig {
+    pub selection: SshSelection,
+    pub executable_path: String,
+    pub hostname: String,
+    pub user: String,
+    pub port: u16,
+    pub proxy_jump: Option<String>,
+    pub has_proxy_command: bool,
 }

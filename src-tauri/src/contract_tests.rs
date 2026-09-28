@@ -102,7 +102,9 @@ fn generated_contract_is_current() {
         DiscoveryWarningCode,
         HostDiscovery,
         SelectSshAliasRequest,
-        SshSelection
+        SshSelection,
+        ResolveSshRequest,
+        EffectiveSshConfig
     );
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/generated.ts"),
@@ -129,6 +131,7 @@ fn serialized_fixtures_are_current() {
         environment_values_masked: true,
     };
     let fixtures = json!({
+        "effectiveSsh": EffectiveSshConfig { selection: SshSelection { alias: "fixture-host".into(), config_path: "/fixture/.ssh/config".into(), use_default_config: false }, executable_path: "/usr/bin/ssh".into(), hostname: "192.0.2.10".into(), user: "fixture-user".into(), port: 2222, proxy_jump: Some("fixture-jump".into()), has_proxy_command: false },
         "discovery": HostDiscovery { config_path: "/fixture/.ssh/config".into(), candidates: vec![SshCandidate { alias: "fixture-host".into(), source: "/fixture/.ssh/config".into(), line: 2 }], warnings: vec![DiscoveryWarning { code: DiscoveryWarningCode::PatternsSkipped, source: "/fixture/.ssh/config".into(), line: Some(3) }] },
         "liveWorkspace": WorkspaceModeSnapshot { mode: WorkspaceMode::Live, scenario: None, scope: None, host: None },
         "confirmationRequest": PrepareConfirmationRequest { scope: scope(), operation: ConfirmationOperation::Mutation(MutationSpec { operation: MutationOperation::Stop, container_ids: vec![ContainerId("a".repeat(64))], timeout_seconds: 10 }) },

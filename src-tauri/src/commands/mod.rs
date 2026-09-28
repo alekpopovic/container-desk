@@ -351,3 +351,11 @@ pub fn select_ssh_alias(
 ) -> Result<SshSelection, AppError> {
     backend.select_alias(request)
 }
+
+#[tauri::command]
+pub async fn resolve_ssh_config(
+    backend: tauri::State<'_, Backend>,
+    request: ResolveSshRequest,
+) -> Result<EffectiveSshConfig, AppError> {
+    backend.resolve_ssh(request).await
+}

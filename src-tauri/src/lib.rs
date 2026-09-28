@@ -38,6 +38,7 @@ pub fn run() {
             commands::get_ssh_config_path,
             commands::discover_ssh_hosts,
             commands::select_ssh_alias,
+            commands::resolve_ssh_config,
             commands::switch_workspace
         ])
         .run(tauri::generate_context!())

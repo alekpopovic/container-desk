@@ -39,10 +39,48 @@ impl Backend {
     pub fn select_alias(&self, request: SelectSshAliasRequest) -> Result<SshSelection, AppError> {
         self.require_live_mode()?;
         crate::ssh::validate_alias(&request.alias)?;
+        let preferences = self.preferences()?.preferences;
+        let configured = request
+            .config_path
+            .as_deref()
+            .or(preferences.trusted_config_path.as_deref());
         Ok(SshSelection {
-            config_path: self.config_path(request.config_path.as_deref())?.path,
+            use_default_config: configured.is_none(),
+            config_path: crate::ssh::discovery::config_path(&self.config_home, configured)?,
             alias: request.alias,
         })
+    }
+    pub async fn resolve_ssh(
+        &self,
+        request: ResolveSshRequest,
+    ) -> Result<EffectiveSshConfig, AppError> {
+        let permit = self
+            .diagnostic_slot
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        self.require_live_mode()?;
+        crate::ssh::validate_alias(&request.selection.alias)?;
+        let path = crate::ssh::discovery::config_path(
+            &self.config_home,
+            Some(&request.selection.config_path),
+        )?;
+        if request.selection.use_default_config
+            && path != crate::ssh::discovery::config_path(&self.config_home, None)?
+        {
+            return Err(AppError::new(ErrorCode::InvalidConfigPath));
+        }
+        let preferences = self.preferences()?.preferences;
+        let executable = preferences
+            .ssh_executable_override
+            .unwrap_or_else(|| crate::diagnostics::DEFAULT_SSH.into());
+        // The owner keeps its permit through bounded completion/reaping even if the IPC caller disappears.
+        tauri::async_runtime::spawn(async move {
+            let _permit = permit;
+            crate::ssh::resolver::resolve(&executable, request.selection).await
+        })
+        .await
+        .map_err(|_| AppError::new(ErrorCode::Internal))?
     }
     pub async fn discover_hosts(
         &self,
@@ -449,6 +487,7 @@ mod tests {
             })
             .unwrap();
         assert_eq!(selected.alias, "manual-wildcard-1");
+        assert!(!selected.use_default_config);
         assert!(backend.list_hosts().unwrap().hosts.is_empty());
         assert_eq!(
             backend
@@ -510,6 +549,56 @@ mod tests {
                     config_path: None,
                     alias: "safe".into()
                 })
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+    }
+
+    #[tokio::test]
+    async fn resolution_rejects_invalid_default_references_and_demo_before_spawn() {
+        let backend = Backend::default();
+        let mut selected = backend
+            .select_alias(SelectSshAliasRequest {
+                config_path: None,
+                alias: "fixture".into(),
+            })
+            .unwrap();
+        assert!(selected.use_default_config);
+        selected.config_path = "/tmp/forged-default-config".into();
+        assert_eq!(
+            backend
+                .resolve_ssh(ResolveSshRequest {
+                    selection: selected.clone()
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::InvalidConfigPath
+        );
+        let permit = backend.diagnostic_slot.try_acquire().unwrap();
+        assert_eq!(
+            backend
+                .resolve_ssh(ResolveSshRequest {
+                    selection: selected.clone()
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::ResourceLimit
+        );
+        drop(permit);
+        backend
+            .switch_workspace(SwitchWorkspaceRequest::Demo {
+                scenario: DemoScenario::Standard,
+            })
+            .unwrap();
+        assert_eq!(
+            backend
+                .resolve_ssh(ResolveSshRequest {
+                    selection: selected
+                })
+                .await
                 .unwrap_err()
                 .code,
             ErrorCode::PermissionDenied
