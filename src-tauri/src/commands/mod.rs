@@ -7,7 +7,7 @@ pub fn app_version(app: tauri::AppHandle) -> AppVersion {
     }
 }
 #[tauri::command]
-pub fn list_hosts(backend: tauri::State<'_, Backend>) -> ListHostsResponse {
+pub fn list_hosts(backend: tauri::State<'_, Backend>) -> Result<ListHostsResponse, AppError> {
     backend.list_hosts()
 }
 #[tauri::command]
@@ -46,7 +46,9 @@ mod tests {
                 list_hosts,
                 connect_host,
                 list_containers,
-                cancel_subscription
+                cancel_subscription,
+                get_preferences,
+                set_theme
             ])
             .build(mock_context(noop_assets()))
             .unwrap();
@@ -88,7 +90,40 @@ mod tests {
         let fixture: Value =
             serde_json::from_str(include_str!("../../../tests/fixtures/ipc.json")).unwrap();
         assert_eq!(error, fixture["error"]);
+        assert_eq!(
+            invoke("get_preferences", json!({})).unwrap(),
+            fixture["preferences"]
+        );
+        let saved = invoke(
+            "set_theme",
+            json!({"request":{"theme":"dark","expectedRevision":0}}),
+        )
+        .unwrap();
+        assert_eq!(saved["preferences"]["theme"], "dark");
+        assert_eq!(saved["preferences"]["revision"], 1);
+        assert_eq!(
+            invoke(
+                "set_theme",
+                json!({"request":{"theme":"light","expectedRevision":0}})
+            )
+            .unwrap_err()["code"],
+            "storage_conflict"
+        );
         assert_eq!(invoke("cancel_subscription", json!({"request":{"scope":crate::contract_tests::scope(),"subscriptionId":"../../socket"}})).unwrap_err()["code"], "invalid_id");
         assert!(invoke("execute", json!({"command":"anything"})).is_err());
     }
+}
+
+#[tauri::command]
+pub fn get_preferences(
+    backend: tauri::State<'_, Backend>,
+) -> Result<PreferencesSnapshot, AppError> {
+    backend.preferences()
+}
+#[tauri::command]
+pub fn set_theme(
+    backend: tauri::State<'_, Backend>,
+    request: SetThemeRequest,
+) -> Result<PreferencesSnapshot, AppError> {
+    backend.set_theme(request)
 }

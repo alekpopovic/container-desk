@@ -1,14 +1,57 @@
-use crate::domain::*;
+use crate::{
+    domain::*,
+    storage::{FileStorage, SettingsStore},
+};
 use std::{collections::HashMap, sync::Mutex};
 
 /// No process launcher exists here. Later transport work must pass these gates.
-#[derive(Default)]
 pub struct Backend {
     sessions: Mutex<HashMap<SessionId, SessionScope>>,
+    settings: Mutex<Result<SettingsStore, AppError>>,
 }
 impl Backend {
-    pub fn list_hosts(&self) -> ListHostsResponse {
-        ListHostsResponse { hosts: vec![] }
+    pub fn new(app_data: &std::path::Path) -> Self {
+        let settings = FileStorage::open(app_data)
+            .map_err(|_| AppError::new(ErrorCode::StorageUnavailable))
+            .and_then(|adapter| SettingsStore::load(Box::new(adapter)));
+        Self {
+            sessions: Mutex::new(HashMap::new()),
+            settings: Mutex::new(settings),
+        }
+    }
+    pub fn preferences(&self) -> Result<PreferencesSnapshot, AppError> {
+        self.settings
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .as_ref()
+            .map(SettingsStore::snapshot)
+            .map_err(Clone::clone)
+    }
+    pub fn set_theme(&self, request: SetThemeRequest) -> Result<PreferencesSnapshot, AppError> {
+        self.settings
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .as_mut()
+            .map_err(|e| e.clone())?
+            .set_theme(request)
+    }
+    pub fn list_hosts(&self) -> Result<ListHostsResponse, AppError> {
+        Ok(ListHostsResponse {
+            hosts: self
+                .preferences()?
+                .preferences
+                .hosts
+                .into_iter()
+                .map(|host| HostSummary {
+                    id: host.id,
+                    alias: host.alias,
+                    display_name: host.display_name,
+                    group: host.group,
+                    read_only: host.read_only,
+                    connection_state: ConnectionState::Disconnected,
+                })
+                .collect(),
+        })
     }
 
     pub fn connect_host(
@@ -16,8 +59,16 @@ impl Backend {
         request: ConnectHostRequest,
     ) -> Result<ConnectHostResponse, AppError> {
         request.selection.validate()?;
-        // Persistence and transport are subsequent increments; never synthesize a connection.
-        Err(AppError::new(ErrorCode::HostNotFound))
+        if !self
+            .preferences()?
+            .preferences
+            .hosts
+            .iter()
+            .any(|host| host.id == request.selection.host_id)
+        {
+            return Err(AppError::new(ErrorCode::HostNotFound));
+        }
+        Err(AppError::new(ErrorCode::FeatureUnavailable))
     }
 
     pub fn require_session(&self, scope: &SessionScope) -> Result<(), AppError> {
@@ -50,6 +101,16 @@ impl Backend {
         request.subscription_id.validate()?;
         self.require_session(&request.scope)?;
         Err(AppError::new(ErrorCode::SubscriptionNotFound).in_scope(&request.scope))
+    }
+}
+
+#[cfg(test)]
+impl Default for Backend {
+    fn default() -> Self {
+        Self {
+            sessions: Mutex::new(HashMap::new()),
+            settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
+        }
     }
 }
 

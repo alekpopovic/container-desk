@@ -1,6 +1,6 @@
 # ContainerDesk project status
 
-Updated 2026-09-28 after prompt 004. The repository now has a working Tauri v2 desktop shell with React, strict TypeScript, Vite and Tailwind. Its backend now has generated Rust/TypeScript domain types and four narrow host/session commands in addition to the version query. The workspace now includes host groups, host identity/status, six resource/settings routes, responsive inventory/details and light/dark themes. Native Linux wide and narrow layouts have been visually inspected.
+Updated 2026-09-28 after prompt 005. The repository now has a working Tauri v2 desktop shell with React, strict TypeScript, Vite and Tailwind. Its backend now has generated Rust/TypeScript domain types and four narrow host/session commands in addition to the version query. The workspace now includes host groups, host identity/status, six resource/settings routes, responsive inventory/details and light/dark themes. Native Linux wide and narrow layouts have been visually inspected.
 
 ## Implemented and verified
 
@@ -33,4 +33,6 @@ Management and terminal remain planned per-host opt-ins enforced in Rust, as spe
 
 Prompt 004 adds validated opaque IDs, scoped requests/responses, structured errors, generated TypeScript/JSON fixtures and stale-result guards. Storage and SSH transport are still unavailable; the new commands report this honestly. See [IPC contract](ipc-contract.md) and [004 evidence](../codex/tracking/evidence/004.md).
 
-Next prompt: **005 — Local settings and host metadata store**. Do not treat this shell as the remote-Docker MVP; checkpoints [018/030/038/046/060](checkpoints.md) still require their actual feature, lab and platform acceptance work.
+Prompt 005 adds private, bounded, versioned settings with atomic writes, backup/recovery, schema migration, file locking and revision checks. Native theme saving and recovery notices are wired through narrow IPC commands. Linux native recovery and theme persistence across restart passed; host editing and connections are still later work. See [settings](settings.md) and [005 evidence](../codex/tracking/evidence/005.md).
+
+Next prompt: **006 — Native dependency diagnostics**. Do not treat this shell as the remote-Docker MVP; checkpoints [018/030/038/046/060](checkpoints.md) still require their actual feature, lab and platform acceptance work.

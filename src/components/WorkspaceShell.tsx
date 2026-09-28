@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { VersionInfo } from "./VersionInfo";
 
-// Presentation-only inputs. Backend host/session models are introduced in 004.
+// Presentation-only inputs; backend identity/authorization is enforced separately.
 export interface DisplayHost {
   name: string;
   alias: string;
@@ -83,10 +83,25 @@ const connectionLabels = {
   error: "Connection error",
 };
 
-export function WorkspaceShell({ state }: { state: WorkspaceState }) {
+export interface WorkspacePreferences {
+  theme: Theme;
+  disabled: boolean;
+  onThemeChange: (theme: Theme) => void;
+  message: string | null;
+  error: boolean;
+}
+export function WorkspaceShell({
+  state,
+  preferences,
+}: {
+  state: WorkspaceState;
+  preferences?: WorkspacePreferences | undefined;
+}) {
   const [route, setRoute] = useState<Route>(readRoute);
   const [group, setGroup] = useState("All hosts");
-  const [theme, setTheme] = useState<Theme>("system");
+  const [previewTheme, setPreviewTheme] = useState<Theme>("system");
+  const theme = preferences?.theme ?? previewTheme;
+  const setTheme = preferences?.onThemeChange ?? setPreviewTheme;
   useEffect(() => {
     const navigate = () => setRoute(readRoute());
     window.addEventListener("hashchange", navigate);
@@ -189,6 +204,14 @@ export function WorkspaceShell({ state }: { state: WorkspaceState }) {
           ))}
         </nav>
         <main id="main-content" tabIndex={-1} aria-labelledby="route-title">
+          {preferences?.message && (
+            <p
+              className="storage-notice"
+              role={preferences.error ? "alert" : "status"}
+            >
+              {preferences.message}
+            </p>
+          )}
           <div className="page-heading">
             <div>
               <p className="eyebrow">
@@ -214,7 +237,11 @@ export function WorkspaceShell({ state }: { state: WorkspaceState }) {
             >
               <div>
                 <h3>Appearance</h3>
-                <p className="muted">Choose a theme for this window.</p>
+                <p className="muted">
+                  {preferences
+                    ? "Your preference is saved on this device."
+                    : "Choose a theme for this window."}
+                </p>
               </div>
               <fieldset>
                 <legend>Theme</legend>
@@ -225,6 +252,7 @@ export function WorkspaceShell({ state }: { state: WorkspaceState }) {
                         type="radio"
                         name="theme"
                         value={choice}
+                        disabled={preferences?.disabled}
                         checked={theme === choice}
                         onChange={() => setTheme(choice)}
                       />

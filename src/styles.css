@@ -637,3 +637,16 @@ legend {
     border-bottom: 1px solid var(--border);
   }
 }
+
+.storage-notice {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: var(--foreground);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.storage-notice[role="alert"] {
+  color: var(--danger);
+  background: var(--danger-soft);
+}

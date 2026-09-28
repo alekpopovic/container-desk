@@ -26,6 +26,10 @@ const messages: Record<ErrorCode, string> = {
   transport_unavailable: "The desktop connection is unavailable.",
   invalid_response: "The desktop returned an invalid response.",
   internal: "The operation could not be completed.",
+  storage_unavailable:
+    "Local settings cannot be saved. The original files were retained.",
+  storage_conflict: "Settings changed. Reload before saving again.",
+  invalid_preferences: "Settings contain invalid or unsupported values.",
 };
 
 export class IpcError extends Error implements AppError {
@@ -238,4 +242,71 @@ export async function cancelSubscription(
   )
     throw new IpcError("stale_session");
   return result as CancelSubscriptionResponse;
+}
+
+function preferencesSnapshot(
+  value: unknown,
+): value is import("./generated.ts").PreferencesSnapshot {
+  if (
+    !record(value) ||
+    !record(value.preferences) ||
+    typeof value.writable !== "boolean" ||
+    (value.notice !== null &&
+      ![
+        "migrated",
+        "recovered_previous",
+        "reset_after_corruption",
+        "unsupported_schema",
+      ].includes(String(value.notice)))
+  )
+    return false;
+  const p = value.preferences;
+  return (
+    p.schemaVersion === 2 &&
+    typeof p.revision === "number" &&
+    Number.isInteger(p.revision) &&
+    p.revision >= 0 &&
+    p.revision <= 0xffffffff &&
+    ["system", "light", "dark"].includes(String(p.theme)) &&
+    (p.selectedHostId === null ||
+      (text(p.selectedHostId, 34) &&
+        /^h_[a-f0-9]{32}$/.test(p.selectedHostId))) &&
+    [p.trustedConfigPath, p.sshExecutableOverride].every(
+      (path) => path === null || text(path, 4096),
+    ) &&
+    Array.isArray(p.hosts) &&
+    p.hosts.length <= 1000 &&
+    p.hosts.every(
+      (host) =>
+        record(host) &&
+        text(host.id, 34) &&
+        /^h_[a-f0-9]{32}$/.test(host.id) &&
+        text(host.alias, 256) &&
+        text(host.displayName, 256) &&
+        text(host.group, 128) &&
+        typeof host.readOnly === "boolean" &&
+        Array.isArray(host.labels) &&
+        host.labels.length <= 32 &&
+        host.labels.every((label) => text(label, 128)),
+    )
+  );
+}
+export async function getPreferences(): Promise<
+  import("./generated.ts").PreferencesSnapshot
+> {
+  const result = await call("get_preferences");
+  if (!preferencesSnapshot(result)) throw new IpcError("invalid_response");
+  return result;
+}
+export async function setTheme(
+  request: import("./generated.ts").SetThemeRequest,
+): Promise<import("./generated.ts").PreferencesSnapshot> {
+  const result = await call("set_theme", request);
+  if (
+    !preferencesSnapshot(result) ||
+    result.preferences.theme !== request.theme ||
+    result.preferences.revision !== request.expectedRevision + 1
+  )
+    throw new IpcError("invalid_response");
+  return result;
 }

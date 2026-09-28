@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T17:53:19+00:00
+Updated: 2026-09-28T18:08:34+00:00
 
-blocked: **0** | done: **4** | in_progress: **0** | pending: **56**
+blocked: **0** | done: **5** | in_progress: **0** | pending: **55**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -14,7 +14,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 002 | 01 Foundations | Tauri React TypeScript scaffold | medium | done | codex/tracking/evidence/002.md |
 | 003 | 01 Foundations | Application layout and design tokens | medium | done | codex/tracking/evidence/003.md |
 | 004 | 01 Foundations | Typed domain models and IPC boundary | high | done | codex/tracking/evidence/004.md |
-| 005 | 01 Foundations | Local settings and host metadata store | high | pending | — |
+| 005 | 01 Foundations | Local settings and host metadata store | high | done | codex/tracking/evidence/005.md |
 | 006 | 01 Foundations | Native dependency diagnostics | medium | pending | — |
 | 007 | 01 Foundations | Backend operation policy and command registry | high | pending | — |
 | 008 | 01 Foundations | Synthetic fixtures and offline development mode | medium | pending | — |
@@ -81,3 +81,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T17:38:23+00:00 — 003: done; npm run check: PASS; strict TypeScript, lint, formatting and 3 IPC tests; npm run test:ui: 18 passed in light/dark at 1280x800, 800x700 and 640x480; routes, keyboard, contrast and synthetic states checked; npm run desktop:build: PASS; native wide and verified narrower Linux windows visually inspected and captured; owned processes reaped; Production fixture exclusion, documentation links, tracker integrity and git diff --check: PASS; platform/fixture limits recorded
 - 2026-09-28T17:44:11+00:00 — 004: start;
 - 2026-09-28T17:53:19+00:00 — 004: done; 5 Rust tests, 9 Node IPC tests, strict frontend checks, Clippy and native Linux release build passed
+- 2026-09-28T17:53:46+00:00 — 005: start;
+- 2026-09-28T18:08:34+00:00 — 005: done; 12 Rust tests, 10 IPC tests, 30 browser checks, Clippy, Linux release build and actual native settings recovery/save/restart passed

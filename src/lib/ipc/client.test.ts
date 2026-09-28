@@ -8,6 +8,8 @@ import {
   listContainers,
   cancelSubscription,
   IpcError,
+  getPreferences,
+  setTheme,
 } from "./client.ts";
 import type { SessionScope } from "./generated.ts";
 
@@ -167,4 +169,31 @@ test("late errors cannot replace the state of a newly selected host", async () =
     connectHost({ selection: expected.selection }, () => null),
     { code: "stale_session" },
   );
+});
+
+test("preferences fixture and theme save preserve revision and reject invalid replies", async () => {
+  mockIPC((command, args) => {
+    if (command === "get_preferences") return fixtures.preferences;
+    assert.equal(command, "set_theme");
+    assert.deepEqual(args, { request: { theme: "dark", expectedRevision: 0 } });
+    return {
+      ...fixtures.preferences,
+      preferences: {
+        ...fixtures.preferences.preferences,
+        theme: "dark",
+        revision: 1,
+      },
+    };
+  });
+  assert.deepEqual(await getPreferences(), fixtures.preferences);
+  assert.equal(
+    (await setTheme({ theme: "dark", expectedRevision: 0 })).preferences.theme,
+    "dark",
+  );
+  mockIPC(() => fixtures.preferences);
+  await assert.rejects(setTheme({ theme: "dark", expectedRevision: 0 }), {
+    code: "invalid_response",
+  });
+  mockIPC(() => ({ preferences: { theme: "impossible" } }));
+  await assert.rejects(getPreferences(), { code: "invalid_response" });
 });

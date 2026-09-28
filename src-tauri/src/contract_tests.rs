@@ -58,7 +58,13 @@ fn generated_contract_is_current() {
         ListContainersResponse,
         CancelSubscriptionRequest,
         CancelSubscriptionResponse,
-        AppVersion
+        AppVersion,
+        Theme,
+        SavedHost,
+        Preferences,
+        StorageNotice,
+        PreferencesSnapshot,
+        SetThemeRequest
     );
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/generated.ts"),
@@ -83,6 +89,7 @@ fn serialized_fixtures_are_current() {
         environment_values_masked: true,
     };
     let fixtures = json!({
+        "preferences": PreferencesSnapshot { preferences: Preferences::default(), notice: None, writable: true },
         "success": ListContainersResponse { scope: scope(), containers: vec![summary] },
         "detail": detail,
         "error": AppError::new(ErrorCode::SessionNotFound).in_scope(&scope()),

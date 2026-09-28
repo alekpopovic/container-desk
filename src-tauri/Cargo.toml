@@ -19,6 +19,8 @@ tokio = { version = "=1.53.1", features = ["rt-multi-thread", "process", "io-uti
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.151"
 
+libc = "=0.2.189"
+
 [dev-dependencies]
 ts-rs = "=12.0.1"
 tauri = { version = "=2.12.0", features = ["test"] }

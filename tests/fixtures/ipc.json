@@ -64,6 +64,19 @@
       }
     ]
   },
+  "preferences": {
+    "notice": null,
+    "preferences": {
+      "hosts": [],
+      "revision": 0,
+      "schemaVersion": 2,
+      "selectedHostId": null,
+      "sshExecutableOverride": null,
+      "theme": "system",
+      "trustedConfigPath": null
+    },
+    "writable": true
+  },
   "success": {
     "containers": [
       {

@@ -114,6 +114,9 @@ pub enum ErrorCode {
     TransportUnavailable,
     InvalidResponse,
     Internal,
+    StorageUnavailable,
+    StorageConflict,
+    InvalidPreferences,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -139,6 +142,11 @@ impl AppError {
             ErrorCode::TransportUnavailable => "The desktop connection is unavailable.",
             ErrorCode::InvalidResponse => "The desktop returned an invalid response.",
             ErrorCode::Internal => "The operation could not be completed.",
+            ErrorCode::StorageUnavailable => {
+                "Local settings cannot be saved. The original files were retained."
+            }
+            ErrorCode::StorageConflict => "Settings changed. Reload before saving again.",
+            ErrorCode::InvalidPreferences => "Settings contain invalid or unsupported values.",
         };
         Self {
             code,
@@ -255,4 +263,78 @@ pub struct CancelSubscriptionResponse {
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct AppVersion {
     pub version: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum Theme {
+    #[default]
+    System,
+    Light,
+    Dark,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SavedHost {
+    pub id: HostId,
+    pub alias: String,
+    pub display_name: String,
+    pub group: String,
+    pub labels: Vec<String>,
+    pub read_only: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct Preferences {
+    pub schema_version: u32,
+    pub revision: u32,
+    pub theme: Theme,
+    pub selected_host_id: Option<HostId>,
+    pub hosts: Vec<SavedHost>,
+    /// References only. The app never copies SSH config/key contents.
+    pub trusted_config_path: Option<String>,
+    pub ssh_executable_override: Option<String>,
+}
+impl Default for Preferences {
+    fn default() -> Self {
+        Self {
+            schema_version: 2,
+            revision: 0,
+            theme: Theme::System,
+            selected_host_id: None,
+            hosts: vec![],
+            trusted_config_path: None,
+            ssh_executable_override: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum StorageNotice {
+    Migrated,
+    RecoveredPrevious,
+    ResetAfterCorruption,
+    UnsupportedSchema,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct PreferencesSnapshot {
+    pub preferences: Preferences,
+    pub notice: Option<StorageNotice>,
+    pub writable: bool,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SetThemeRequest {
+    pub expected_revision: u32,
+    pub theme: Theme,
 }

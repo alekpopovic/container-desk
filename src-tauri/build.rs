@@ -6,6 +6,8 @@ fn main() {
             "connect_host",
             "list_containers",
             "cancel_subscription",
+            "get_preferences",
+            "set_theme",
         ]),
     ))
     .expect("failed to build ContainerDesk application context");
