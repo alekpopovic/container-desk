@@ -1,6 +1,6 @@
 # ContainerDesk project status
 
-Updated 2026-09-28 after prompt 005. The repository now has a working Tauri v2 desktop shell with React, strict TypeScript, Vite and Tailwind. Its backend now has generated Rust/TypeScript domain types and four narrow host/session commands in addition to the version query. The workspace now includes host groups, host identity/status, six resource/settings routes, responsive inventory/details and light/dark themes. Native Linux wide and narrow layouts have been visually inspected.
+Updated 2026-09-28 after prompt 006. The repository now has a working Tauri v2 desktop shell with React, strict TypeScript, Vite and Tailwind. Its backend now has generated Rust/TypeScript domain types and four narrow host/session commands in addition to the version query. The workspace now includes host groups, host identity/status, six resource/settings routes, responsive inventory/details and light/dark themes. Native Linux wide and narrow layouts have been visually inspected.
 
 ## Implemented and verified
 
@@ -35,4 +35,6 @@ Prompt 004 adds validated opaque IDs, scoped requests/responses, structured erro
 
 Prompt 005 adds private, bounded, versioned settings with atomic writes, backup/recovery, schema migration, file locking and revision checks. Native theme saving and recovery notices are wired through narrow IPC commands. Linux native recovery and theme persistence across restart passed; host editing and connections are still later work. See [settings](settings.md) and [005 evidence](../codex/tracking/evidence/005.md).
 
-Next prompt: **006 — Native dependency diagnostics**. Do not treat this shell as the remote-Docker MVP; checkpoints [018/030/038/046/060](checkpoints.md) still require their actual feature, lab and platform acceptance work.
+Prompt 006 adds actual native OpenSSH/agent diagnostics and a validated executable override. Linux native diagnostics passed with PATH=/nonexistent; the view showed real OpenSSH version, linux/x86_64, app 0.1.0 and absent-agent guidance. Probes have bounded output/time and one concurrent slot. An inherited-descriptor storage-lock race was fixed and regression-tested. See [native dependencies](native-dependencies.md) and [006 evidence](../codex/tracking/evidence/006.md).
+
+Next prompt: **007 — SSH config alias discovery**. Do not treat this shell as the remote-Docker MVP; checkpoints [018/030/038/046/060](checkpoints.md) still require their actual feature, lab and platform acceptance work.

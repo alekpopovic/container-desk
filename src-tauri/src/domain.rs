@@ -338,3 +338,67 @@ pub struct SetThemeRequest {
     pub expected_revision: u32,
     pub theme: Theme,
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum SshStatus {
+    Ready,
+    Missing,
+    NotExecutable,
+    Untrusted,
+    Failed,
+    TimedOut,
+    OutputLimit,
+    InvalidVersion,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SshDiagnostic {
+    pub path: String,
+    pub status: SshStatus,
+    pub version: Option<String>,
+    pub message: String,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum AgentStatus {
+    Unset,
+    Missing,
+    NotSocket,
+    Inaccessible,
+    Reachable,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct AgentDiagnostic {
+    pub status: AgentStatus,
+    pub message: String,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct DependencyDiagnostics {
+    pub app_version: String,
+    pub platform: String,
+    pub architecture: String,
+    pub ssh: SshDiagnostic,
+    pub agent: AgentDiagnostic,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SetSshExecutableRequest {
+    pub expected_revision: u32,
+    pub path: Option<String>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SetSshExecutableResponse {
+    pub preferences: Option<PreferencesSnapshot>,
+    pub ssh: SshDiagnostic,
+}

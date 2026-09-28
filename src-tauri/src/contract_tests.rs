@@ -64,7 +64,14 @@ fn generated_contract_is_current() {
         Preferences,
         StorageNotice,
         PreferencesSnapshot,
-        SetThemeRequest
+        SetThemeRequest,
+        SshStatus,
+        SshDiagnostic,
+        AgentStatus,
+        AgentDiagnostic,
+        DependencyDiagnostics,
+        SetSshExecutableRequest,
+        SetSshExecutableResponse
     );
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/generated.ts"),
@@ -89,6 +96,7 @@ fn serialized_fixtures_are_current() {
         environment_values_masked: true,
     };
     let fixtures = json!({
+        "diagnostics": DependencyDiagnostics { app_version: "0.1.0".into(), platform: "linux".into(), architecture: "x86_64".into(), ssh: SshDiagnostic { path: "/usr/bin/ssh".into(), status: SshStatus::Ready, version: Some("OpenSSH_fixture".into()), message: "OpenSSH is available.".into() }, agent: AgentDiagnostic { status: AgentStatus::Unset, message: "SSH_AUTH_SOCK is not set. Existing configured keys may still work.".into() } },
         "preferences": PreferencesSnapshot { preferences: Preferences::default(), notice: None, writable: true },
         "success": ListContainersResponse { scope: scope(), containers: vec![summary] },
         "detail": detail,

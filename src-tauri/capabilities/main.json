@@ -10,6 +10,8 @@
     "allow-list-containers",
     "allow-cancel-subscription",
     "allow-get-preferences",
-    "allow-set-theme"
+    "allow-set-theme",
+    "allow-dependency-diagnostics",
+    "allow-set-ssh-executable"
   ]
 }

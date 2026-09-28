@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T18:08:34+00:00",
+  "updated_at": "2026-09-28T18:23:17+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -171,6 +171,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T18:09:22+00:00",
+      "id": "006",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T18:23:17+00:00",
+      "id": "006",
+      "action": "done",
+      "note": "18 Rust tests, 11 IPC tests, 36 browser tests, Clippy and native minimal-PATH diagnostics passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T18:09:22+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -244,12 +278,14 @@
       "note": ""
     },
     "006": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T18:09:22+00:00",
+      "finished_at": "2026-09-28T18:23:17+00:00",
+      "evidence": "codex/tracking/evidence/006.md",
+      "evidence_sha256": "8b0604bcd39035dedaea3cb0115287a2250ba6bdd2c7776bc7a0bb6a5d00a4ff",
+      "checks": [
+        "18 Rust tests, 11 IPC tests, 36 browser tests, Clippy and native minimal-PATH diagnostics passed"
+      ],
       "commit": "",
       "note": ""
     },

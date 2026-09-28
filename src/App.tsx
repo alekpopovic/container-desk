@@ -1,5 +1,6 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
+import { DependencyDiagnostics } from "./components/DependencyDiagnostics";
 import { WorkspaceShell } from "./components/WorkspaceShell";
 import { getPreferences, setTheme, IpcError } from "./lib/ipc/client";
 import type {
@@ -75,6 +76,9 @@ export default function App() {
   return (
     <WorkspaceShell
       state={{ kind: "empty" }}
+      settingsExtra={
+        <DependencyDiagnostics preferences={snapshot} onSaved={setSnapshot} />
+      }
       preferences={
         native
           ? {

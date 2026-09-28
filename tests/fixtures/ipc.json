@@ -39,6 +39,21 @@
       "status": "Up"
     }
   },
+  "diagnostics": {
+    "agent": {
+      "message": "SSH_AUTH_SOCK is not set. Existing configured keys may still work.",
+      "status": "unset"
+    },
+    "appVersion": "0.1.0",
+    "architecture": "x86_64",
+    "platform": "linux",
+    "ssh": {
+      "message": "OpenSSH is available.",
+      "path": "/usr/bin/ssh",
+      "status": "ready",
+      "version": "OpenSSH_fixture"
+    }
+  },
   "error": {
     "code": "session_not_found",
     "message": "Connection session does not exist.",

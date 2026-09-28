@@ -310,3 +310,63 @@ export async function setTheme(
     throw new IpcError("invalid_response");
   return result;
 }
+
+function sshDiagnostic(
+  value: unknown,
+): value is import("./generated.ts").SshDiagnostic {
+  return (
+    record(value) &&
+    text(value.path, 4096) &&
+    text(value.message) &&
+    (value.version === null || text(value.version, 512)) &&
+    [
+      "ready",
+      "missing",
+      "not_executable",
+      "untrusted",
+      "failed",
+      "timed_out",
+      "output_limit",
+      "invalid_version",
+    ].includes(String(value.status))
+  );
+}
+export async function getDependencyDiagnostics(): Promise<
+  import("./generated.ts").DependencyDiagnostics
+> {
+  const result = await call("dependency_diagnostics");
+  if (
+    !record(result) ||
+    !text(result.appVersion, 128) ||
+    !text(result.platform, 64) ||
+    !text(result.architecture, 64) ||
+    !sshDiagnostic(result.ssh) ||
+    !record(result.agent) ||
+    !text(result.agent.message) ||
+    !["unset", "missing", "not_socket", "inaccessible", "reachable"].includes(
+      String(result.agent.status),
+    )
+  )
+    throw new IpcError("invalid_response");
+  return result as import("./generated.ts").DependencyDiagnostics;
+}
+export async function setSshExecutable(
+  request: import("./generated.ts").SetSshExecutableRequest,
+): Promise<import("./generated.ts").SetSshExecutableResponse> {
+  const result = await call("set_ssh_executable", request);
+  if (
+    !record(result) ||
+    !sshDiagnostic(result.ssh) ||
+    (result.preferences !== null && !preferencesSnapshot(result.preferences))
+  )
+    throw new IpcError("invalid_response");
+  if (
+    result.preferences !== null &&
+    (result.ssh.status !== "ready" ||
+      result.preferences.preferences.revision !==
+        request.expectedRevision + 1 ||
+      result.preferences.preferences.sshExecutableOverride !== request.path)
+  )
+    throw new IpcError("invalid_response");
+  return result as import("./generated.ts").SetSshExecutableResponse;
+}

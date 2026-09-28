@@ -8,6 +8,8 @@ import {
   listContainers,
   cancelSubscription,
   IpcError,
+  getDependencyDiagnostics,
+  setSshExecutable,
   getPreferences,
   setTheme,
 } from "./client.ts";
@@ -196,4 +198,36 @@ test("preferences fixture and theme save preserve revision and reject invalid re
   });
   mockIPC(() => ({ preferences: { theme: "impossible" } }));
   await assert.rejects(getPreferences(), { code: "invalid_response" });
+});
+
+test("diagnostics deserialize Rust fixture and rejected executable overrides do not fake a save", async () => {
+  mockIPC((command, args) => {
+    if (command === "dependency_diagnostics") return fixtures.diagnostics;
+    assert.equal(command, "set_ssh_executable");
+    assert.deepEqual(args, {
+      request: { expectedRevision: 0, path: "/missing/ssh" },
+    });
+    return {
+      preferences: null,
+      ssh: {
+        path: "/missing/ssh",
+        status: "missing",
+        version: null,
+        message: "SSH was not found.",
+      },
+    };
+  });
+  assert.equal(
+    (await getDependencyDiagnostics()).ssh.version,
+    "OpenSSH_fixture",
+  );
+  assert.equal(
+    (await setSshExecutable({ expectedRevision: 0, path: "/missing/ssh" }))
+      .preferences,
+    null,
+  );
+  mockIPC(() => ({ ssh: { status: "invented" } }));
+  await assert.rejects(getDependencyDiagnostics(), {
+    code: "invalid_response",
+  });
 });

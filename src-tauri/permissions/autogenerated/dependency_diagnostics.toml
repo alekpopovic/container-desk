@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-dependency-diagnostics"
+description = "Enables the dependency_diagnostics command without any pre-configured scope."
+commands.allow = ["dependency_diagnostics"]
+
+[[permission]]
+identifier = "deny-dependency-diagnostics"
+description = "Denies the dependency_diagnostics command without any pre-configured scope."
+commands.deny = ["dependency_diagnostics"]

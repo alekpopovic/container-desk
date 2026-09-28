@@ -4,10 +4,11 @@ use crate::{
 };
 use std::{collections::HashMap, sync::Mutex};
 
-/// No process launcher exists here. Later transport work must pass these gates.
+/// Resource operations remain behind identity gates. Local version probes are separately bounded.
 pub struct Backend {
     sessions: Mutex<HashMap<SessionId, SessionScope>>,
     settings: Mutex<Result<SettingsStore, AppError>>,
+    diagnostic_slot: tokio::sync::Semaphore,
 }
 impl Backend {
     pub fn new(app_data: &std::path::Path) -> Self {
@@ -17,6 +18,7 @@ impl Backend {
         Self {
             sessions: Mutex::new(HashMap::new()),
             settings: Mutex::new(settings),
+            diagnostic_slot: tokio::sync::Semaphore::new(1),
         }
     }
     pub fn preferences(&self) -> Result<PreferencesSnapshot, AppError> {
@@ -35,6 +37,69 @@ impl Backend {
             .map_err(|e| e.clone())?
             .set_theme(request)
     }
+    pub async fn diagnostics(&self) -> Result<DependencyDiagnostics, AppError> {
+        let _permit = self
+            .diagnostic_slot
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let preferences = self.preferences()?;
+        let path = preferences
+            .preferences
+            .ssh_executable_override
+            .as_deref()
+            .unwrap_or(crate::diagnostics::DEFAULT_SSH);
+        let socket = std::env::var_os("SSH_AUTH_SOCK").map(std::path::PathBuf::from);
+        let (ssh, agent) = tokio::join!(
+            crate::diagnostics::inspect_ssh(path),
+            crate::diagnostics::inspect_agent(socket.as_deref())
+        );
+        Ok(DependencyDiagnostics {
+            app_version: env!("CARGO_PKG_VERSION").into(),
+            platform: std::env::consts::OS.into(),
+            architecture: std::env::consts::ARCH.into(),
+            ssh,
+            agent,
+        })
+    }
+    pub async fn set_ssh_executable(
+        &self,
+        request: SetSshExecutableRequest,
+    ) -> Result<SetSshExecutableResponse, AppError> {
+        let _permit = self
+            .diagnostic_slot
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let mut preferences = self.preferences()?.preferences;
+        if preferences.revision != request.expected_revision {
+            return Err(AppError::new(ErrorCode::StorageConflict));
+        }
+        let ssh = crate::diagnostics::inspect_ssh(
+            request
+                .path
+                .as_deref()
+                .unwrap_or(crate::diagnostics::DEFAULT_SSH),
+        )
+        .await;
+        if ssh.status != SshStatus::Ready {
+            return Ok(SetSshExecutableResponse {
+                preferences: None,
+                ssh,
+            });
+        }
+        preferences.ssh_executable_override = request.path;
+        let saved = self
+            .settings
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .as_mut()
+            .map_err(|e| e.clone())?
+            .replace(preferences, request.expected_revision)?;
+        Ok(SetSshExecutableResponse {
+            preferences: Some(saved),
+            ssh,
+        })
+    }
+
     pub fn list_hosts(&self) -> Result<ListHostsResponse, AppError> {
         Ok(ListHostsResponse {
             hosts: self
@@ -110,6 +175,7 @@ impl Default for Backend {
         Self {
             sessions: Mutex::new(HashMap::new()),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
+            diagnostic_slot: tokio::sync::Semaphore::new(1),
         }
     }
 }
@@ -118,6 +184,54 @@ impl Default for Backend {
 mod tests {
     use super::*;
     use crate::contract_tests::scope;
+
+    #[tokio::test]
+    async fn diagnostics_are_single_flight_and_invalid_override_is_not_persisted() {
+        let backend = Backend::default();
+        let permit = backend.diagnostic_slot.try_acquire().unwrap();
+        assert_eq!(
+            backend.diagnostics().await.unwrap_err().code,
+            ErrorCode::ResourceLimit
+        );
+        assert_eq!(
+            backend
+                .set_ssh_executable(SetSshExecutableRequest {
+                    expected_revision: 0,
+                    path: None
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::ResourceLimit
+        );
+        drop(permit);
+        let result = backend
+            .set_ssh_executable(SetSshExecutableRequest {
+                expected_revision: 0,
+                path: Some("relative/ssh".into()),
+            })
+            .await
+            .unwrap();
+        assert_eq!(result.ssh.status, SshStatus::Untrusted);
+        assert!(result.preferences.is_none());
+        assert_eq!(backend.preferences().unwrap().preferences.revision, 0);
+        let saved = backend
+            .set_ssh_executable(SetSshExecutableRequest {
+                expected_revision: 0,
+                path: Some("/usr/bin/ssh".into()),
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            saved
+                .preferences
+                .unwrap()
+                .preferences
+                .ssh_executable_override
+                .as_deref(),
+            Some("/usr/bin/ssh")
+        );
+    }
 
     #[test]
     fn rejects_invalid_ids_before_session_lookup() {

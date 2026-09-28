@@ -650,3 +650,45 @@ legend {
   color: var(--danger);
   background: var(--danger-soft);
 }
+
+.diagnostics-panel {
+  display: grid;
+  gap: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+.diagnostics-panel form {
+  display: grid;
+  gap: 12px;
+}
+.diagnostics-panel input[type="text"] {
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--foreground);
+  font: inherit;
+}
+.diagnostics-panel p,
+.diagnostics-facts dd {
+  overflow-wrap: anywhere;
+}
+.diagnostics-facts {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+.diagnostics-facts dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.diagnostics-facts dd {
+  margin: 4px 0 0;
+}
+.diagnostic-result {
+  border-left: 3px solid var(--accent);
+  padding: 8px 16px;
+  background: var(--canvas);
+}

@@ -127,3 +127,17 @@ pub fn set_theme(
 ) -> Result<PreferencesSnapshot, AppError> {
     backend.set_theme(request)
 }
+
+#[tauri::command]
+pub async fn dependency_diagnostics(
+    backend: tauri::State<'_, Backend>,
+) -> Result<DependencyDiagnostics, AppError> {
+    backend.diagnostics().await
+}
+#[tauri::command]
+pub async fn set_ssh_executable(
+    backend: tauri::State<'_, Backend>,
+    request: SetSshExecutableRequest,
+) -> Result<SetSshExecutableResponse, AppError> {
+    backend.set_ssh_executable(request).await
+}

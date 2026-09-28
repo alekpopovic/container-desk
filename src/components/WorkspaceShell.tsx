@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { VersionInfo } from "./VersionInfo";
 
 // Presentation-only inputs; backend identity/authorization is enforced separately.
@@ -93,9 +93,11 @@ export interface WorkspacePreferences {
 export function WorkspaceShell({
   state,
   preferences,
+  settingsExtra,
 }: {
   state: WorkspaceState;
   preferences?: WorkspacePreferences | undefined;
+  settingsExtra?: ReactNode;
 }) {
   const [route, setRoute] = useState<Route>(readRoute);
   const [group, setGroup] = useState("All hosts");
@@ -267,6 +269,7 @@ export function WorkspaceShell({
                   ))}
                 </div>
               </fieldset>
+              {settingsExtra}
               <div className="settings-note">
                 <h3>Connections & permissions</h3>
                 <p className="muted">

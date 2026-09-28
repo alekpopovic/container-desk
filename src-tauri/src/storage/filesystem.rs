@@ -154,3 +154,38 @@ impl Storage for FileStorage {
         self.atomic_write("settings.json", current)
     }
 }
+
+impl Drop for FileStorage {
+    fn drop(&mut self) {
+        // Release ownership now, including the brief fork-before-exec window in another thread.
+        // Relying only on close can leave flock held by a just-forked child's inherited descriptor.
+        // SAFETY: the lock File still owns a valid descriptor while this destructor runs.
+        unsafe {
+            libc::flock(self._lock.as_raw_fd(), libc::LOCK_UN);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn owner_drop_releases_lock_even_while_an_inherited_descriptor_exists() {
+        let path = std::env::temp_dir().join(format!(
+            "containerdesk-lock-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir(&path).unwrap();
+        let store = FileStorage::open(&path).unwrap();
+        let inherited = store._lock.try_clone().unwrap();
+        drop(store);
+        let reopened = FileStorage::open(&path).unwrap();
+        drop(reopened);
+        drop(inherited);
+        fs::remove_dir_all(path).unwrap();
+    }
+}

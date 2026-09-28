@@ -8,6 +8,8 @@ fn main() {
             "cancel_subscription",
             "get_preferences",
             "set_theme",
+            "dependency_diagnostics",
+            "set_ssh_executable",
         ]),
     ))
     .expect("failed to build ContainerDesk application context");
