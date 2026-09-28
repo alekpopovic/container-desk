@@ -127,7 +127,7 @@ def render(manifest, state):
         lines.append(f'| {task["id"]} | {clean(task["phase"])} | {clean(task["title"])} | {task["reasoning"]} | {row["status"]} | {clean(evidence)} |')
     lines += ["", "## History", ""]
     for event in state["history"]:
-        lines.append(f'- {event["at"]} — {event["id"]}: {event["action"]}; {clean(event.get("note", ""))}')
+        lines.append(f'- {event["at"]} — {event["id"]}: {event["action"]}; {clean(event.get("note", ""))}'.rstrip())
     atomic_write(TRACK / "TRACKER.md", "\n".join(lines) + "\n")
 
 

@@ -1,1 +1,7 @@
 codex/tracking/.tracker.lock
+**/__pycache__/
+*.pyc
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/

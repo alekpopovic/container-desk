@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T15:48:31+00:00
+Updated: 2026-09-28T17:09:10+00:00
 
-blocked: **0** | done: **0** | in_progress: **0** | pending: **60**
+blocked: **0** | done: **1** | in_progress: **0** | pending: **59**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -10,7 +10,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 
 | ID | Phase | Task | Reasoning | Status | Evidence |
 |---|---|---|---|---|---|
-| 001 | 01 Foundations | Repository audit and implementation contract | high | pending | — |
+| 001 | 01 Foundations | Repository audit and implementation contract | high | done | codex/tracking/evidence/001.md |
 | 002 | 01 Foundations | Tauri React TypeScript scaffold | medium | pending | — |
 | 003 | 01 Foundations | Application layout and design tokens | medium | pending | — |
 | 004 | 01 Foundations | Typed domain models and IPC boundary | high | pending | — |
@@ -73,3 +73,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 
 ## History
 
+- 2026-09-28T16:55:10+00:00 — 001: start;
+- 2026-09-28T17:09:10+00:00 — 001: done; npm ci --ignore-scripts and npm ls --depth=0: PASS with Node 24.21.0/npm 11.19.0; 11 exact direct pins; cargo generate-lockfile, locked offline metadata and fmt --check: PASS with Rust 1.98.1; no native compilation claimed; python3 -m unittest discover -s codex/tests -v: 14 tests passed after tracker renderer whitespace fix; Manifest/lock/toolchain consistency, architecture review, local Markdown links, tracker validate and git diff --check: PASS; native/platform limits recorded

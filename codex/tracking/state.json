@@ -1,15 +1,55 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T15:48:31+00:00",
-  "history": [],
+  "updated_at": "2026-09-28T17:09:10+00:00",
+  "history": [
+    {
+      "at": "2026-09-28T16:55:10+00:00",
+      "id": "001",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T17:09:10+00:00",
+      "id": "001",
+      "action": "done",
+      "note": "npm ci --ignore-scripts and npm ls --depth=0: PASS with Node 24.21.0/npm 11.19.0; 11 exact direct pins; cargo generate-lockfile, locked offline metadata and fmt --check: PASS with Rust 1.98.1; no native compilation claimed; python3 -m unittest discover -s codex/tests -v: 14 tests passed after tracker renderer whitespace fix; Manifest/lock/toolchain consistency, architecture review, local Markdown links, tracker validate and git diff --check: PASS; native/platform limits recorded",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T16:55:10+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    }
+  ],
   "tasks": {
     "001": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T16:55:10+00:00",
+      "finished_at": "2026-09-28T17:09:10+00:00",
+      "evidence": "codex/tracking/evidence/001.md",
+      "evidence_sha256": "ed3770616e5a286253f4398dba0395afcf172097b6667bd2796b71d10d025779",
+      "checks": [
+        "npm ci --ignore-scripts and npm ls --depth=0: PASS with Node 24.21.0/npm 11.19.0; 11 exact direct pins",
+        "cargo generate-lockfile, locked offline metadata and fmt --check: PASS with Rust 1.98.1; no native compilation claimed",
+        "python3 -m unittest discover -s codex/tests -v: 14 tests passed after tracker renderer whitespace fix",
+        "Manifest/lock/toolchain consistency, architecture review, local Markdown links, tracker validate and git diff --check: PASS; native/platform limits recorded"
+      ],
       "commit": "",
       "note": ""
     },
