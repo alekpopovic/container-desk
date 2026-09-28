@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T17:09:10+00:00",
+  "updated_at": "2026-09-28T17:22:30+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -35,6 +35,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T17:10:13+00:00",
+      "id": "002",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T17:22:30+00:00",
+      "id": "002",
+      "action": "done",
+      "note": "npm run check and npm run build: PASS; strict TypeScript, Biome, 3 IPC tests and production Vite build; cargo check --locked, Clippy all targets with -D warnings, and Rust formatting: PASS with installed GTK/WebKitGTK libraries; npm run desktop:build: PASS; real Linux release window captured showing Rust-provided Version 0.1.0 after process-local Snap environment cleanup; Generated local main-window ACL and 13 npm pins verified; tracker validate, Markdown links and git diff --check passed; other native platforms unverified",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T17:10:13+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -54,12 +88,17 @@
       "note": ""
     },
     "002": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T17:10:13+00:00",
+      "finished_at": "2026-09-28T17:22:30+00:00",
+      "evidence": "codex/tracking/evidence/002.md",
+      "evidence_sha256": "81fc8faf79eb938e56627a5ecd4c50e18f36aff20257205a0c7bfdbc77ce6195",
+      "checks": [
+        "npm run check and npm run build: PASS; strict TypeScript, Biome, 3 IPC tests and production Vite build",
+        "cargo check --locked, Clippy all targets with -D warnings, and Rust formatting: PASS with installed GTK/WebKitGTK libraries",
+        "npm run desktop:build: PASS; real Linux release window captured showing Rust-provided Version 0.1.0 after process-local Snap environment cleanup",
+        "Generated local main-window ACL and 13 npm pins verified; tracker validate, Markdown links and git diff --check passed; other native platforms unverified"
+      ],
       "commit": "",
       "note": ""
     },

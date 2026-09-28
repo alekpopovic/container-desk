@@ -37,7 +37,7 @@ The official crates.io HTTP API was unavailable during the audit; version metada
 
 React/React DOM and their types share 19.3.0. Vite 8.3.1 and React plugin 6.1.1 satisfy the plugin's Vite 8 peer range. The Tailwind Vite plugin 4.3.3 accepts Vite 8. Node 24.21.0 satisfies the selected Vite/plugin Node requirement (`^20.19.0 || >=22.12.0`). Tauri Rust/API/CLI use v2; tauri-build has its own release version (2.7.0). Rust 1.98.1 exceeds the direct dependencies' declared compiler minimums. Dependency resolution must still be followed by frontend compilation, native compilation and runtime checks in subsequent prompts.
 
-Terminal PTY/xterm dependencies and lint/test tooling are intentionally selected and locked when their prompts introduce them. Avoid unused plugins and capabilities. The documentation-only Rust library exists solely to make the dependency manifest a valid Cargo package; it is not a native application.
+Terminal PTY/xterm dependencies are selected and locked when their prompts introduce them. Prompt 002 adds Biome 2.5.14 and @types/node 24.19.0, and uses the built-in Node test runner. Avoid unused plugins and capabilities. Prompt 001 initially used a documentation-only Rust target for dependency resolution. Prompt 002 extends it into the native shell; see [development commands](development.md) and its evidence for actual compilation and launch results.
 
 ## Reproduce the dependency baseline
 
@@ -54,7 +54,7 @@ cargo metadata --manifest-path src-tauri/Cargo.toml --locked --no-deps --format-
 python3 codex/scripts/track.py validate
 ```
 
-The install above verifies the package resolution with lifecycle scripts disabled. Prompt 002 must deliberately enable any required native dependency setup and prove the actual frontend build; a successful `npm ci` alone does not prove that tool binaries or the app run. Do not regenerate locks during normal installation. After deliberate manifest changes, regenerate with the pinned managers and review the diff. [Cargo's lockfile guidance](https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html) explains why application resolutions are committed.
+The install above verifies the package resolution with lifecycle scripts disabled. Prompt 002 performed the normal npm install and verified the actual frontend/native build; a successful `npm ci` alone does not prove that tool binaries or the app run. Do not regenerate locks during normal installation. After deliberate manifest changes, regenerate with the pinned managers and review the diff. [Cargo's lockfile guidance](https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html) explains why application resolutions are committed.
 
 ## Native platforms
 

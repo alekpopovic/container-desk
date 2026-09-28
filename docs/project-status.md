@@ -1,58 +1,32 @@
 # ContainerDesk project status
 
-Audit date: 2026-09-28. Prompt 001 establishes the repository and implementation contract. The application is **not runnable yet**; prompt 002 supplies the native shell, frontend, version IPC and build/lint commands.
+Updated 2026-09-28 after prompt 002. The repository now has a working Tauri v2 desktop shell with React, strict TypeScript, Vite and Tailwind. Its sole backend command returns the application version; the native Linux window has been launched and visually verified showing **Version 0.1.0**.
 
-## Repository audit
+## Implemented and verified
 
-- Starting commit: `154ab1027910e5ac092399c382b8d13a30423fee`, branch `main`, upstream `origin/main`.
-- Initial `git status --short` was empty. There were no application sources, package manifests, lockfiles or existing implementation evidence. The repository contained the 60-prompt pack, docs, Python tracker/tests and project instructions.
-- Existing `AGENTS.md` and `CODEX_START.md` are retained unchanged, including the user-authorized per-prompt commit/push rule. No unrelated changes were found or overwritten. The ephemeral tracker lock was already ignored.
-- Historical prompts, manifest hashes, architecture contract and pack checksums are retained. Decisions are recorded in [ADR 0001](decisions/0001-architecture.md), not edits to historical tasks.
-- Added exact npm/Cargo manifests and lockfiles plus toolchain pins. The Rust target contains only a documentation comment to allow Cargo dependency resolution. It implements no application feature; the same root and `src-tauri/` are extended by 002.
-- Fixed the existing tracker renderer's trailing space after history events with empty notes, found by `git diff --check`. State changes still go exclusively through the tracker.
+- One application in the existing root; the original prompt pack, AGENTS.md and immutable hashes remain intact. Prompt 002 started from clean commit `2f598de89c7f9e2386a79f03ad67cb1296e3faf5`.
+- React handles loading, actual version, bridge error/retry and browser-only states. Rust supplies version metadata through a narrow typed command. The local main-window capability grants only `allow-app-version`.
+- Node 24.21.0/npm 11.19.0 and Rust/Cargo 1.98.1 remain pinned. Biome 2.5.14 and Node types 24.19.0 were added with exact versions. npm's lock was updated; the committed Cargo.lock remains unchanged.
+- Strict TypeScript, recommended Biome lint, formatting and three focused IPC bridge tests passed. Rust `cargo check --locked` and Clippy with warnings denied passed.
+- Production frontend and native release builds passed. The unbundled Linux executable embeds its frontend and opens a real GTK/WebKit window; the screenshot records actual Rust-to-React version IPC, not browser mock output.
 
-## Observed local environment
+Commands: [development](development.md). Sources/pins: [toolchains](toolchains.md). Initial audit: [001 evidence](../codex/tracking/evidence/001.md). Current checks: [002 evidence](../codex/tracking/evidence/002.md).
 
-| Item | Observed during audit | Meaning |
-|---|---|---|
-| OS | Ubuntu 26.04.1 LTS, Linux 7.0.0-34-generic, x86_64, glibc 2.43 | Actual development host; target Linux baseline is Ubuntu 24.04 |
-| Initial Rust | `/usr/bin/rustc` 1.93.1 | Cargo/rustup initially absent from this session's PATH |
-| User-provided Rust installation | `~/.cargo/bin`, rustup stable Rust/Cargo 1.98.1 | Discovered after the user installed Cargo; session PATH needed a command-local prefix |
-| Pinned Rust | Exact toolchain 1.98.1 installed with rustfmt/clippy, default unchanged | Used for lock generation, metadata and formatting |
-| Existing Node/npm | Node 26.4.0, npm 11.17.0 | Left unchanged globally |
-| Selected Node/npm | Node 24.21.0 LTS, npm 11.19.0 | Official Linux archive verified by published SHA-256 and extracted under `/tmp` for this audit |
-| Other package managers | pnpm 11.20.0 present, yarn absent | npm is the project's sole JavaScript package manager |
-| Python | 3.14.4 | Ran the tracker and its existing 14 tests |
-| C compiler | GCC 15.2.0; build-essential 12.12ubuntu2.26.04.2 | Present; not proof of a native app build |
-| OpenSSH | OpenSSH_10.2p1 Ubuntu-2ubuntu3.6 | Version inspected only; no user's SSH alias/config/keys were executed or read |
-| Local Docker | CLI 29.8.1 | Version inspected only; daemon and lab availability untested |
-| Display | DISPLAY and WAYLAND_DISPLAY set | A native window was not launched; display variables alone do not prove launchability |
-| Missing native development packages | pkg-config, libgtk-3-dev, libwebkit2gtk-4.1-dev, libayatana-appindicator3-dev, librsvg2-dev, libxdo-dev | Confirmed absent by dpkg-query; prerequisites for the next native build |
-| Present SSL development package | libssl-dev 3.5.5-1ubuntu3.5 | Confirmed installed |
-| macOS | No macOS runner or Xcode execution available | Apple Silicon/Intel runtime, packaging and signing remain unverified |
+## Native environment and limits
 
-See [toolchains](toolchains.md) for version pins, official sources and setup commands. Temporary Node binaries and the npm cache are audit conveniences, not portable project dependencies; future sessions must select/install the pinned Node. Ensure rustup's bin directory is on PATH before invoking Cargo. The execution sandbox helper failed with `mountinfo path is not absolute`; actual checks ran through reviewed commands outside that broken helper. This is an agent-environment limitation, not an application result.
-
-## Verification status
-
-| Check | Result |
+| Area | Actual status |
 |---|---|
-| Exact stable direct versions and compatible declared engine/peer ranges | Selected and checked against official metadata |
-| npm lock generation and `npm ci --ignore-scripts` | Passed with Node 24.21.0/npm 11.19.0; 44 local packages installed |
-| `npm ls --depth=0` | Passed; all 11 direct packages resolved at exact pins |
-| Cargo lock generation | Passed; 419 dependencies plus the application package locked |
-| Cargo `metadata --locked --offline --no-deps` and `fmt --check` | Passed; manifest/format checks only |
-| Pin/lock consistency | Passed for npm, Cargo and toolchain selections; no direct prereleases |
-| Existing Python tracker tests | 14 passed after the renderer fix |
-| Tracker integrity | All 60 prompt hashes/dependencies/statuses validated |
-| Frontend compilation / native compilation / version IPC / GUI | NOT RUN; runnable scaffold belongs to 002 |
-| Live direct/ProxyJump SSH, Docker operations and terminal | NOT RUN; no disposable lab selected or contacted |
-| Linux baseline and macOS packages/runtime/signing | NOT RUN |
+| Linux host | Ubuntu 26.04.1 LTS x86_64, glibc 2.43 |
+| Installed development libraries | User installed missing packages; pkg-config 2.5.1, GTK 3.24.52, WebKitGTK 2.52.6 confirmed |
+| Native launch | PASS on X11/XWayland with Snap-inherited library/module paths removed for this process |
+| Native screenshot | [ContainerDesk showing Version 0.1.0](verification/002-native-linux.png) |
+| Native Wayland / Ubuntu 24.04 baseline | NOT RUN; current host execution is not baseline certification |
+| macOS arm64 / Intel | NOT RUN; no Mac native build or runtime evidence |
+| Installers / public signing / notarization | NOT RUN; no packages published; bundling disabled for scaffold |
+| SSH / Docker resource views / management / terminal | Not implemented or exercised in this prompt |
 
-## Delivery gates and next step
+The first launch inherited incompatible Snap library paths and failed before opening the window. A process-local clean environment resolved the conflict; no system or user shell configuration was changed. Non-fatal missing `canberra-gtk-module` messages remain in this environment. The captured test process was terminated and reaped after inspection; no persistent development server is needed for the release binary.
 
-The manual execution procedures, required evidence and blocking criteria for 018, 030, 038, 046 and 060 are defined in [checkpoints](checkpoints.md). Management and terminal are separately opt-in per host and enforced in Rust; all new host sessions begin read-only. Scope and resource/security boundaries follow ADR 0001.
+Management and terminal remain planned per-host opt-ins enforced in Rust, as specified in [ADR 0001](decisions/0001-architecture.md). There is no unrestricted shell plugin, host discovery or remote mutation endpoint in the scaffold.
 
-Prompt 001's audit acceptance does not require building a native app that does not yet exist, so missing native libraries/macOS hardware are recorded downstream limitations. Next: **002 — Tauri React TypeScript scaffold**. Reuse these pinned manifests/locks, add the actual frontend and native entry points, install native prerequisites as needed, and execute its typecheck/build/IPC/native checks. Stop after 001; do not start 002 automatically.
-
-Detailed audit evidence: [001](../codex/tracking/evidence/001.md). The tracker remains the authoritative current task status as later prompts progress.
+Next prompt: **003 — Application layout and design tokens**. Do not treat this shell as the remote-Docker MVP; checkpoints [018/030/038/046/060](checkpoints.md) still require their actual feature, lab and platform acceptance work.

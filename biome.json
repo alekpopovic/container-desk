@@ -1,0 +1,29 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+  "files": {
+    "includes": [
+      "src/**",
+      "vite.config.ts",
+      "index.html",
+      "package.json",
+      "tsconfig.json",
+      "biome.json",
+      "src-tauri/tauri.conf.json",
+      "src-tauri/capabilities/**"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
+  }
+}

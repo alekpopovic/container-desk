@@ -11,10 +11,10 @@ name = "containerdesk_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = "=2.7.0"
+tauri-build = { version = "=2.7.0", features = [] }
 
 [dependencies]
-tauri = "=2.12.0"
+tauri = { version = "=2.12.0", features = [] }
 tokio = { version = "=1.53.1", features = ["rt-multi-thread", "process", "io-util", "sync", "time", "macros"] }
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.151"
