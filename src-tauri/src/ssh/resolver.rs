@@ -1,11 +1,7 @@
 //! Resolves only an explicitly selected trusted config/alias. `ssh -G` may run Match exec.
-use crate::{diagnostics::validate_executable, domain::*};
-use std::{ffi::OsString, io, path::Path, process::Stdio, time::Duration};
-use tokio::{
-    io::AsyncReadExt,
-    process::{Child, Command},
-    time::timeout,
-};
+use super::runner::{Limits, RunError, Runner};
+use crate::domain::*;
+use std::{ffi::OsString, path::Path, time::Duration};
 const STDOUT_LIMIT: usize = 1024 * 1024;
 const STDERR_LIMIT: usize = 64 * 1024;
 const DEADLINE: Duration = Duration::from_secs(5);
@@ -30,86 +26,51 @@ pub fn arguments(selection: &SshSelection) -> Result<Vec<OsString>, AppError> {
     Ok(args)
 }
 
-// The group contains only this invocation and ordinary descendants from its trusted config.
-// Never signal a reaped child's numeric group ID (it could have been reused).
-struct OwnedProbe(Child);
-impl OwnedProbe {
-    fn stop_group(&self) {
-        if let Some(pid) = self.0.id() {
-            // SAFETY: process_group(0) created this child's dedicated group; pid fits pid_t.
-            unsafe {
-                libc::kill(-(pid as libc::pid_t), libc::SIGKILL);
-            }
-        }
-    }
-}
-impl Drop for OwnedProbe {
-    fn drop(&mut self) {
-        self.stop_group();
-    }
-}
-async fn capture(reader: impl tokio::io::AsyncRead + Unpin, limit: usize) -> io::Result<Vec<u8>> {
-    let mut bytes = Vec::new();
-    reader
-        .take(limit as u64 + 1)
-        .read_to_end(&mut bytes)
-        .await?;
-    if bytes.len() > limit {
-        return Err(io::Error::new(
-            io::ErrorKind::FileTooLarge,
-            "bounded diagnostic capture",
-        ));
-    }
-    Ok(bytes)
-}
 pub async fn resolve(
+    runner: &Runner,
     executable: &str,
     selection: SshSelection,
 ) -> Result<EffectiveSshConfig, AppError> {
-    resolve_with_deadline(executable, selection, DEADLINE).await
+    resolve_with_deadline(runner, executable, selection, DEADLINE).await
 }
 async fn resolve_with_deadline(
+    runner: &Runner,
     executable: &str,
     selection: SshSelection,
     deadline: Duration,
 ) -> Result<EffectiveSshConfig, AppError> {
-    let args = arguments(&selection)?; // Validate alias before any possible process creation.
-    let executable =
-        validate_executable(executable).map_err(|_| error(ErrorCode::SshUnavailable))?;
-    let child = Command::new(&executable)
-        .args(args)
-        .env("LC_ALL", "C")
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .process_group(0)
-        .kill_on_drop(true)
-        .spawn()
+    let args = arguments(&selection)?;
+    let executable = crate::diagnostics::validate_executable(executable)
         .map_err(|_| error(ErrorCode::SshUnavailable))?;
-    let mut owned = OwnedProbe(child);
-    let stdout = owned.0.stdout.take().expect("piped stdout");
-    let stderr = owned.0.stderr.take().expect("piped stderr");
-    let result = timeout(deadline, async {
-        // Do not reap before readers finish: timeout cleanup must still own the group identity.
-        let (stdout, _stderr) =
-            tokio::try_join!(capture(stdout, STDOUT_LIMIT), capture(stderr, STDERR_LIMIT))?;
-        let status = owned.0.wait().await?;
-        Ok::<_, io::Error>((stdout, status))
-    })
-    .await;
-    match result {
-        Ok(Ok((stdout, status))) if status.success() => parse(&stdout, selection, &executable),
-        other => {
-            owned.stop_group();
-            let _ = owned.0.kill().await;
-            let _ = owned.0.wait().await;
-            Err(error(match other {
-                Err(_) => ErrorCode::OperationTimedOut,
-                Ok(Err(e)) if e.kind() == io::ErrorKind::FileTooLarge => ErrorCode::ResourceLimit,
-                _ => ErrorCode::SshResolutionFailed,
-            }))
-        }
+    let output = runner
+        .start(
+            executable
+                .to_str()
+                .ok_or_else(|| error(ErrorCode::SshUnavailable))?,
+            args,
+            Limits {
+                deadline,
+                stdout_bytes: STDOUT_LIMIT,
+                stderr_bytes: STDERR_LIMIT,
+            },
+        )
+        .map_err(map_failure)?
+        .wait()
+        .await
+        .map_err(map_failure)?;
+    if !output.status.success() {
+        return Err(error(ErrorCode::SshResolutionFailed));
     }
+    parse(&output.stdout, selection, &executable)
+}
+fn map_failure(failure: RunError) -> AppError {
+    error(match failure {
+        RunError::Unavailable => ErrorCode::SshUnavailable,
+        RunError::Busy | RunError::OutputLimit(_) => ErrorCode::ResourceLimit,
+        RunError::TimedOut => ErrorCode::OperationTimedOut,
+        RunError::Cancelled => ErrorCode::OperationCancelled,
+        RunError::InvalidInput | RunError::Io => ErrorCode::SshResolutionFailed,
+    })
 }
 fn parse(
     bytes: &[u8],

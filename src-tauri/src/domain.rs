@@ -123,6 +123,7 @@ pub enum ErrorCode {
     IntentExpired,
     Disconnected,
     OperationTimedOut,
+    OperationCancelled,
     InvalidAlias,
     InvalidConfigPath,
     SshUnavailable,
@@ -163,6 +164,7 @@ impl AppError {
             }
             ErrorCode::IntentExpired => "This confirmation expired. Review the operation again.",
             ErrorCode::Disconnected => "The connection closed. Reconnect before refreshing.",
+            ErrorCode::OperationCancelled => "The operation was cancelled.",
             ErrorCode::OperationTimedOut => "The command exceeded its deadline.",
             ErrorCode::SshUnavailable => {
                 "The selected OpenSSH executable is unavailable or untrusted. Check native dependency settings."

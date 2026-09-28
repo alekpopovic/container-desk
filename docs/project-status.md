@@ -1,6 +1,6 @@
 # ContainerDesk project status
 
-Updated 2026-09-28 after prompt 010. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations and SSH configuration resolution through 010 are implemented; live remote Docker management is not available yet.
+Updated 2026-09-28 after prompt 011. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations and bounded SSH process ownership through 011 are implemented; live remote Docker management is not available yet.
 
 ## Current implementation
 
@@ -16,9 +16,11 @@ Updated 2026-09-28 after prompt 010. ContainerDesk is a working native Tauri v2 
 
 - Explicit native ssh -G resolution with bounded output/deadline, original-alias/config-policy preservation, trusted-code explanation and safe effective-host/user/port/jump display.
 
-Design: [SSH resolution](ssh-resolution.md), [SSH discovery](ssh-discovery.md), [demo mode](demo-mode.md), [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
+- Shared cancellable process runner with four slots, separate bounded pipes, typed failures, partial-output preservation and cleanup/reaping before acknowledgment. Native structured SSH option policy is prepared; no remote command dispatcher is exposed yet.
 
-Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md), [008](../codex/tracking/evidence/008.md), [009](../codex/tracking/evidence/009.md), [010](../codex/tracking/evidence/010.md).
+Design: [SSH runner](ssh-runner.md), [SSH resolution](ssh-resolution.md), [SSH discovery](ssh-discovery.md), [demo mode](demo-mode.md), [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
+
+Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md), [008](../codex/tracking/evidence/008.md), [009](../codex/tracking/evidence/009.md), [010](../codex/tracking/evidence/010.md), [011](../codex/tracking/evidence/011.md).
 
 ## Actual platform status
 
@@ -34,4 +36,4 @@ Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evid
 
 No browser fixture, mock runtime or build is counted as native server-operation proof. Existing bundle-identifier warning and GitHub moderate dependency alert remain open for the relevant later review. [Checkpoints](checkpoints.md) still require actual lab/platform evidence.
 
-Next prompt: **011 — OpenSSH subprocess runner**. Continue sequentially under the user's [execution authorization](execution.md).
+Next prompt: **012 — Remote argument quoting and Docker command builders**. Continue sequentially under the user's [execution authorization](execution.md).

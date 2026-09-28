@@ -1,6 +1,6 @@
 mod diagnostics;
 pub mod policy;
-mod ssh;
+pub mod ssh;
 mod storage;
 pub mod transport;
 use tauri::Manager;

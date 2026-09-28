@@ -1,6 +1,7 @@
 //! Native SSH configuration boundaries. Discovery never invokes a subprocess.
 pub mod discovery;
 pub mod resolver;
+pub mod runner;
 use crate::domain::{AppError, ErrorCode};
 
 pub fn validate_alias(alias: &str) -> Result<(), AppError> {

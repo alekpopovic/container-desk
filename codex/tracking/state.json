@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T19:35:57+00:00",
+  "updated_at": "2026-09-28T19:49:28+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -341,6 +341,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T19:37:24+00:00",
+      "id": "011",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T19:49:28+00:00",
+      "id": "011",
+      "action": "done",
+      "note": "51 Rust tests and 19 frontend IPC checks passed; targeted runner tests also passed under strace; Native timeout/cancellation/output-limit/partial-output/reaping and OpenSSH option checks passed; Clippy, formatting and native Linux release build passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T19:37:24+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -480,12 +514,16 @@
       "note": ""
     },
     "011": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T19:37:24+00:00",
+      "finished_at": "2026-09-28T19:49:28+00:00",
+      "evidence": "codex/tracking/evidence/011.md",
+      "evidence_sha256": "707a87828a473e3c527f8e95e09b53f2fa126a0d8b7303cfdff706e71dba0ee2",
+      "checks": [
+        "51 Rust tests and 19 frontend IPC checks passed; targeted runner tests also passed under strace",
+        "Native timeout/cancellation/output-limit/partial-output/reaping and OpenSSH option checks passed",
+        "Clippy, formatting and native Linux release build passed"
+      ],
       "commit": "",
       "note": ""
     },

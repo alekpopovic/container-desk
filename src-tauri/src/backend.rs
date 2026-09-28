@@ -8,6 +8,7 @@ use std::sync::{Arc, Mutex};
 
 /// Resource operations remain behind identity gates. Local version probes are separately bounded.
 pub struct Backend {
+    process_runner: crate::ssh::runner::Runner,
     config_home: std::path::PathBuf,
     policy: Mutex<PolicyEngine>,
     settings: Mutex<Result<SettingsStore, AppError>>,
@@ -21,6 +22,7 @@ impl Backend {
             .map_err(|_| AppError::new(ErrorCode::StorageUnavailable))
             .and_then(|adapter| SettingsStore::load(Box::new(adapter)));
         Self {
+            process_runner: crate::ssh::runner::Runner::default(),
             config_home,
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(settings),
@@ -74,10 +76,11 @@ impl Backend {
         let executable = preferences
             .ssh_executable_override
             .unwrap_or_else(|| crate::diagnostics::DEFAULT_SSH.into());
+        let runner = self.process_runner.clone();
         // The owner keeps its permit through bounded completion/reaping even if the IPC caller disappears.
         tauri::async_runtime::spawn(async move {
             let _permit = permit;
-            crate::ssh::resolver::resolve(&executable, request.selection).await
+            crate::ssh::resolver::resolve(&runner, &executable, request.selection).await
         })
         .await
         .map_err(|_| AppError::new(ErrorCode::Internal))?
@@ -455,6 +458,7 @@ impl Backend {
 impl Default for Backend {
     fn default() -> Self {
         Self {
+            process_runner: crate::ssh::runner::Runner::default(),
             config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),

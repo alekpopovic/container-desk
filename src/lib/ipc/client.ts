@@ -43,6 +43,7 @@ const messages: Record<ErrorCode, string> = {
     "This confirmation does not match the operation or was already used.",
   intent_expired: "This confirmation expired. Review the operation again.",
   disconnected: "The connection closed. Reconnect before refreshing.",
+  operation_cancelled: "The operation was cancelled.",
   operation_timed_out: "The command exceeded its deadline.",
 };
 

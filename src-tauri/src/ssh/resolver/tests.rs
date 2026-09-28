@@ -1,5 +1,5 @@
 use super::*;
-use std::{fs, os::unix::fs::PermissionsExt};
+use std::{fs, io, os::unix::fs::PermissionsExt};
 struct Lab(std::path::PathBuf);
 impl Lab {
     fn new() -> Self {
@@ -52,7 +52,9 @@ async fn native_g_agrees_on_overlap_include_jump_and_original_alias() {
         lab.0.join("included").display()
     );
     fs::write(&selection.config_path, &config).unwrap();
-    let result = resolve("/usr/bin/ssh", selection.clone()).await.unwrap();
+    let result = resolve(&Runner::default(), "/usr/bin/ssh", selection.clone())
+        .await
+        .unwrap();
     let native = std::process::Command::new("/usr/bin/ssh")
         .args(["-G", "-F", &selection.config_path, "--", &selection.alias])
         .output()
@@ -95,7 +97,9 @@ async fn native_match_exec_is_acknowledged_but_proxy_command_contents_are_privat
     let selection = lab.selection();
     let marker = lab.0.join("match-ran");
     fs::write(&selection.config_path, format!("Match exec \"touch {}\"\n User match-user\nHost *\n HostName 192.0.2.20\n ProxyCommand echo SECRET_COMMAND_VALUE\n", marker.display())).unwrap();
-    let result = resolve("/usr/bin/ssh", selection).await.unwrap();
+    let result = resolve(&Runner::default(), "/usr/bin/ssh", selection)
+        .await
+        .unwrap();
     assert!(marker.exists());
     assert_eq!(result.user, "match-user");
     assert!(result.has_proxy_command);
@@ -113,7 +117,7 @@ async fn aliases_are_separate_argv_and_invalid_alias_never_starts_a_child() {
     for alias in ["-F", "a b", "a;touch", "a\nb", "$(id)"] {
         selection.alias = alias.into();
         assert_eq!(
-            resolve(&executable, selection.clone())
+            resolve(&Runner::default(), &executable, selection.clone())
                 .await
                 .unwrap_err()
                 .code,
@@ -122,7 +126,9 @@ async fn aliases_are_separate_argv_and_invalid_alias_never_starts_a_child() {
         assert!(!lab.0.join("args").exists());
     }
     selection.alias = "safe-fixture".into();
-    resolve(&executable, selection.clone()).await.unwrap();
+    resolve(&Runner::default(), &executable, selection.clone())
+        .await
+        .unwrap();
     assert_eq!(
         fs::read_to_string(lab.0.join("args")).unwrap(),
         format!("-G\n-F\n{}\n--\nsafe-fixture\n", selection.config_path)
@@ -135,10 +141,15 @@ async fn capture_is_bounded_and_timeout_reaps_the_direct_child() {
     let path = lab.executable("#!/bin/sh\necho $$ > \"${0%/*}/pid\"\nexec /bin/sleep 30\n");
     let start = std::time::Instant::now();
     assert_eq!(
-        resolve_with_deadline(&path, selection.clone(), Duration::from_millis(100))
-            .await
-            .unwrap_err()
-            .code,
+        resolve_with_deadline(
+            &Runner::default(),
+            &path,
+            selection.clone(),
+            Duration::from_millis(100)
+        )
+        .await
+        .unwrap_err()
+        .code,
         ErrorCode::OperationTimedOut
     );
     assert!(start.elapsed() < Duration::from_secs(2));
@@ -151,12 +162,17 @@ async fn capture_is_bounded_and_timeout_reaps_the_direct_child() {
     assert_eq!(unsafe { libc::kill(pid, 0) }, -1);
     assert_eq!(io::Error::last_os_error().raw_os_error(), Some(libc::ESRCH));
     let path = lab.executable("#!/bin/sh\nwhile :; do printf 'SECRET_OUTPUT_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' >&2; done\n");
-    let failure = resolve(&path, selection.clone()).await.unwrap_err();
+    let failure = resolve(&Runner::default(), &path, selection.clone())
+        .await
+        .unwrap_err();
     assert_eq!(failure.code, ErrorCode::ResourceLimit);
     assert!(!failure.message.contains("SECRET_OUTPUT"));
     let path = lab.executable("#!/bin/sh\nprintf 'SECRET_STDERR' >&2\nexit 7\n");
     assert_eq!(
-        resolve(&path, selection).await.unwrap_err().code,
+        resolve(&Runner::default(), &path, selection)
+            .await
+            .unwrap_err()
+            .code,
         ErrorCode::SshResolutionFailed
     );
 }
