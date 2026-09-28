@@ -20,6 +20,7 @@ test("switching during probe and cancellation reject old completions", async ({
           request?: {
             alias?: string;
             selection?: Record<string, unknown>;
+            docker?: Record<string, unknown>;
             token?: { sessionId: string; sessionGeneration: number };
           };
         },
@@ -50,6 +51,8 @@ test("switching during probe and cancellation reject old completions", async ({
             diagnostic: null,
             hasJump: true,
             transportMode: "direct_fallback",
+            dockerOptions: args?.request?.docker,
+            docker: null,
           };
           return { ...current };
         }
@@ -71,7 +74,27 @@ test("switching during probe and cancellation reject old completions", async ({
               Reflect.set(window, "finishOldProbe", () => resolve(old)),
             );
           }
-          return { ...current, state: generation <= 3 ? "ready" : "resolving" };
+          return {
+            ...current,
+            state: generation <= 3 ? "ready" : "resolving",
+            docker:
+              generation <= 3
+                ? {
+                    status: "ready",
+                    context: "rootless",
+                    endpoint: "unix:///run/user/1000/docker.sock",
+                    endpointKind: "unix",
+                    clientVersion: "29.fixture",
+                    serverVersion: "29.fixture",
+                    daemonId: "fixture-daemon",
+                    os: "linux",
+                    rootless: true,
+                    compose: "absent",
+                    composeVersion: null,
+                    sudo: true,
+                  }
+                : null,
+          };
         }
         if (command === "disconnect_ssh_session") {
           generation += 1;
@@ -102,10 +125,23 @@ test("switching during probe and cancellation reject old completions", async ({
     .toBe("function");
   await page.getByLabel("Manual SSH alias", { exact: true }).fill("new-host");
   await page.getByRole("button", { name: "Select manual alias" }).click();
+  await page.getByLabel("Remote Docker context (optional)").fill("rootless");
+  await page
+    .getByLabel("Use existing noninteractive sudo access (sudo -n)")
+    .check();
   await page.getByRole("button", { name: "Connect selected host" }).click();
   await expect(panel.getByRole("status", { exact: true }).first()).toHaveText(
     "Ready",
   );
+  const capabilities = panel.getByRole("region", {
+    name: "Docker capabilities",
+  });
+  await expect(capabilities).toContainText("fixture-daemon");
+  await expect(capabilities).toContainText("unix:///run/user/1000/docker.sock");
+  await expect(capabilities).toContainText("absent");
+  await expect(
+    page.getByLabel("Remote Docker context (optional)"),
+  ).toBeDisabled();
   await page.evaluate(() => Reflect.get(window, "finishOldProbe")());
   await expect(panel).toContainText("Session generation 3");
   await expect(panel).toContainText("SSH transport: direct fallback.");

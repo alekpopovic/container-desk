@@ -13,15 +13,9 @@ pub(crate) enum StageOutcome {
         has_jump: bool,
     },
     Authenticated(SshTransportMode),
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "Native Docker readiness arrives in prompt 016; the controlled driver exercises this state now."
-        )
-    )]
+    #[cfg(test)]
     Ready,
-    Degraded(ConnectionDiagnosticCode),
+    Probed(Box<DockerProbeReport>),
     Failed(ConnectionDiagnosticCode),
 }
 pub(crate) trait StageDriver: Send + Sync {
@@ -40,6 +34,8 @@ pub(crate) struct NativeDriver {
     pub executable: String,
     pub _permit: tokio::sync::OwnedSemaphorePermit,
     pub connection: AsyncMutex<Option<super::multiplex::Connection>>,
+    pub docker_options: DockerOptions,
+    pub docker_binding: AsyncMutex<Option<crate::docker::probe::VerifiedDocker>>,
 }
 impl StageDriver for NativeDriver {
     fn run<'a>(
@@ -121,9 +117,15 @@ impl StageDriver for NativeDriver {
                         }
                     }
                 }
-                // Prompt 016 supplies the Docker capability probe. Never fabricate readiness now.
                 ConnectionStage::Probe => {
-                    StageOutcome::Degraded(ConnectionDiagnosticCode::ProbeUnavailable)
+                    let owner = self.connection.lock().await;
+                    let Some(connection) = owner.as_ref() else {
+                        return StageOutcome::Failed(ConnectionDiagnosticCode::ConnectionLost);
+                    };
+                    let (report, binding) =
+                        crate::docker::probe::run(connection, &self.docker_options).await;
+                    *self.docker_binding.lock().await = binding;
+                    StageOutcome::Probed(Box::new(report))
                 }
             }
         })
@@ -139,6 +141,7 @@ impl StageDriver for NativeDriver {
     }
     fn quiesce(&self) -> StageFuture<'_, ()> {
         Box::pin(async move {
+            self.docker_binding.lock().await.take();
             if let Some(connection) = self.connection.lock().await.take() {
                 connection.close().await;
             }
@@ -164,9 +167,11 @@ impl Sessions {
     pub(crate) async fn begin(
         &self,
         selection: SshSelection,
+        docker_options: DockerOptions,
         factory: impl FnOnce() -> Result<Arc<dyn StageDriver>, AppError>,
     ) -> Result<ConnectionSnapshot, AppError> {
         super::resolver::arguments(&selection)?;
+        crate::docker::DockerCommandConfig::from_options(&docker_options)?;
         let mut control = self
             .control
             .try_lock()
@@ -178,6 +183,7 @@ impl Sessions {
                 .map_err(|_| AppError::new(ErrorCode::Internal))?;
             if let Some(snapshot) = &state.snapshot
                 && snapshot.selection == selection
+                && snapshot.docker_options == docker_options
                 && matches!(
                     snapshot.state,
                     ConnectionState::Resolving
@@ -214,6 +220,8 @@ impl Sessions {
                 diagnostic: None,
                 has_jump: false,
                 transport_mode: SshTransportMode::Unconnected,
+                docker_options,
+                docker: None,
             };
             state.snapshot = Some(snapshot.clone());
             snapshot
@@ -242,6 +250,7 @@ impl Sessions {
             snapshot.state = ConnectionState::Disconnected;
             snapshot.diagnostic = None;
             snapshot.transport_mode = SshTransportMode::Unconnected;
+            snapshot.docker = None;
         }
         Ok(())
     }
@@ -332,10 +341,20 @@ async fn drive(
                 current.transport_mode = mode;
                 current.state = ConnectionState::Probing
             }
+            #[cfg(test)]
             (ConnectionStage::Probe, StageOutcome::Ready) => current.state = ConnectionState::Ready,
-            (ConnectionStage::Probe, StageOutcome::Degraded(code)) => {
-                current.state = ConnectionState::Degraded;
-                current.diagnostic = Some(ConnectionDiagnostic { stage, code });
+            (ConnectionStage::Probe, StageOutcome::Probed(report)) => {
+                current.state = if report.status == DockerProbeStatus::Ready {
+                    ConnectionState::Ready
+                } else {
+                    ConnectionState::Degraded
+                };
+                current.diagnostic =
+                    (report.status != DockerProbeStatus::Ready).then_some(ConnectionDiagnostic {
+                        stage,
+                        code: ConnectionDiagnosticCode::DockerUnavailable,
+                    });
+                current.docker = Some(*report);
             }
             (_, StageOutcome::Failed(code)) => {
                 current.state = ConnectionState::Error;
@@ -379,6 +398,12 @@ async fn drive(
     }
     // Dropped stage futures cancel Runner Jobs. Hold the native gate until their owners reap.
     driver.quiesce().await;
+    if let Ok(mut state) = state.lock()
+        && let Some(current) = &mut state.snapshot
+        && current.token == initial.token
+    {
+        current.transport_mode = SshTransportMode::Unconnected;
+    }
 }
 #[cfg(test)]
 mod tests;

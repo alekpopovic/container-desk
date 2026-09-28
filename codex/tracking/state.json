@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T21:23:45+00:00",
+  "updated_at": "2026-09-28T21:40:21+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -511,6 +511,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T21:24:28+00:00",
+      "id": "016",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T21:40:21+00:00",
+      "id": "016",
+      "action": "done",
+      "note": "74 Rust tests passed; final five Docker parser/binding tests, clippy and native Linux release build passed; 22 IPC and 12 browser checks passed; Six native SSH lab tests passed; real Docker CLI verified ten capability cases against explicitly synthetic API/socket fixtures",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T21:24:28+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -718,12 +752,16 @@
       "note": ""
     },
     "016": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T21:24:28+00:00",
+      "finished_at": "2026-09-28T21:40:21+00:00",
+      "evidence": "codex/tracking/evidence/016.md",
+      "evidence_sha256": "b1956e2bd369876cd6c240c4b38ad1bbd7e972e81573e5d1b744c187bd7985e6",
+      "checks": [
+        "74 Rust tests passed; final five Docker parser/binding tests, clippy and native Linux release build passed",
+        "22 IPC and 12 browser checks passed",
+        "Six native SSH lab tests passed; real Docker CLI verified ten capability cases against explicitly synthetic API/socket fixtures"
+      ],
       "commit": "",
       "note": ""
     },

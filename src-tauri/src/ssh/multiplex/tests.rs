@@ -286,9 +286,11 @@ async fn disposable_lab_ownership_long_paths_stale_socket_fallback_and_master_de
         executable: "/usr/bin/ssh".into(),
         _permit: gate.clone().try_acquire_owned().unwrap(),
         connection: Default::default(),
+        docker_options: Default::default(),
+        docker_binding: Default::default(),
     });
     let snapshot = sessions
-        .begin(selected.clone(), || Ok(driver))
+        .begin(selected.clone(), Default::default(), || Ok(driver))
         .await
         .unwrap();
     tokio::time::timeout(Duration::from_secs(15), async {

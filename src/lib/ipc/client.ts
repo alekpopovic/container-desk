@@ -608,6 +608,9 @@ import type {
   ConnectionState,
   ConnectionStage,
   ConnectionDiagnosticCode,
+  DockerOptions,
+  DockerProbeReport,
+  DockerProbeStatus,
 } from "./generated.ts";
 export const connectionLabels: Record<ConnectionState, string> = {
   disconnected: "Disconnected",
@@ -619,6 +622,8 @@ export const connectionLabels: Record<ConnectionState, string> = {
   error: "Connection error",
 };
 export const connectionDiagnostics: Record<ConnectionDiagnosticCode, string> = {
+  docker_unavailable:
+    "SSH access works; review the Docker capability result below.",
   connection_lost:
     "The app-owned SSH connection ended or reached its idle limit. Reconnect explicitly; no command was replayed.",
   resolution_failed: "OpenSSH could not resolve the selected configuration.",
@@ -644,6 +649,7 @@ function decodeConnection(
   value: unknown,
   expected: SshSelection,
   token?: ConnectionToken,
+  dockerOptions?: DockerOptions,
 ): ConnectionSnapshot {
   if (
     !record(value) ||
@@ -654,6 +660,16 @@ function decodeConnection(
     (token &&
       (value.token.sessionId !== token.sessionId ||
         value.token.sessionGeneration !== token.sessionGeneration)) ||
+    !validDockerOptions(value.dockerOptions) ||
+    (dockerOptions !== undefined &&
+      (value.dockerOptions.executable !== dockerOptions.executable ||
+        value.dockerOptions.context !== dockerOptions.context ||
+        value.dockerOptions.sudo !== dockerOptions.sudo)) ||
+    !(
+      value.docker === null ||
+      (validDockerReport(value.docker) &&
+        value.docker.sudo === value.dockerOptions.sudo)
+    ) ||
     !record(value.selection) ||
     value.selection.alias !== expected.alias ||
     value.selection.configPath !== expected.configPath ||
@@ -690,10 +706,13 @@ function decodeConnection(
 }
 export async function beginSshSession(
   selected: SshSelection,
+  docker: DockerOptions = { executable: null, context: null, sudo: false },
 ): Promise<ConnectionSnapshot> {
   return decodeConnection(
-    await call("begin_ssh_session", { selection: selected }),
+    await call("begin_ssh_session", { selection: selected, docker }),
     selected,
+    undefined,
+    docker,
   );
 }
 export async function getSshSession(
@@ -703,6 +722,7 @@ export async function getSshSession(
     await call("get_ssh_session", { token: current.token }),
     current.selection,
     current.token,
+    current.dockerOptions,
   );
 }
 export async function disconnectSshSession(
@@ -711,6 +731,8 @@ export async function disconnectSshSession(
   const result = decodeConnection(
     await call("disconnect_ssh_session", { token: current.token }),
     current.selection,
+    undefined,
+    current.dockerOptions,
   );
   if (
     result.token.sessionId !== current.token.sessionId ||
@@ -719,4 +741,76 @@ export async function disconnectSshSession(
   )
     throw new IpcError("invalid_response");
   return result;
+}
+
+export const dockerProbeLabels: Record<DockerProbeStatus, string> = {
+  ready: "Linux Docker Engine is accessible.",
+  docker_missing:
+    "Docker was not found in the remote command path. Check its installation or choose an absolute executable path.",
+  daemon_unavailable:
+    "The selected Docker daemon is not reachable. Check whether it is running and the context endpoint is correct.",
+  permission_denied:
+    "The SSH user cannot access this Docker endpoint. Ask the server administrator to review existing access.",
+  sudo_authentication_required:
+    "sudo requires authentication. ContainerDesk uses sudo -n and cannot request a password.",
+  sudo_denied:
+    "The existing sudo policy does not allow this noninteractive Docker command.",
+  invalid_context:
+    "The selected remote Docker context is missing or unsupported.",
+  unsupported_endpoint:
+    "The Docker endpoint is unsupported or contains credential parameters; it was not exposed or used.",
+  unsupported_os: "This daemon is not a supported Linux Docker Engine.",
+  invalid_response:
+    "Docker returned an invalid or unsupported capability response.",
+  identity_changed:
+    "The Docker context or daemon identity changed. Disconnect and connect again to review the new target.",
+  timed_out: "The Docker capability check exceeded its deadline.",
+  output_limit: "The Docker capability response exceeded the size limit.",
+  connection_failed: "The SSH transport failed during the Docker check.",
+  command_failed:
+    "The remote Docker command failed. Check the selected binary, context and noninteractive environment.",
+};
+function validDockerOptions(value: unknown): value is DockerOptions {
+  return (
+    record(value) &&
+    typeof value.sudo === "boolean" &&
+    (value.executable === null || text(value.executable, 4096)) &&
+    (value.context === null ||
+      (text(value.context, 256) &&
+        /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(value.context)))
+  );
+}
+function validDockerReport(value: unknown): value is DockerProbeReport {
+  if (
+    !record(value) ||
+    typeof value.status !== "string" ||
+    !Object.hasOwn(dockerProbeLabels, value.status) ||
+    typeof value.sudo !== "boolean" ||
+    !(value.rootless === null || typeof value.rootless === "boolean") ||
+    ![null, "unix", "tcp", "ssh"].includes(
+      value.endpointKind as string | null,
+    ) ||
+    !["available", "absent", "unknown"].includes(value.compose as string)
+  )
+    return false;
+  for (const [field, limit] of [
+    ["context", 256],
+    ["endpoint", 4096],
+    ["clientVersion", 128],
+    ["serverVersion", 128],
+    ["daemonId", 256],
+    ["os", 32],
+    ["composeVersion", 128],
+  ] as const) {
+    if (value[field] !== null && !text(value[field], limit)) return false;
+  }
+  return (
+    value.status !== "ready" ||
+    (value.os === "linux" &&
+      value.daemonId !== null &&
+      value.endpoint !== null &&
+      value.context !== null &&
+      value.clientVersion !== null &&
+      value.serverVersion !== null)
+  );
 }

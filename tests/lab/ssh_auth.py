@@ -14,7 +14,7 @@ import tempfile
 import time
 
 REPO = Path(__file__).resolve().parents[2]
-IMAGE = "containerdesk-ssh-lab:013"
+IMAGE = "containerdesk-ssh-lab:016"
 BASE = "alpine@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce"
 
 
@@ -89,6 +89,16 @@ def main():
                         if attempt == 49:
                             raise RuntimeError("owned SSH server did not start") from None
                         time.sleep(0.1)
+            # Actual remote Docker CLI, but a deliberately synthetic read-only API fixture.
+            # This validates CLI formats/classification; it does not prove a running Docker Engine.
+            dc("exec", "-d", names[-1], "python3", "/opt/fixture/docker_probe_fixture.py")
+            for attempt in range(100):
+                probe = subprocess.run(docker + ["exec", names[-1], "test", "-f", "/tmp/probe-ready"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+                if probe.returncode == 0:
+                    break
+                if attempt == 99:
+                    raise RuntimeError("synthetic Docker API fixture did not start")
+                time.sleep(0.05)
             agent_socket = root / "agent.sock"
             agent = subprocess.Popen(["ssh-agent", "-D", "-a", str(agent_socket)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             for _ in range(50):

@@ -783,6 +783,7 @@ pub enum ConnectionDiagnosticCode {
     TimedOut,
     OutputLimit,
     ProbeUnavailable,
+    DockerUnavailable,
     RemoteCommandFailed,
     ConnectionLost,
 }
@@ -835,6 +836,8 @@ pub struct ConnectionSnapshot {
     pub diagnostic: Option<ConnectionDiagnostic>,
     pub has_jump: bool,
     pub transport_mode: SshTransportMode,
+    pub docker_options: DockerOptions,
+    pub docker: Option<DockerProbeReport>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -844,4 +847,74 @@ pub enum SshTransportMode {
     Unconnected,
     Multiplexed,
     DirectFallback,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct DockerOptions {
+    pub executable: Option<String>,
+    pub context: Option<String>,
+    pub sudo: bool,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct BeginSshRequest {
+    pub selection: SshSelection,
+    #[serde(default)]
+    pub docker: DockerOptions,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum DockerProbeStatus {
+    Ready,
+    DockerMissing,
+    DaemonUnavailable,
+    PermissionDenied,
+    SudoAuthenticationRequired,
+    SudoDenied,
+    InvalidContext,
+    UnsupportedEndpoint,
+    UnsupportedOs,
+    InvalidResponse,
+    IdentityChanged,
+    TimedOut,
+    OutputLimit,
+    ConnectionFailed,
+    CommandFailed,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum DockerEndpointKind {
+    Unix,
+    Tcp,
+    Ssh,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum ComposeAvailability {
+    Available,
+    Absent,
+    Unknown,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct DockerProbeReport {
+    pub status: DockerProbeStatus,
+    pub context: Option<String>,
+    pub endpoint: Option<String>,
+    pub endpoint_kind: Option<DockerEndpointKind>,
+    pub client_version: Option<String>,
+    pub server_version: Option<String>,
+    pub daemon_id: Option<String>,
+    pub os: Option<String>,
+    pub rootless: Option<bool>,
+    pub compose: ComposeAvailability,
+    pub compose_version: Option<String>,
+    pub sudo: bool,
 }

@@ -1,6 +1,6 @@
 # ContainerDesk project status
 
-Updated 2026-09-28 after prompt 015. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations, remote command preparation and transient SSH connection state through 015 are implemented; live remote Docker management is not available yet.
+Updated 2026-09-28 after prompt 016. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations, remote command preparation and transient SSH connection state through 016 are implemented; live remote Docker management is not available yet.
 
 ## Current implementation
 
@@ -22,13 +22,15 @@ Updated 2026-09-28 after prompt 015. ContainerDesk is a working native Tauri v2 
 
 - Explicit SSH access/trust flow with no password collection; strict native ProxyJump policy and 15 real disposable-lab cases verified on Linux.
 
-- Backend-owned connection stages, generation-scoped cancellation/switching and static diagnostics with monotonic durations; no automatic connections. Successful live SSH currently ends in degraded while Docker capability probing awaits 016.
+- Backend-owned connection stages, generation-scoped cancellation/switching and static diagnostics with monotonic durations; no automatic connections. Native Docker capability probing now reports Linux readiness or a specific degraded diagnosis; actual Engine workflow verification remains 018.
 
 - Private app-owned multiplex masters, independent channel cancellation, visible direct fallback, bounded idle lifetime and conservative abandoned-resource recovery; native Linux SSH lab verified.
 
-Design: [SSH multiplexing](ssh-multiplexing.md), [connection state](connection-state.md), [SSH authentication](ssh-authentication.md), [remote commands](remote-commands.md), [SSH runner](ssh-runner.md), [SSH resolution](ssh-resolution.md), [SSH discovery](ssh-discovery.md), [demo mode](demo-mode.md), [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
+- Remote Docker context/endpoint/version/daemon/rootless/Compose diagnostics, explicit sudo -n mode and pinned command configuration; actual remote CLI verified with a synthetic API, not a live Engine.
 
-Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md), [008](../codex/tracking/evidence/008.md), [009](../codex/tracking/evidence/009.md), [010](../codex/tracking/evidence/010.md), [011](../codex/tracking/evidence/011.md), [012](../codex/tracking/evidence/012.md), [013](../codex/tracking/evidence/013.md), [014](../codex/tracking/evidence/014.md), [015](../codex/tracking/evidence/015.md).
+Design: [Docker capabilities](docker-capabilities.md), [SSH multiplexing](ssh-multiplexing.md), [connection state](connection-state.md), [SSH authentication](ssh-authentication.md), [remote commands](remote-commands.md), [SSH runner](ssh-runner.md), [SSH resolution](ssh-resolution.md), [SSH discovery](ssh-discovery.md), [demo mode](demo-mode.md), [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
+
+Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md), [008](../codex/tracking/evidence/008.md), [009](../codex/tracking/evidence/009.md), [010](../codex/tracking/evidence/010.md), [011](../codex/tracking/evidence/011.md), [012](../codex/tracking/evidence/012.md), [013](../codex/tracking/evidence/013.md), [014](../codex/tracking/evidence/014.md), [015](../codex/tracking/evidence/015.md), [016](../codex/tracking/evidence/016.md).
 
 ## Actual platform status
 
@@ -45,4 +47,4 @@ Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evid
 
 No browser fixture, mock runtime or build is counted as native server-operation proof. Existing bundle-identifier warning and GitHub moderate dependency alert remain open for the relevant later review. [Checkpoints](checkpoints.md) still require actual lab/platform evidence.
 
-Next prompt: **016 — Remote Docker capability probe**. Continue sequentially under the user's [execution authorization](execution.md).
+Next prompt: **017 — Host inventory screen and groups**. Continue sequentially under the user's [execution authorization](execution.md).

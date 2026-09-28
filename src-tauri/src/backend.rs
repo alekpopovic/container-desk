@@ -130,7 +130,7 @@ impl Backend {
 
     pub async fn begin_ssh_session(
         &self,
-        request: ResolveSshRequest,
+        request: BeginSshRequest,
     ) -> Result<ConnectionSnapshot, AppError> {
         self.require_live_mode()?;
         crate::ssh::resolver::arguments(&request.selection)?;
@@ -141,7 +141,7 @@ impl Backend {
             return Err(AppError::new(ErrorCode::InvalidConfigPath));
         }
         self.sessions
-            .begin(request.selection, || {
+            .begin(request.selection, request.docker.clone(), || {
                 let permit = self
                     .diagnostic_slot
                     .clone()
@@ -158,6 +158,8 @@ impl Backend {
                     executable,
                     _permit: permit,
                     connection: Default::default(),
+                    docker_options: request.docker,
+                    docker_binding: Default::default(),
                 }))
             })
             .await
@@ -1128,7 +1130,8 @@ mod shutdown_tests {
         backend.shutdown().await;
         assert_eq!(
             backend
-                .begin_ssh_session(ResolveSshRequest {
+                .begin_ssh_session(BeginSshRequest {
+                    docker: Default::default(),
                     selection: SshSelection {
                         alias: "fixture".into(),
                         config_path: "/fixture/config".into(),

@@ -115,7 +115,13 @@ fn generated_contract_is_current() {
         StageDuration,
         ConnectionDiagnostic,
         ConnectionSnapshot,
-        SshTransportMode
+        SshTransportMode,
+        DockerOptions,
+        BeginSshRequest,
+        DockerProbeStatus,
+        DockerEndpointKind,
+        ComposeAvailability,
+        DockerProbeReport
     );
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/generated.ts"),

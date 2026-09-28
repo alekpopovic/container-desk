@@ -147,6 +147,8 @@ test("connection snapshots reject stale generations and mismatched aliases", asy
     diagnostic: null,
     hasJump: false,
     transportMode: "unconnected",
+    dockerOptions: { executable: null, context: null, sudo: false },
+    docker: null,
   };
   mockIPC(() => snapshot);
   const current = await beginSshSession(selected);
@@ -172,4 +174,52 @@ test("connection snapshots reject stale generations and mismatched aliases", asy
     state: "disconnected",
   }));
   assert.equal((await disconnectSshSession(current)).state, "disconnected");
+});
+
+test("Docker results cannot change execution mode or context within a session", async () => {
+  const selected = fixtures.effectiveSsh.selection;
+  const docker = { executable: null, context: "rootless", sudo: false };
+  const snapshot = {
+    token: { sessionId: `s_${"2".repeat(32)}`, sessionGeneration: 1 },
+    selection: selected,
+    state: "ready",
+    durations: [],
+    diagnostic: null,
+    hasJump: false,
+    transportMode: "multiplexed",
+    dockerOptions: docker,
+    docker: {
+      status: "ready",
+      context: "rootless",
+      endpoint: "unix:///run/user/1000/docker.sock",
+      endpointKind: "unix",
+      clientVersion: "29.fixture",
+      serverVersion: "29.fixture",
+      daemonId: "fixture",
+      os: "linux",
+      rootless: true,
+      compose: "absent",
+      composeVersion: null,
+      sudo: false,
+    },
+  };
+  mockIPC(() => snapshot);
+  const current = await beginSshSession(selected, docker);
+  mockIPC(() => ({
+    ...snapshot,
+    dockerOptions: { ...docker, context: "other" },
+  }));
+  await assert.rejects(getSshSession(current), { code: "invalid_response" });
+  mockIPC(() => ({ ...snapshot, docker: { ...snapshot.docker, sudo: true } }));
+  await assert.rejects(getSshSession(current), { code: "invalid_response" });
+  mockIPC(() => ({
+    ...snapshot,
+    docker: { ...snapshot.docker, daemonId: null },
+  }));
+  await assert.rejects(getSshSession(current), { code: "invalid_response" });
+  mockIPC(() => ({
+    ...snapshot,
+    docker: { ...snapshot.docker, status: "arbitrary" },
+  }));
+  await assert.rejects(getSshSession(current), { code: "invalid_response" });
 });

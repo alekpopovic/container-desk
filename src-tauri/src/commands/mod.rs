@@ -379,7 +379,7 @@ pub async fn check_ssh_access(
 #[tauri::command]
 pub async fn begin_ssh_session(
     backend: tauri::State<'_, Backend>,
-    request: ResolveSshRequest,
+    request: BeginSshRequest,
 ) -> Result<ConnectionSnapshot, AppError> {
     backend.begin_ssh_session(request).await
 }

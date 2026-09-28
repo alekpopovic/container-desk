@@ -5,12 +5,14 @@ use crate::{
     ssh::{quoting, runner},
 };
 use std::{ffi::OsString, fmt};
+pub(crate) mod probe;
 
 #[derive(Clone, Debug, Default)]
 pub struct DockerCommandConfig {
     executable: Option<String>,
     context: Option<String>,
     sudo: bool,
+    endpoint: Option<String>,
 }
 impl DockerCommandConfig {
     pub fn new(
@@ -35,7 +37,29 @@ impl DockerCommandConfig {
             executable,
             context,
             sudo,
+            endpoint: None,
         })
+    }
+    pub fn from_options(options: &DockerOptions) -> Result<Self, AppError> {
+        Self::new(
+            options.executable.clone(),
+            options.context.clone(),
+            options.sudo,
+        )
+    }
+    fn arguments(&self, operation: impl IntoIterator<Item = String>) -> Vec<String> {
+        let mut args = Vec::new();
+        if self.sudo {
+            args.extend(["sudo".into(), "-n".into(), "--".into()]);
+        }
+        args.push(self.executable().to_string());
+        if let Some(endpoint) = &self.endpoint {
+            args.extend(["--host".into(), endpoint.clone()]);
+        } else if let Some(context) = &self.context {
+            args.extend(["--context".into(), context.clone()]);
+        }
+        args.extend(operation);
+        args
     }
     pub fn executable(&self) -> &str {
         self.executable.as_deref().unwrap_or("docker")
@@ -110,15 +134,7 @@ pub fn prepare(
     if plan.args().first().map(String::as_str) != Some("docker") {
         return Err(AppError::new(ErrorCode::Internal));
     }
-    let mut args = Vec::new();
-    if config.sudo {
-        args.extend(["sudo".into(), "-n".into(), "--".into()]);
-    }
-    args.push(config.executable().to_string());
-    if let Some(context) = &config.context {
-        args.extend(["--context".into(), context.clone()]);
-    }
-    args.extend(plan.args().iter().skip(1).cloned());
+    let args = config.arguments(plan.args().iter().skip(1).cloned());
     Ok(PreparedCommand {
         encoded: quoting::command(&args)?,
         category: plan.category().clone(),
