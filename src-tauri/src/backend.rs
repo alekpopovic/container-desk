@@ -707,10 +707,7 @@ mod tests {
         let directory = std::env::temp_dir().join(format!(
             "containerdesk-demo-spawn-{}-{}",
             std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
+            crate::test_directory_suffix()
         ));
         std::fs::create_dir(&directory).unwrap();
         std::fs::set_permissions(&directory, std::fs::Permissions::from_mode(0o700)).unwrap();

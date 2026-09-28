@@ -1,4 +1,4 @@
-//! Allowlisted argv plans only. Remote shell encoding is added by the SSH builder increment.
+//! Allowlisted argv plans only. docker::prepare validates configuration and encodes for the remote shell.
 use crate::domain::*;
 use std::collections::HashSet;
 
@@ -12,6 +12,7 @@ pub enum OperationCategory {
 pub enum ResponseKind {
     ContainerList,
     ContainerDetail,
+    ImageDetail,
     LogSnapshot,
     Mutation,
     TerminalSession,
@@ -19,6 +20,9 @@ pub enum ResponseKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReadOperation {
     ListContainers,
+    InspectImage {
+        image_id: ImageId,
+    },
     InspectContainer {
         container_id: ContainerId,
     },
@@ -85,10 +89,26 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
             ResponseKind::ContainerList,
             30,
         ),
+        ReadOperation::InspectImage { image_id } => {
+            image_id.validate()?;
+            plan(
+                &["docker", "image", "inspect", "--", &image_id.0],
+                OperationCategory::Read,
+                ResponseKind::ImageDetail,
+                30,
+            )
+        }
         ReadOperation::InspectContainer { container_id } => {
             container_id.validate()?;
             plan(
-                &["docker", "inspect", "--type", "container", &container_id.0],
+                &[
+                    "docker",
+                    "inspect",
+                    "--type",
+                    "container",
+                    "--",
+                    &container_id.0,
+                ],
                 OperationCategory::Read,
                 ResponseKind::ContainerDetail,
                 30,
@@ -109,6 +129,7 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
                     "--timestamps",
                     "--tail",
                     &tail.to_string(),
+                    "--",
                     &container_id.0,
                 ],
                 OperationCategory::Read,
@@ -152,6 +173,7 @@ pub fn confirmation(operation: &ConfirmationOperation) -> Result<CommandPlan, Ap
                     timeout + 10,
                 ),
             };
+            command.args.push("--".into());
             command
                 .args
                 .extend(spec.container_ids.iter().map(|id| id.0.clone()));
@@ -171,6 +193,7 @@ pub fn confirmation(operation: &ConfirmationOperation) -> Result<CommandPlan, Ap
                     "exec",
                     "--interactive",
                     "--tty",
+                    "--",
                     &spec.container_id.0,
                     shell,
                 ],

@@ -15,6 +15,8 @@ import type {
 
 const messages: Record<ErrorCode, string> = {
   invalid_id: "Invalid resource identifier.",
+  invalid_remote_argument:
+    "A remote operation argument is invalid or unsupported.",
   ssh_unavailable:
     "The selected OpenSSH executable is unavailable or untrusted. Check native dependency settings.",
   ssh_resolution_failed:

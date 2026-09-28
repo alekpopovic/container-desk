@@ -174,10 +174,7 @@ mod tests {
         let path = std::env::temp_dir().join(format!(
             "containerdesk-lock-{}-{}",
             std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
+            crate::test_directory_suffix()
         ));
         fs::create_dir(&path).unwrap();
         let store = FileStorage::open(&path).unwrap();

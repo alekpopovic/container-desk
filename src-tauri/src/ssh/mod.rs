@@ -1,5 +1,6 @@
 //! Native SSH configuration boundaries. Discovery never invokes a subprocess.
 pub mod discovery;
+pub mod quoting;
 pub mod resolver;
 pub mod runner;
 use crate::domain::{AppError, ErrorCode};

@@ -41,6 +41,7 @@ fn generated_contract_is_current() {
         HostId,
         SessionId,
         ContainerId,
+        ImageId,
         SubscriptionId,
         HostSelection,
         SessionScope,

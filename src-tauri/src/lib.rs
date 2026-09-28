@@ -1,4 +1,5 @@
 mod diagnostics;
+pub mod docker;
 pub mod policy;
 pub mod ssh;
 mod storage;
@@ -43,4 +44,18 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("failed to run ContainerDesk");
+}
+
+#[cfg(test)]
+fn test_directory_suffix() -> String {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    format!(
+        "{}-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    )
 }

@@ -11,6 +11,7 @@ macro_rules! identifier {
 identifier!(HostId);
 identifier!(SessionId);
 identifier!(ContainerId);
+identifier!(ImageId);
 identifier!(SubscriptionId);
 identifier!(IntentId);
 
@@ -30,14 +31,24 @@ impl HostId {
         }
     }
 }
+fn full_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
+}
 impl ContainerId {
     pub fn validate(&self) -> Result<(), AppError> {
-        if self.0.len() == 64
-            && self
-                .0
-                .bytes()
-                .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
-        {
+        if full_sha256(&self.0) {
+            Ok(())
+        } else {
+            Err(AppError::new(ErrorCode::InvalidId))
+        }
+    }
+}
+impl ImageId {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if full_sha256(self.0.strip_prefix("sha256:").unwrap_or(&self.0)) {
             Ok(())
         } else {
             Err(AppError::new(ErrorCode::InvalidId))
@@ -126,6 +137,7 @@ pub enum ErrorCode {
     OperationCancelled,
     InvalidAlias,
     InvalidConfigPath,
+    InvalidRemoteArgument,
     SshUnavailable,
     SshResolutionFailed,
 }
@@ -171,6 +183,9 @@ impl AppError {
             }
             ErrorCode::SshResolutionFailed => {
                 "OpenSSH could not resolve this alias. Check the trusted configuration in your terminal."
+            }
+            ErrorCode::InvalidRemoteArgument => {
+                "A remote operation argument is invalid or unsupported."
             }
             ErrorCode::InvalidAlias => {
                 "Use a concrete SSH alias: letters, digits, dots, underscores or dashes, starting with a letter or digit (maximum 256 bytes)."

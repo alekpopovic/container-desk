@@ -6,10 +6,7 @@ impl Lab {
         let path = std::env::temp_dir().join(format!(
             "containerdesk-resolver-{}-{}",
             std::process::id(),
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
+            crate::test_directory_suffix()
         ));
         fs::create_dir(&path).unwrap();
         fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();

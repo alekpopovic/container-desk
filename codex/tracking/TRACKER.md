@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T19:49:28+00:00
+Updated: 2026-09-28T20:01:28+00:00
 
-blocked: **0** | done: **11** | in_progress: **0** | pending: **49**
+blocked: **0** | done: **12** | in_progress: **0** | pending: **48**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -21,7 +21,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 009 | 02 SSH transport | SSH config discovery and host candidates | high | done | codex/tracking/evidence/009.md |
 | 010 | 02 SSH transport | Effective SSH configuration resolution | high | done | codex/tracking/evidence/010.md |
 | 011 | 02 SSH transport | OpenSSH subprocess runner | high | done | codex/tracking/evidence/011.md |
-| 012 | 02 SSH transport | Remote argument quoting and Docker command builders | high | pending | — |
+| 012 | 02 SSH transport | Remote argument quoting and Docker command builders | high | done | codex/tracking/evidence/012.md |
 | 013 | 02 SSH transport | SSH authentication and host trust flow | high | pending | — |
 | 014 | 02 SSH transport | Host connection state machine | high | pending | — |
 | 015 | 02 SSH transport | Connection reuse and child ownership | high | pending | — |
@@ -95,3 +95,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T19:35:57+00:00 — 010: done; 46 Rust tests including native ssh -G comparison, Match exec marker, argv and timeout/reaping passed; 19 frontend IPC and 60 Playwright tests passed; Direct native argv verified by strace; clippy and native Linux release build passed
 - 2026-09-28T19:37:24+00:00 — 011: start;
 - 2026-09-28T19:49:28+00:00 — 011: done; 51 Rust tests and 19 frontend IPC checks passed; targeted runner tests also passed under strace; Native timeout/cancellation/output-limit/partial-output/reaping and OpenSSH option checks passed; Clippy, formatting and native Linux release build passed
+- 2026-09-28T19:49:44+00:00 — 012: start;
+- 2026-09-28T20:01:28+00:00 — 012: done; 56 Rust tests and 19 frontend IPC tests passed; final 3 Docker-builder and 2 quoting tests passed; Native inert POSIX harness preserved hostile arguments exactly without executing injected commands; Clippy, formatting and native Linux release build passed

@@ -4,7 +4,6 @@ use std::{
     fs,
     os::unix::fs::{PermissionsExt, symlink},
     sync::{Arc, Mutex},
-    time::{SystemTime, UNIX_EPOCH},
 };
 
 #[derive(Default)]
@@ -74,10 +73,7 @@ impl TestDir {
         let name = format!(
             "containerdesk-storage-{}-{}",
             std::process::id(),
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_nanos()
+            crate::test_directory_suffix()
         );
         let path = std::env::temp_dir().join(name);
         fs::create_dir(&path).unwrap();

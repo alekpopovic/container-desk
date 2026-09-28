@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T19:49:28+00:00",
+  "updated_at": "2026-09-28T20:01:28+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -375,6 +375,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T19:49:44+00:00",
+      "id": "012",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T20:01:28+00:00",
+      "id": "012",
+      "action": "done",
+      "note": "56 Rust tests and 19 frontend IPC tests passed; final 3 Docker-builder and 2 quoting tests passed; Native inert POSIX harness preserved hostile arguments exactly without executing injected commands; Clippy, formatting and native Linux release build passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T19:49:44+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -528,12 +562,16 @@
       "note": ""
     },
     "012": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T19:49:44+00:00",
+      "finished_at": "2026-09-28T20:01:28+00:00",
+      "evidence": "codex/tracking/evidence/012.md",
+      "evidence_sha256": "b1f4a03fc01ce06435703b6bc53b9bb5e69eff6e84eaadb3f100c5300469809f",
+      "checks": [
+        "56 Rust tests and 19 frontend IPC tests passed; final 3 Docker-builder and 2 quoting tests passed",
+        "Native inert POSIX harness preserved hostile arguments exactly without executing injected commands",
+        "Clippy, formatting and native Linux release build passed"
+      ],
       "commit": "",
       "note": ""
     },

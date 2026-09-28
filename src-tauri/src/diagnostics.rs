@@ -195,20 +195,14 @@ pub async fn inspect_agent(path: Option<&Path>) -> AgentDiagnostic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{
-        os::unix::{fs::PermissionsExt, net::UnixListener},
-        time::{SystemTime, UNIX_EPOCH},
-    };
+    use std::os::unix::{fs::PermissionsExt, net::UnixListener};
     struct Dir(PathBuf);
     impl Dir {
         fn new() -> Self {
             let path = std::env::temp_dir().join(format!(
                 "containerdesk-diagnostics-{}-{}",
                 std::process::id(),
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_nanos()
+                crate::test_directory_suffix()
             ));
             fs::create_dir(&path).unwrap();
             fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
