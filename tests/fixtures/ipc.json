@@ -1,0 +1,97 @@
+{
+  "connected": {
+    "capabilities": {
+      "compose": false,
+      "docker": true,
+      "management": false,
+      "terminal": false
+    },
+    "scope": {
+      "daemonId": "fixture-daemon",
+      "selection": {
+        "hostId": "h_11111111111111111111111111111111",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    }
+  },
+  "detail": {
+    "environmentNames": [
+      "EXAMPLE_TOKEN"
+    ],
+    "environmentValuesMasked": true,
+    "summary": {
+      "health": null,
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "image": "example:fixture",
+      "name": "example",
+      "scope": {
+        "daemonId": "fixture-daemon",
+        "selection": {
+          "hostId": "h_11111111111111111111111111111111",
+          "selectionGeneration": 7
+        },
+        "sessionGeneration": 3,
+        "sessionId": "s_22222222222222222222222222222222"
+      },
+      "state": "running",
+      "status": "Up"
+    }
+  },
+  "error": {
+    "code": "session_not_found",
+    "message": "Connection session does not exist.",
+    "scope": {
+      "daemonId": "fixture-daemon",
+      "selection": {
+        "hostId": "h_11111111111111111111111111111111",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    }
+  },
+  "hosts": {
+    "hosts": [
+      {
+        "alias": "fixture",
+        "connectionState": "disconnected",
+        "displayName": "Example",
+        "group": "Lab",
+        "id": "h_11111111111111111111111111111111",
+        "readOnly": true
+      }
+    ]
+  },
+  "success": {
+    "containers": [
+      {
+        "health": null,
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "image": "example:fixture",
+        "name": "example",
+        "scope": {
+          "daemonId": "fixture-daemon",
+          "selection": {
+            "hostId": "h_11111111111111111111111111111111",
+            "selectionGeneration": 7
+          },
+          "sessionGeneration": 3,
+          "sessionId": "s_22222222222222222222222222222222"
+        },
+        "state": "running",
+        "status": "Up"
+      }
+    ],
+    "scope": {
+      "daemonId": "fixture-daemon",
+      "selection": {
+        "hostId": "h_11111111111111111111111111111111",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    }
+  }
+}

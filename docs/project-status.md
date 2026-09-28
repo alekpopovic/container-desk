@@ -1,11 +1,11 @@
 # ContainerDesk project status
 
-Updated 2026-09-28 after prompt 003. The repository now has a working Tauri v2 desktop shell with React, strict TypeScript, Vite and Tailwind. Its sole backend command still returns the application version. The workspace now includes host groups, host identity/status, six resource/settings routes, responsive inventory/details and light/dark themes. Native Linux wide and narrow layouts have been visually inspected.
+Updated 2026-09-28 after prompt 004. The repository now has a working Tauri v2 desktop shell with React, strict TypeScript, Vite and Tailwind. Its backend now has generated Rust/TypeScript domain types and four narrow host/session commands in addition to the version query. The workspace now includes host groups, host identity/status, six resource/settings routes, responsive inventory/details and light/dark themes. Native Linux wide and narrow layouts have been visually inspected.
 
 ## Implemented and verified
 
 - One application in the existing root; the original prompt pack, AGENTS.md and immutable hashes remain intact. Prompt 002 started from clean commit `2f598de89c7f9e2386a79f03ad67cb1296e3faf5`.
-- React handles loading, actual version, bridge error/retry and browser-only states. Rust supplies version metadata through a narrow typed command. The local main-window capability grants only `allow-app-version`.
+- React handles loading, actual version, bridge error/retry and browser-only states. Rust supplies version metadata through a narrow typed command. Prompt 002 initially granted only `allow-app-version`; prompt 004 extends the local capability with the four narrow host/session commands.
 - Node 24.21.0/npm 11.19.0 and Rust/Cargo 1.98.1 remain pinned. Biome 2.5.14 and Node types 24.19.0 were added with exact versions. npm's lock was updated; the committed Cargo.lock remains unchanged.
 - Strict TypeScript, recommended Biome lint, formatting and three focused IPC bridge tests passed. Rust `cargo check --locked` and Clippy with warnings denied passed.
 - Production frontend and native release builds passed. The unbundled Linux executable embeds its frontend and opens a real GTK/WebKit window; the screenshot records actual Rust-to-React version IPC, not browser mock output.
@@ -31,4 +31,6 @@ The first launch inherited incompatible Snap library paths and failed before ope
 
 Management and terminal remain planned per-host opt-ins enforced in Rust, as specified in [ADR 0001](decisions/0001-architecture.md). There is no unrestricted shell plugin, host discovery or remote mutation endpoint in the scaffold.
 
-Next prompt: **004 — Typed domain models and IPC boundary**. Do not treat this shell as the remote-Docker MVP; checkpoints [018/030/038/046/060](checkpoints.md) still require their actual feature, lab and platform acceptance work.
+Prompt 004 adds validated opaque IDs, scoped requests/responses, structured errors, generated TypeScript/JSON fixtures and stale-result guards. Storage and SSH transport are still unavailable; the new commands report this honestly. See [IPC contract](ipc-contract.md) and [004 evidence](../codex/tracking/evidence/004.md).
+
+Next prompt: **005 — Local settings and host metadata store**. Do not treat this shell as the remote-Docker MVP; checkpoints [018/030/038/046/060](checkpoints.md) still require their actual feature, lab and platform acceptance work.

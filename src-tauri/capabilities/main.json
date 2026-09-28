@@ -1,7 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "Permit only the application-version query from the local main window.",
+  "description": "Permit narrow application and read-session commands only from the local main window.",
   "windows": ["main"],
-  "permissions": ["allow-app-version"]
+  "permissions": [
+    "allow-app-version",
+    "allow-list-hosts",
+    "allow-connect-host",
+    "allow-list-containers",
+    "allow-cancel-subscription"
+  ]
 }

@@ -54,3 +54,7 @@ This evidence covers GTK on X11/XWayland. It does not establish native Wayland o
 Prompt 003 adds six hash routes, an empty host sidebar, connection context and responsive inventory/details. Appearance controls are functional for the current window; remote features remain explicitly unavailable. See [design system](design-system.md) for tokens and accessibility behavior.
 
 UI checks use pinned Playwright 1.63.0. Run `npm exec playwright -- install chromium` once if its browser is missing, then `npm run test:ui`. The runner starts and stops a dedicated development server on loopback port 1431. Screenshots/traces under test-results are ignored; curated verification images are committed separately. Isolated synthetic fixtures are excluded from the production entry point and never represent real SSH/native results.
+
+## IPC contract maintenance
+
+Edit Rust domain DTOs, run `npm run ipc:generate`, review generated types and fixtures, then run `npm run rust:test` and `npm run check`. Ordinary tests fail on drift without rewriting files. `ts-rs` and Tauri mock-runtime helpers are development-only dependencies. See [IPC contract](ipc-contract.md).

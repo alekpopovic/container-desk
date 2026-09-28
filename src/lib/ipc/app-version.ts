@@ -1,8 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
-export interface AppVersion {
-  version: string;
-}
+import type { AppVersion } from "./generated.ts";
+export type { AppVersion } from "./generated.ts";
 
 export async function getAppVersion(): Promise<AppVersion> {
   const response = await invoke<unknown>("app_version");

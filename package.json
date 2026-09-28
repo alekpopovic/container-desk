@@ -35,7 +35,7 @@
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build --no-bundle -- --locked",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/lib/ipc/app-version.test.ts",
+    "test": "node --test src/lib/ipc/*.test.ts",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "format:check": "biome format .",
@@ -44,6 +44,8 @@
     "rust:lint": "cargo clippy --manifest-path src-tauri/Cargo.toml --locked --all-targets -- -D warnings",
     "rust:format": "cargo fmt --manifest-path src-tauri/Cargo.toml",
     "rust:format:check": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "ipc:generate": "CONTAINERDESK_UPDATE_CONTRACTS=1 cargo test --manifest-path src-tauri/Cargo.toml --locked contract_tests",
+    "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml --locked"
   }
 }

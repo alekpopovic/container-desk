@@ -1,7 +1,12 @@
 fn main() {
-    tauri_build::try_build(
-        tauri_build::Attributes::new()
-            .app_manifest(tauri_build::AppManifest::new().commands(&["app_version"])),
-    )
+    tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
+        tauri_build::AppManifest::new().commands(&[
+            "app_version",
+            "list_hosts",
+            "connect_host",
+            "list_containers",
+            "cancel_subscription",
+        ]),
+    ))
     .expect("failed to build ContainerDesk application context");
 }
