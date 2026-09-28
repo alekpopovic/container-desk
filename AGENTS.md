@@ -13,6 +13,9 @@ Read `codex/docs/ARCHITECTURE.md` and the selected prompt before implementation.
 - Use `start`, `done` and `block` through the script; do not manually change state to bypass dependencies.
 - Evidence is mandatory. Record real checks and platform limitations. Never claim that a fixture, browser preview, cross-compile or unexecuted CI file proves native operation.
 - A recommended reasoning level does not change the actual model configuration. Be accurate about what your environment can control.
+- After every prompt, record verification/evidence and mark it `done` or `blocked` accurately, then commit all prompt-related changes (including tracker state and evidence) and push the commit to the current branch's configured upstream before the final handover. This is standing user authorization; do not request confirmation for each commit or push.
+- Review the diff and stage only prompt-related files/hunks. Preserve unrelated user work and never commit secrets, generated build artifacts or the ephemeral tracker lock. Include the prompt ID and a concise description in the commit message; identify blocked work explicitly.
+- Verify the commit and successful push; report the commit SHA, destination branch and any failure in the handover. Do not force-push or bypass Git hooks. If no upstream is configured, or commit/push fails, preserve local work and report the specific blocker without claiming it was pushed. If there are no prompt-related changes, report that instead of creating an empty commit.
 - Stop after the selected prompt with changes, verification, limits and next step.
 - Keep immutable original prompt hashes. Put implementation decisions or approved scope changes in application docs and evidence rather than rewriting historical tasks.
 

@@ -16,6 +16,9 @@ Use the manifest reasoning recommendation if your interface supports it;
 otherwise report it without claiming that you changed a model setting.
 Start the task through the tracker, implement the requested increment,
 run meaningful checks, write evidence, and mark done or blocked accurately.
+Review and commit only prompt-related changes, including tracker state and
+evidence, then push to the current branch's configured upstream as required
+by AGENTS.md. Report the commit SHA, destination and actual push result.
 Do not execute a second prompt automatically. Return changes, checks,
 remaining limitations and the next task ID. Preserve all unrelated user work.
 ```
