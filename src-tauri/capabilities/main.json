@@ -21,6 +21,9 @@
     "allow-discover-ssh-hosts",
     "allow-select-ssh-alias",
     "allow-resolve-ssh-config",
-    "allow-check-ssh-access"
+    "allow-check-ssh-access",
+    "allow-begin-ssh-session",
+    "allow-get-ssh-session",
+    "allow-disconnect-ssh-session"
   ]
 }

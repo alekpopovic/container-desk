@@ -38,7 +38,7 @@ export async function switchWorkspace(
     const host = {
       ...fixture.workspace.host,
       readOnly: true,
-      connectionState: "connected" as const,
+      connectionState: "ready" as const,
     };
     const scope: SessionScope = {
       selection: { hostId: host.id, selectionGeneration: generation },

@@ -142,10 +142,12 @@ export async function listHosts(): Promise<ListHostsResponse> {
   const result = await call("list_hosts");
   const states = [
     "disconnected",
+    "resolving",
     "connecting",
-    "connected",
-    "reconnecting",
-    "failed",
+    "probing",
+    "ready",
+    "degraded",
+    "error",
   ];
   if (
     !record(result) ||
@@ -428,7 +430,7 @@ function workspaceMode(
     text(value.host.displayName, 256) &&
     text(value.host.group, 128) &&
     value.host.readOnly === true &&
-    value.host.connectionState === "connected" &&
+    value.host.connectionState === "ready" &&
     [
       "standard",
       "empty",
@@ -564,6 +566,8 @@ export async function resolveSshConfig(
 
 import type { SshAccessReport, SshAccessStatus } from "./generated.ts";
 export const sshAccessHelp: Record<SshAccessStatus, string> = {
+  remote_command_failed:
+    "SSH authenticated, but the fixed remote access command failed or returned an unexpected result.",
   verified: "SSH access verified. Docker readiness has not been checked.",
   unknown_host_key:
     "A destination or jump host is not trusted yet. Verify its fingerprint independently in your terminal, then retry explicitly.",
@@ -596,4 +600,118 @@ export async function checkSshAccess(
   )
     throw new IpcError("invalid_response");
   return value as SshAccessReport;
+}
+
+import type {
+  ConnectionSnapshot,
+  ConnectionToken,
+  ConnectionState,
+  ConnectionStage,
+  ConnectionDiagnosticCode,
+} from "./generated.ts";
+export const connectionLabels: Record<ConnectionState, string> = {
+  disconnected: "Disconnected",
+  resolving: "Resolving configuration",
+  connecting: "Authenticating SSH",
+  probing: "Checking remote capabilities",
+  ready: "Ready",
+  degraded: "Limited connection",
+  error: "Connection error",
+};
+export const connectionDiagnostics: Record<ConnectionDiagnosticCode, string> = {
+  resolution_failed: "OpenSSH could not resolve the selected configuration.",
+  unknown_host_key: sshAccessHelp.unknown_host_key,
+  changed_host_key: sshAccessHelp.changed_host_key,
+  host_key_rejected: sshAccessHelp.host_key_rejected,
+  authentication_failed: sshAccessHelp.authentication_failed,
+  connection_failed: sshAccessHelp.connection_failed,
+  timed_out:
+    "This connection stage exceeded its deadline. Retry explicitly after checking access.",
+  output_limit: "SSH output exceeded the application limit.",
+  probe_unavailable:
+    "SSH access verified. Docker capability checks are not available in this increment.",
+  remote_command_failed:
+    "SSH connected, but the remote capability command failed.",
+};
+const connectionStages: ConnectionStage[] = [
+  "resolve",
+  "authenticate",
+  "probe",
+];
+function decodeConnection(
+  value: unknown,
+  expected: SshSelection,
+  token?: ConnectionToken,
+): ConnectionSnapshot {
+  if (
+    !record(value) ||
+    !record(value.token) ||
+    !text(value.token.sessionId, 34) ||
+    !/^s_[a-f0-9]{32}$/.test(value.token.sessionId) ||
+    !generation(value.token.sessionGeneration) ||
+    (token &&
+      (value.token.sessionId !== token.sessionId ||
+        value.token.sessionGeneration !== token.sessionGeneration)) ||
+    !record(value.selection) ||
+    value.selection.alias !== expected.alias ||
+    value.selection.configPath !== expected.configPath ||
+    value.selection.useDefaultConfig !== expected.useDefaultConfig ||
+    typeof value.state !== "string" ||
+    !Object.hasOwn(connectionLabels, value.state) ||
+    typeof value.hasJump !== "boolean" ||
+    !Array.isArray(value.durations) ||
+    value.durations.length > 3 ||
+    !value.durations.every(
+      (duration) =>
+        record(duration) &&
+        connectionStages.includes(duration.stage as ConnectionStage) &&
+        typeof duration.durationMs === "number" &&
+        Number.isInteger(duration.durationMs) &&
+        duration.durationMs >= 0 &&
+        duration.durationMs <= 0xffffffff,
+    ) ||
+    new Set(value.durations.map((duration) => duration.stage)).size !==
+      value.durations.length ||
+    !(
+      value.diagnostic === null ||
+      (record(value.diagnostic) &&
+        connectionStages.includes(value.diagnostic.stage as ConnectionStage) &&
+        typeof value.diagnostic.code === "string" &&
+        Object.hasOwn(connectionDiagnostics, value.diagnostic.code))
+    )
+  )
+    throw new IpcError("invalid_response");
+  return value as ConnectionSnapshot;
+}
+export async function beginSshSession(
+  selected: SshSelection,
+): Promise<ConnectionSnapshot> {
+  return decodeConnection(
+    await call("begin_ssh_session", { selection: selected }),
+    selected,
+  );
+}
+export async function getSshSession(
+  current: ConnectionSnapshot,
+): Promise<ConnectionSnapshot> {
+  return decodeConnection(
+    await call("get_ssh_session", { token: current.token }),
+    current.selection,
+    current.token,
+  );
+}
+export async function disconnectSshSession(
+  current: ConnectionSnapshot,
+): Promise<ConnectionSnapshot> {
+  const result = decodeConnection(
+    await call("disconnect_ssh_session", { token: current.token }),
+    current.selection,
+  );
+  if (
+    result.token.sessionId !== current.token.sessionId ||
+    result.token.sessionGeneration <= current.token.sessionGeneration ||
+    result.state !== "disconnected"
+  )
+    throw new IpcError("invalid_response");
+  return result;
 }

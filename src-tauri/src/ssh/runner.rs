@@ -103,6 +103,11 @@ impl Job {
     }
 }
 impl Runner {
+    pub(crate) async fn wait_idle(&self) {
+        // Snapshot owners retain slots until child/group cleanup and reaping finish.
+        let permit = self.slots.acquire_many(4).await;
+        drop(permit);
+    }
     /// Caller must supply arguments from a fixed validated operation builder, never renderer shell text.
     /// Dropping Job or its wait future cancels; the owner retains its slot until direct-child reaping.
     pub fn start(

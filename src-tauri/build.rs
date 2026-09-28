@@ -22,6 +22,9 @@ fn main() {
             "select_ssh_alias",
             "resolve_ssh_config",
             "check_ssh_access",
+            "begin_ssh_session",
+            "get_ssh_session",
+            "disconnect_ssh_session",
         ]),
     ))
     .expect("failed to build ContainerDesk application context");

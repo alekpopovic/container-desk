@@ -107,7 +107,14 @@ fn generated_contract_is_current() {
         ResolveSshRequest,
         EffectiveSshConfig,
         SshAccessStatus,
-        SshAccessReport
+        SshAccessReport,
+        ConnectionStage,
+        ConnectionDiagnosticCode,
+        ConnectionToken,
+        ConnectionRequest,
+        StageDuration,
+        ConnectionDiagnostic,
+        ConnectionSnapshot
     );
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/generated.ts"),

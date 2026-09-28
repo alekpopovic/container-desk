@@ -211,10 +211,12 @@ impl AppError {
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub enum ConnectionState {
     Disconnected,
+    Resolving,
     Connecting,
-    Connected,
-    Reconnecting,
-    Failed,
+    Probing,
+    Ready,
+    Degraded,
+    Error,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -749,6 +751,7 @@ pub enum SshAccessStatus {
     TimedOut,
     OutputLimit,
     ConnectionFailed,
+    RemoteCommandFailed,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -757,4 +760,77 @@ pub struct SshAccessReport {
     pub selection: SshSelection,
     pub status: SshAccessStatus,
     pub ssh_error: Option<String>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum ConnectionStage {
+    Resolve,
+    Authenticate,
+    Probe,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum ConnectionDiagnosticCode {
+    ResolutionFailed,
+    UnknownHostKey,
+    ChangedHostKey,
+    HostKeyRejected,
+    AuthenticationFailed,
+    ConnectionFailed,
+    TimedOut,
+    OutputLimit,
+    ProbeUnavailable,
+    RemoteCommandFailed,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ConnectionToken {
+    pub session_id: SessionId,
+    pub session_generation: u32,
+}
+impl ConnectionToken {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if !opaque_id(&self.session_id.0, "s_") {
+            return Err(AppError::new(ErrorCode::InvalidId));
+        }
+        if self.session_generation == 0 {
+            return Err(AppError::new(ErrorCode::InvalidGeneration));
+        }
+        Ok(())
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ConnectionRequest {
+    pub token: ConnectionToken,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct StageDuration {
+    pub stage: ConnectionStage,
+    pub duration_ms: u32,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ConnectionDiagnostic {
+    pub stage: ConnectionStage,
+    pub code: ConnectionDiagnosticCode,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ConnectionSnapshot {
+    pub token: ConnectionToken,
+    pub selection: SshSelection,
+    pub state: ConnectionState,
+    pub durations: Vec<StageDuration>,
+    pub diagnostic: Option<ConnectionDiagnostic>,
+    pub has_jump: bool,
 }

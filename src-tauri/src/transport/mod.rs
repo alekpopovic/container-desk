@@ -43,6 +43,6 @@ pub fn demo_host() -> HostSummary {
         display_name: "Demo Linux host".into(),
         group: "Demo".into(),
         read_only: true,
-        connection_state: ConnectionState::Connected,
+        connection_state: ConnectionState::Ready,
     }
 }

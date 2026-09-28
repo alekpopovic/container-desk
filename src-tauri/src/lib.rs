@@ -41,6 +41,9 @@ pub fn run() {
             commands::select_ssh_alias,
             commands::resolve_ssh_config,
             commands::check_ssh_access,
+            commands::begin_ssh_session,
+            commands::get_ssh_session,
+            commands::disconnect_ssh_session,
             commands::switch_workspace
         ])
         .run(tauri::generate_context!())

@@ -120,6 +120,9 @@ pub async fn probe(
         Ok(output) if output.status.success() && output.stdout == b"containerdesk-access-ok" => {
             (SshAccessStatus::Verified, None)
         }
+        Ok(output) if output.status.code().is_some_and(|code| code != 255) => {
+            (SshAccessStatus::RemoteCommandFailed, None)
+        }
         Ok(output) => classify(&output.stderr),
         Err(RunError::TimedOut) => (SshAccessStatus::TimedOut, None),
         Err(RunError::Cancelled) => return Err(AppError::new(ErrorCode::OperationCancelled)),

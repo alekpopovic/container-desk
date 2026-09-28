@@ -45,6 +45,9 @@ mod tests {
             .invoke_handler(tauri::generate_handler![
                 get_workspace_mode,
                 switch_workspace,
+                begin_ssh_session,
+                get_ssh_session,
+                disconnect_ssh_session,
                 list_containers
             ])
             .build(mock_context(noop_assets()))
@@ -77,6 +80,11 @@ mod tests {
         )
         .unwrap();
         assert_eq!(mode["mode"], "demo");
+        assert_eq!(invoke("begin_ssh_session", json!({"request":{"selection":{"alias":"fixture","configPath":"/fixture/config","useDefaultConfig":false}}})).unwrap_err()["code"], "permission_denied");
+        for command in ["get_ssh_session", "disconnect_ssh_session"] {
+            assert_eq!(invoke(command, json!({"request":{"token":{"sessionId":format!("s_{}", "1".repeat(32)),"sessionGeneration":1}}})).unwrap_err()["code"], "permission_denied");
+        }
+
         let response = invoke(
             "list_containers",
             json!({"request":{"scope":mode["scope"]}}),
@@ -366,4 +374,26 @@ pub async fn check_ssh_access(
     request: ResolveSshRequest,
 ) -> Result<SshAccessReport, AppError> {
     backend.check_ssh_access(request).await
+}
+
+#[tauri::command]
+pub async fn begin_ssh_session(
+    backend: tauri::State<'_, Backend>,
+    request: ResolveSshRequest,
+) -> Result<ConnectionSnapshot, AppError> {
+    backend.begin_ssh_session(request).await
+}
+#[tauri::command]
+pub fn get_ssh_session(
+    backend: tauri::State<'_, Backend>,
+    request: ConnectionRequest,
+) -> Result<ConnectionSnapshot, AppError> {
+    backend.ssh_session(request)
+}
+#[tauri::command]
+pub async fn disconnect_ssh_session(
+    backend: tauri::State<'_, Backend>,
+    request: ConnectionRequest,
+) -> Result<ConnectionSnapshot, AppError> {
+    backend.disconnect_ssh_session(request).await
 }

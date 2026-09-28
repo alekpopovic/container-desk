@@ -9,6 +9,9 @@ import {
   isConcreteAlias,
   resolveSshConfig,
   checkSshAccess,
+  beginSshSession,
+  getSshSession,
+  disconnectSshSession,
 } from "./client.ts";
 const fixtures = JSON.parse(
   readFileSync(
@@ -132,4 +135,40 @@ test("SSH access rejects mismatched selection and unrecognized status", async ()
   await assert.rejects(checkSshAccess(selection), { code: "invalid_response" });
   mockIPC(() => ({ selection, status: "trust_automatically", sshError: null }));
   await assert.rejects(checkSshAccess(selection), { code: "invalid_response" });
+});
+
+test("connection snapshots reject stale generations and mismatched aliases", async () => {
+  const selected = fixtures.effectiveSsh.selection;
+  const snapshot = {
+    token: { sessionId: `s_${"1".repeat(32)}`, sessionGeneration: 1 },
+    selection: selected,
+    state: "resolving",
+    durations: [],
+    diagnostic: null,
+    hasJump: false,
+  };
+  mockIPC(() => snapshot);
+  const current = await beginSshSession(selected);
+  mockIPC(() => ({
+    ...snapshot,
+    token: { ...snapshot.token, sessionGeneration: 2 },
+  }));
+  await assert.rejects(getSshSession(current), { code: "invalid_response" });
+  mockIPC(() => ({ ...snapshot, selection: { ...selected, alias: "other" } }));
+  await assert.rejects(getSshSession(current), { code: "invalid_response" });
+  mockIPC(() => ({
+    ...snapshot,
+    durations: [{ stage: "resolve", durationMs: -1 }],
+  }));
+  await assert.rejects(getSshSession(current), { code: "invalid_response" });
+  mockIPC(() => ({ ...snapshot, state: "disconnected" }));
+  await assert.rejects(disconnectSshSession(current), {
+    code: "invalid_response",
+  });
+  mockIPC(() => ({
+    ...snapshot,
+    token: { ...snapshot.token, sessionGeneration: 2 },
+    state: "disconnected",
+  }));
+  assert.equal((await disconnectSshSession(current)).state, "disconnected");
 });

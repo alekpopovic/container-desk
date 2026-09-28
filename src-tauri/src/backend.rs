@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex};
 /// Resource operations remain behind identity gates. Local version probes are separately bounded.
 pub struct Backend {
     process_runner: crate::ssh::runner::Runner,
+    sessions: crate::ssh::sessions::Sessions,
     config_home: std::path::PathBuf,
     policy: Mutex<PolicyEngine>,
     settings: Mutex<Result<SettingsStore, AppError>>,
@@ -23,6 +24,7 @@ impl Backend {
             .and_then(|adapter| SettingsStore::load(Box::new(adapter)));
         Self {
             process_runner: crate::ssh::runner::Runner::default(),
+            sessions: crate::ssh::sessions::Sessions::default(),
             config_home,
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(settings),
@@ -117,6 +119,51 @@ impl Backend {
         })
         .await
         .map_err(|_| AppError::new(ErrorCode::Internal))?
+    }
+
+    pub async fn begin_ssh_session(
+        &self,
+        request: ResolveSshRequest,
+    ) -> Result<ConnectionSnapshot, AppError> {
+        self.require_live_mode()?;
+        crate::ssh::resolver::arguments(&request.selection)?;
+        if request.selection.use_default_config
+            && request.selection.config_path
+                != crate::ssh::discovery::config_path(&self.config_home, None)?
+        {
+            return Err(AppError::new(ErrorCode::InvalidConfigPath));
+        }
+        self.sessions
+            .begin(request.selection, || {
+                let permit = self
+                    .diagnostic_slot
+                    .clone()
+                    .try_acquire_owned()
+                    .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+                self.require_live_mode()?;
+                let executable = self
+                    .preferences()?
+                    .preferences
+                    .ssh_executable_override
+                    .unwrap_or_else(|| crate::diagnostics::DEFAULT_SSH.into());
+                Ok(Arc::new(crate::ssh::sessions::NativeDriver {
+                    runner: self.process_runner.clone(),
+                    executable,
+                    _permit: permit,
+                }))
+            })
+            .await
+    }
+    pub fn ssh_session(&self, request: ConnectionRequest) -> Result<ConnectionSnapshot, AppError> {
+        self.require_live_mode()?;
+        self.sessions.snapshot(&request.token)
+    }
+    pub async fn disconnect_ssh_session(
+        &self,
+        request: ConnectionRequest,
+    ) -> Result<ConnectionSnapshot, AppError> {
+        self.require_live_mode()?;
+        self.sessions.disconnect(&request.token).await
     }
     pub async fn discover_hosts(
         &self,
@@ -306,7 +353,8 @@ impl Backend {
                 )
             }
         };
-        // No live SSH sessions exist in this increment. Later mode switching must cancel/reap them first.
+        // The diagnostic gate excludes connection stages and their child cleanup.
+        self.sessions.reset_idle()?;
         *policy = PolicyEngine::default();
         if let Some(scope) = &snapshot.scope {
             policy.register(scope.clone())?;
@@ -492,6 +540,7 @@ impl Default for Backend {
     fn default() -> Self {
         Self {
             process_runner: crate::ssh::runner::Runner::default(),
+            sessions: crate::ssh::sessions::Sessions::default(),
             config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
             policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),

@@ -42,10 +42,10 @@ def main():
         agent = None
         network_created = False
         try:
-            for name in ("plain", "encrypted", "jump-host", "target-host", "wrong-host"):
+            for name in ("plain", "encrypted", "forced-failure", "jump-host", "target-host", "wrong-host"):
                 run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "disposable-lab-only" if name == "encrypted" else "", "-f", str(root / name)], stdout=subprocess.DEVNULL)
             authorized = root / "authorized_keys"
-            authorized.write_text((root / "plain.pub").read_text() + (root / "encrypted.pub").read_text())
+            authorized.write_text((root / "plain.pub").read_text() + (root / "encrypted.pub").read_text() + 'command="exit 7" ' + (root / "forced-failure.pub").read_text())
             authorized.chmod(0o644)
             # Docker's default address pool can be exhausted by unrelated existing networks.
             # Select a small unused subnet without modifying/removing any of those networks.
@@ -125,6 +125,7 @@ def main():
 
             (root / "empty").write_text("")
             case("direct-known", "verified")
+            case("direct-command-failed", "remote_command_failed", identity="forced-failure")
             case("direct-unknown", "unknown_host_key", trust="unknown-target")
             case("direct-changed", "changed_host_key", trust="changed-target")
             case("direct-absent", "authentication_failed", identity="absent")
@@ -157,7 +158,7 @@ def main():
             manifest.write_text(json.dumps({"config": str(config), "cases": cases, "askpassMarker": str(marker)}))
             test_env = {**env, "CONTAINERDESK_SSH_LAB_MANIFEST": str(manifest), "SSH_ASKPASS": str(askpass),
                         "SSH_ASKPASS_REQUIRE": "force", "DISPLAY": "lab:0"}
-            run(["cargo", "test", "--manifest-path", str(REPO / "src-tauri/Cargo.toml"), "--locked", "disposable_lab_authentication_matrix", "--", "--ignored", "--nocapture"], env=test_env, timeout=180)
+            run(["cargo", "test", "--manifest-path", str(REPO / "src-tauri/Cargo.toml"), "--locked", "disposable_lab", "--", "--ignored", "--nocapture"], env=test_env, timeout=180)
             assert not marker.exists()
             assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
             print(f"PASS: {len(cases)} native SSH cases; config/trust hashes unchanged; no askpass invoked", flush=True)

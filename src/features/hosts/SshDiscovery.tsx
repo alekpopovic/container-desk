@@ -1,3 +1,4 @@
+import { ConnectionPanel } from "./ConnectionPanel";
 import { isTauri } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -306,6 +307,9 @@ export function SshDiscovery({ demo }: { demo: boolean }) {
             </p>
           </details>
         </div>
+      )}
+      {selected && native && (
+        <ConnectionPanel key={JSON.stringify(selected)} selection={selected} />
       )}
       {access && (
         <div role="status" aria-label="SSH access result">

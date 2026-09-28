@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-begin-ssh-session"
+description = "Enables the begin_ssh_session command without any pre-configured scope."
+commands.allow = ["begin_ssh_session"]
+
+[[permission]]
+identifier = "deny-begin-ssh-session"
+description = "Denies the begin_ssh_session command without any pre-configured scope."
+commands.deny = ["begin_ssh_session"]

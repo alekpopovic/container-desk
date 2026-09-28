@@ -110,7 +110,7 @@
   "workspace": {
     "host": {
       "alias": "demo-local",
-      "connectionState": "connected",
+      "connectionState": "ready",
       "displayName": "Demo Linux host",
       "group": "Demo",
       "id": "h_00000000000000000000000000d00800",

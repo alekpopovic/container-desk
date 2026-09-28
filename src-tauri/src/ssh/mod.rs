@@ -4,6 +4,7 @@ pub mod discovery;
 pub mod quoting;
 pub mod resolver;
 pub mod runner;
+pub mod sessions;
 use crate::domain::{AppError, ErrorCode};
 
 pub fn validate_alias(alias: &str) -> Result<(), AppError> {
