@@ -3,6 +3,7 @@
 Only labelled app-owned containers and an internal network are created and removed.
 No ports are published; the local host reaches only the owned bridge addresses.
 """
+import argparse
 import hashlib
 import ipaddress
 import json
@@ -14,7 +15,7 @@ import tempfile
 import time
 
 REPO = Path(__file__).resolve().parents[2]
-IMAGE = "containerdesk-ssh-lab:016"
+IMAGE = "containerdesk-ssh-lab:018"
 BASE = "alpine@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce"
 
 
@@ -23,6 +24,13 @@ def run(args, **kwargs):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--engine", action="store_true", help="Run a real isolated empty Docker Engine in the SSH target")
+    parser.add_argument("--native-driver", type=Path, help="Optional external tauri-driver executable for the real native UI journey")
+    parser.add_argument("--webkit-driver", type=Path, help="WebKitWebDriver executable, required with --native-driver")
+    args = parser.parse_args()
+    if args.native_driver and (not args.engine or not args.webkit_driver):
+        parser.error("--native-driver requires --engine and --webkit-driver")
     with tempfile.TemporaryDirectory(prefix="containerdesk-auth-lab-") as directory:
         root = Path(directory)
         docker_config = root / "docker-client"
@@ -99,6 +107,25 @@ def main():
                 if attempt == 99:
                     raise RuntimeError("synthetic Docker API fixture did not start")
                 time.sleep(0.05)
+            engine = {}
+            if args.engine:
+                # Separate Engine: private filesystem/socket, no host socket, no privileged container.
+                dc("exec", "-d", names[-1], "sh", "-c",
+                   "exec dockerd --host unix:///run/docker.sock --data-root /tmp/engine-data "
+                   "--exec-root /tmp/engine-exec --pidfile /tmp/engine.pid --storage-driver vfs "
+                   "--iptables=false --ip6tables=false --bridge=none --ip-forward=false "
+                   "--ip-masq=false --userland-proxy=false > /tmp/engine.log 2>&1")
+                for attempt in range(100):
+                    probe = subprocess.run(docker + ["exec", names[-1], "docker", "info", "--format", "{{.ServerVersion}}"],
+                                           env=env, capture_output=True, text=True, timeout=5)
+                    if probe.returncode == 0:
+                        engine = {"engineVersion": probe.stdout.strip(), "engineId": dc("exec", names[-1], "docker", "info", "--format", "{{.ID}}", capture_output=True).stdout.strip()}
+                        print("Real isolated Docker Engine ready: " + probe.stdout.strip(), flush=True)
+                        break
+                    if attempt == 99:
+                        dc("exec", names[-1], "cat", "/tmp/engine.log")
+                        raise RuntimeError("isolated Docker Engine did not start")
+                    time.sleep(0.1)
             agent_socket = root / "agent.sock"
             agent = subprocess.Popen(["ssh-agent", "-D", "-a", str(agent_socket)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             for _ in range(50):
@@ -165,10 +192,21 @@ def main():
             askpass.write_text(f"#!/bin/sh\ntouch '{marker}'\nexit 1\n")
             askpass.chmod(0o700)
             manifest = root / "manifest.json"
-            manifest.write_text(json.dumps({"config": str(config), "cases": cases, "askpassMarker": str(marker)}))
+            manifest.write_text(json.dumps({"config": str(config), "cases": cases, "askpassMarker": str(marker), "realEngine": args.engine, **engine}))
             test_env = {**env, "CONTAINERDESK_SSH_LAB_MANIFEST": str(manifest), "SSH_ASKPASS": str(askpass),
                         "SSH_ASKPASS_REQUIRE": "force", "DISPLAY": "lab:0"}
             run(["cargo", "test", "--manifest-path", str(REPO / "src-tauri/Cargo.toml"), "--locked", "disposable_lab", "--", "--ignored", "--nocapture"], env=test_env, timeout=180)
+            if args.engine:
+                build = run(["cargo", "test", "--manifest-path", str(REPO / "src-tauri/Cargo.toml"), "--locked", "--lib", "--no-run", "--message-format=json"],
+                            env=env, capture_output=True, timeout=180)
+                artifacts = [json.loads(line) for line in build.stdout.splitlines() if line.startswith("{")]
+                executable = next(item["executable"] for item in artifacts
+                                  if item.get("reason") == "compiler-artifact" and item.get("profile", {}).get("test") and item.get("executable"))
+                run([executable, "checkpoint018_real_engine", "--ignored", "--nocapture"],
+                    env={**test_env, "PATH": "/nonexistent"}, timeout=60)
+            if args.native_driver:
+                from native_ssh import verify
+                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine)
             assert not marker.exists()
             assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
             print(f"PASS: {len(cases)} native SSH cases; config/trust hashes unchanged; no askpass invoked", flush=True)

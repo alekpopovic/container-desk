@@ -393,3 +393,82 @@ async fn compose_json_version_is_read_only_after_successful_plugin_discovery() {
     assert_eq!(report.compose_version.as_deref(), Some("v2.99.0-fixture"));
     assert_eq!(executor.commands.lock().unwrap().len(), 6);
 }
+
+#[tokio::test]
+#[ignore = "requires an explicitly provisioned real Docker Engine, direct and ProxyJump SSH lab"]
+async fn checkpoint018_real_engine_version_and_bounded_empty_list_without_client_tools() {
+    use crate::policy::registry::{self, ReadOperation};
+    assert_eq!(std::env::var("PATH").unwrap(), "/nonexistent");
+    let path = std::env::var("CONTAINERDESK_SSH_LAB_MANIFEST").expect("explicit lab manifest");
+    let lab: serde_json::Value = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
+    assert_eq!(lab["realEngine"], true, "synthetic API does not qualify");
+    let mut identity = None;
+    for alias in ["direct-known", "via-known"] {
+        let mut connection = Connection::new(
+            "/usr/bin/ssh",
+            SshSelection {
+                alias: alias.into(),
+                config_path: lab["config"].as_str().unwrap().into(),
+                use_default_config: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            connection.start().await.unwrap().status,
+            SshAccessStatus::Verified
+        );
+        let (initial, binding) = run(&connection, &DockerOptions::default()).await;
+        assert_eq!(initial.status, DockerProbeStatus::Ready);
+        assert_eq!(
+            initial.server_version.as_deref(),
+            lab["engineVersion"].as_str()
+        );
+        assert_eq!(initial.daemon_id.as_deref(), lab["engineId"].as_str());
+        assert_eq!(
+            initial.endpoint.as_deref(),
+            Some("unix:///var/run/docker.sock")
+        );
+        assert_eq!(initial.rootless, Some(false));
+        assert_eq!(initial.os.as_deref(), Some("linux"));
+        assert_ne!(
+            initial.daemon_id.as_deref(),
+            Some("containerdesk-api-fixture")
+        );
+        if let Some(previous) = identity {
+            assert_eq!(initial.daemon_id, Some(previous));
+        }
+        identity = initial.daemon_id.clone();
+        // Re-observe actual identity before dispatch; never substitute renderer input or old report.
+        let (fresh, _) = run(&connection, &DockerOptions::default()).await;
+        let command = binding
+            .unwrap()
+            .prepare(
+                registry::read(&ReadOperation::ListContainers).unwrap(),
+                &fresh,
+            )
+            .unwrap();
+        let result = connection
+            .start_fixed(
+                command.encoded().to_string(),
+                Limits {
+                    deadline: Duration::from_secs(5),
+                    stdout_bytes: 16 * 1024 * 1024,
+                    stderr_bytes: 16 * 1024,
+                },
+            )
+            .unwrap()
+            .wait()
+            .await
+            .unwrap();
+        assert!(result.status.success());
+        assert!(
+            result.stdout.is_empty(),
+            "explicitly empty real Engine must return a successful empty JSONL list"
+        );
+        connection.close().await;
+        println!(
+            "PASS real Engine {alias}: native SSH, fresh daemon identity, version {}, empty docker ps JSONL, 5 s / 16 MiB bounds; PATH=/nonexistent",
+            initial.server_version.unwrap()
+        );
+    }
+}

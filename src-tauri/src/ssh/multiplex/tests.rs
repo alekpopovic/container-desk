@@ -281,16 +281,20 @@ async fn disposable_lab_ownership_long_paths_stale_socket_fallback_and_master_de
     // Same coordinator shutdown invoked by the native app Exit callback.
     let sessions = super::super::sessions::Sessions::default();
     let gate = Arc::new(tokio::sync::Semaphore::new(1));
+    let docker_options = DockerOptions {
+        executable: Some("/opt/fixture/docker-stopped".into()),
+        ..Default::default()
+    };
     let driver = Arc::new(super::super::sessions::NativeDriver {
         runner: Runner::default(),
         executable: "/usr/bin/ssh".into(),
         _permit: gate.clone().try_acquire_owned().unwrap(),
         connection: Default::default(),
-        docker_options: Default::default(),
+        docker_options: docker_options.clone(),
         docker_binding: Default::default(),
     });
     let snapshot = sessions
-        .begin(selected.clone(), Default::default(), || Ok(driver))
+        .begin(selected.clone(), docker_options, || Ok(driver))
         .await
         .unwrap();
     tokio::time::timeout(Duration::from_secs(15), async {

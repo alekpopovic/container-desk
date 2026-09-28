@@ -568,6 +568,8 @@ export function HostInventory({
             <dd>
               {connection?.docker?.endpoint ?? "Not verified in this session"}
             </dd>
+            <dt>Docker Engine version</dt>
+            <dd>{connection?.docker?.serverVersion ?? "Not verified"}</dd>
             <dt>Daemon identity</dt>
             <dd>{connection?.docker?.daemonId ?? "Not verified"}</dd>
           </dl>

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T22:04:23+00:00",
+  "updated_at": "2026-09-28T22:20:14+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -579,6 +579,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T22:04:55+00:00",
+      "id": "018",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T22:20:14+00:00",
+      "id": "018",
+      "action": "done",
+      "note": "Native Linux UI + isolated real Engine direct/ProxyJump and bounded JSONL list passed; 7 SSH lab tests, 77 Rust, 24 IPC, 12 browser tests; build/clippy/fmt/tracker passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T22:04:55+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -814,12 +848,14 @@
       "note": ""
     },
     "018": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T22:04:55+00:00",
+      "finished_at": "2026-09-28T22:20:14+00:00",
+      "evidence": "codex/tracking/evidence/018.md",
+      "evidence_sha256": "eefeacac35eedc4c5f053258a1de8925628135e86bd763d8f5860b7110eeb297",
+      "checks": [
+        "Native Linux UI + isolated real Engine direct/ProxyJump and bounded JSONL list passed; 7 SSH lab tests, 77 Rust, 24 IPC, 12 browser tests; build/clippy/fmt/tracker passed"
+      ],
       "commit": "",
       "note": ""
     },

@@ -1,7 +1,8 @@
 ARG LAB_BASE_IMAGE=alpine@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce
 FROM ${LAB_BASE_IMAGE}
-RUN apk add --no-cache openssh-server docker-cli python3 sudo \
+RUN apk add --no-cache openssh-server docker-cli docker-engine python3 sudo \
     && adduser -D -s /bin/sh lab \
+    && addgroup lab docker \
     && passwd -d lab \
     && mkdir -p /run/sshd /lab
 COPY docker_probe_fixture.py /opt/fixture/docker_probe_fixture.py

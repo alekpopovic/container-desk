@@ -199,12 +199,16 @@ async fn disposable_lab_session_driver_reports_real_authentication_and_no_false_
         ),
     ] {
         let gate = Arc::new(Semaphore::new(1));
+        let docker_options = DockerOptions {
+            executable: Some("/opt/fixture/docker-stopped".into()),
+            ..Default::default()
+        };
         let driver = Arc::new(NativeDriver {
             runner: super::super::runner::Runner::default(),
             executable: "/usr/bin/ssh".into(),
             _permit: gate.clone().try_acquire_owned().unwrap(),
             connection: Default::default(),
-            docker_options: Default::default(),
+            docker_options: docker_options.clone(),
             docker_binding: Default::default(),
         });
         let selected = SshSelection {
@@ -213,7 +217,7 @@ async fn disposable_lab_session_driver_reports_real_authentication_and_no_false_
             use_default_config: false,
         };
         let snapshot = sessions
-            .begin(selected, Default::default(), || Ok(driver))
+            .begin(selected, docker_options, || Ok(driver))
             .await
             .unwrap();
         let result = wait_state(&sessions, &snapshot.token, expected).await;
