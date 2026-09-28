@@ -1,4 +1,25 @@
 {
+  "confirmationRequest": {
+    "operation": {
+      "category": "mutation",
+      "spec": {
+        "containerIds": [
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ],
+        "operation": "stop",
+        "timeoutSeconds": 10
+      }
+    },
+    "scope": {
+      "daemonId": "fixture-daemon",
+      "selection": {
+        "hostId": "h_11111111111111111111111111111111",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    }
+  },
   "connected": {
     "capabilities": {
       "compose": false,
@@ -78,6 +99,38 @@
         "readOnly": true
       }
     ]
+  },
+  "mutationRequest": {
+    "intentId": "i_ffffffffffffffffffffffffffffffff",
+    "scope": {
+      "daemonId": "fixture-daemon",
+      "selection": {
+        "hostId": "h_11111111111111111111111111111111",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    },
+    "spec": {
+      "containerIds": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "operation": "stop",
+      "timeoutSeconds": 10
+    }
+  },
+  "policyError": {
+    "code": "permission_denied",
+    "message": "This operation is not permitted.",
+    "scope": {
+      "daemonId": "fixture-daemon",
+      "selection": {
+        "hostId": "h_11111111111111111111111111111111",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    }
   },
   "preferences": {
     "notice": null,

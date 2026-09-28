@@ -71,7 +71,24 @@ fn generated_contract_is_current() {
         AgentDiagnostic,
         DependencyDiagnostics,
         SetSshExecutableRequest,
-        SetSshExecutableResponse
+        SetSshExecutableResponse,
+        IntentId,
+        HostAccess,
+        MutationOperation,
+        MutationSpec,
+        TerminalShell,
+        TerminalSpec,
+        ConfirmationOperation,
+        PrepareConfirmationRequest,
+        ConfirmationIntent,
+        MutationRequest,
+        MutationOutcome,
+        MutationResponse,
+        TerminalRequest,
+        TerminalResponse,
+        InspectContainerRequest,
+        ContainerLogsRequest,
+        LogSnapshot
     );
     check_or_update(
         &Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/lib/ipc/generated.ts"),
@@ -96,6 +113,9 @@ fn serialized_fixtures_are_current() {
         environment_values_masked: true,
     };
     let fixtures = json!({
+        "confirmationRequest": PrepareConfirmationRequest { scope: scope(), operation: ConfirmationOperation::Mutation(MutationSpec { operation: MutationOperation::Stop, container_ids: vec![ContainerId("a".repeat(64))], timeout_seconds: 10 }) },
+        "policyError": AppError::new(ErrorCode::PermissionDenied).in_scope(&scope()),
+        "mutationRequest": MutationRequest { scope: scope(), intent_id: IntentId(format!("i_{}", "f".repeat(32))), spec: MutationSpec { operation: MutationOperation::Stop, container_ids: vec![ContainerId("a".repeat(64))], timeout_seconds: 10 } },
         "diagnostics": DependencyDiagnostics { app_version: "0.1.0".into(), platform: "linux".into(), architecture: "x86_64".into(), ssh: SshDiagnostic { path: "/usr/bin/ssh".into(), status: SshStatus::Ready, version: Some("OpenSSH_fixture".into()), message: "OpenSSH is available.".into() }, agent: AgentDiagnostic { status: AgentStatus::Unset, message: "SSH_AUTH_SOCK is not set. Existing configured keys may still work.".into() } },
         "preferences": PreferencesSnapshot { preferences: Preferences::default(), notice: None, writable: true },
         "success": ListContainersResponse { scope: scope(), containers: vec![summary] },

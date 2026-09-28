@@ -39,6 +39,82 @@ mod tests {
     use tauri::test::{get_ipc_response, mock_builder, mock_context, noop_assets};
 
     #[test]
+    fn direct_ipc_mutation_is_denied_in_read_only_and_bad_arguments_cannot_dispatch() {
+        let backend = Backend::default();
+        backend.register_test_session(crate::contract_tests::scope());
+        let app = mock_builder()
+            .manage(backend)
+            .invoke_handler(tauri::generate_handler![
+                list_containers,
+                inspect_container,
+                container_logs,
+                prepare_confirmation,
+                mutate_container,
+                open_container_terminal
+            ])
+            .build(mock_context(noop_assets()))
+            .unwrap();
+        let window = tauri::WebviewWindowBuilder::new(&app, "main", Default::default())
+            .build()
+            .unwrap();
+        let invoke = |command: &str, request: Value| {
+            get_ipc_response(
+                &window,
+                tauri::webview::InvokeRequest {
+                    cmd: command.into(),
+                    callback: tauri::ipc::CallbackFn(0),
+                    error: tauri::ipc::CallbackFn(1),
+                    url: "tauri://localhost".parse().unwrap(),
+                    body: tauri::ipc::InvokeBody::Json(json!({"request":request})),
+                    headers: Default::default(),
+                    invoke_key: tauri::test::INVOKE_KEY.into(),
+                },
+            )
+            .map(|response| response.deserialize::<Value>().unwrap())
+        };
+        let scope = crate::contract_tests::scope();
+        let spec =
+            json!({"operation":"restart","containerIds":["a".repeat(64)],"timeoutSeconds":10});
+        let mut request =
+            json!({"scope":scope,"intentId":format!("i_{}", "1".repeat(32)),"spec":spec});
+        assert_eq!(
+            invoke("mutate_container", request.clone()).unwrap_err()["code"],
+            "permission_denied"
+        );
+        assert_eq!(
+            invoke("list_containers", json!({"scope":scope})).unwrap_err()["code"],
+            "feature_unavailable",
+            "read is authorized; only the absent transport blocks it"
+        );
+        request["spec"]["force"] = true.into();
+        assert!(invoke("mutate_container", request.clone()).is_err());
+        request["spec"].as_object_mut().unwrap().remove("force");
+        request["spec"]["operation"] = "prune".into();
+        assert!(invoke("mutate_container", request.clone()).is_err());
+        request["spec"]["operation"] = "restart".into();
+        request["spec"]["timeoutSeconds"] = (-1).into();
+        assert_eq!(
+            invoke("mutate_container", request.clone()).unwrap_err()["code"],
+            "invalid_limits"
+        );
+        request["spec"]["timeoutSeconds"] = 10.into();
+        request["spec"]["containerIds"] = json!(["--all"]);
+        assert_eq!(
+            invoke("mutate_container", request).unwrap_err()["code"],
+            "invalid_id"
+        );
+        assert_eq!(
+            invoke(
+                "container_logs",
+                json!({"scope":scope,"containerId":"a".repeat(64),"tail":-1,"timeoutSeconds":30})
+            )
+            .unwrap_err()["code"],
+            "invalid_limits"
+        );
+        assert_eq!(invoke("open_container_terminal", json!({"scope":scope,"intentId":format!("i_{}", "1".repeat(32)),"spec":{"containerId":"a".repeat(64),"shell":"sh","columns":80,"rows":24}})).unwrap_err()["code"], "permission_denied");
+    }
+
+    #[test]
     fn registered_handlers_return_typed_results_without_a_process_launcher() {
         let app = mock_builder()
             .manage(Backend::default())
@@ -140,4 +216,40 @@ pub async fn set_ssh_executable(
     request: SetSshExecutableRequest,
 ) -> Result<SetSshExecutableResponse, AppError> {
     backend.set_ssh_executable(request).await
+}
+
+#[tauri::command]
+pub fn inspect_container(
+    backend: tauri::State<'_, Backend>,
+    request: InspectContainerRequest,
+) -> Result<ContainerDetail, AppError> {
+    backend.inspect_container(request)
+}
+#[tauri::command]
+pub fn container_logs(
+    backend: tauri::State<'_, Backend>,
+    request: ContainerLogsRequest,
+) -> Result<LogSnapshot, AppError> {
+    backend.container_logs(request)
+}
+#[tauri::command]
+pub fn prepare_confirmation(
+    backend: tauri::State<'_, Backend>,
+    request: PrepareConfirmationRequest,
+) -> Result<ConfirmationIntent, AppError> {
+    backend.prepare_confirmation(request)
+}
+#[tauri::command]
+pub fn mutate_container(
+    backend: tauri::State<'_, Backend>,
+    request: MutationRequest,
+) -> Result<MutationResponse, AppError> {
+    backend.mutate_container(request)
+}
+#[tauri::command]
+pub fn open_container_terminal(
+    backend: tauri::State<'_, Backend>,
+    request: TerminalRequest,
+) -> Result<TerminalResponse, AppError> {
+    backend.open_container_terminal(request)
 }

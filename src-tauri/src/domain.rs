@@ -12,6 +12,7 @@ identifier!(HostId);
 identifier!(SessionId);
 identifier!(ContainerId);
 identifier!(SubscriptionId);
+identifier!(IntentId);
 
 fn opaque_id(value: &str, prefix: &str) -> bool {
     value.strip_prefix(prefix).is_some_and(|v| {
@@ -117,6 +118,9 @@ pub enum ErrorCode {
     StorageUnavailable,
     StorageConflict,
     InvalidPreferences,
+    InvalidLimits,
+    InvalidIntent,
+    IntentExpired,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -147,6 +151,11 @@ impl AppError {
             }
             ErrorCode::StorageConflict => "Settings changed. Reload before saving again.",
             ErrorCode::InvalidPreferences => "Settings contain invalid or unsupported values.",
+            ErrorCode::InvalidLimits => "An operation limit is outside the supported range.",
+            ErrorCode::InvalidIntent => {
+                "This confirmation does not match the operation or was already used."
+            }
+            ErrorCode::IntentExpired => "This confirmation expired. Review the operation again.",
         };
         Self {
             code,
@@ -401,4 +410,147 @@ pub struct SetSshExecutableRequest {
 pub struct SetSshExecutableResponse {
     pub preferences: Option<PreferencesSnapshot>,
     pub ssh: SshDiagnostic,
+}
+
+impl IntentId {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if opaque_id(&self.0, "i_") {
+            Ok(())
+        } else {
+            Err(AppError::new(ErrorCode::InvalidId))
+        }
+    }
+}
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum HostAccess {
+    #[default]
+    ReadOnly,
+    Manage,
+    ManageAndTerminal,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum MutationOperation {
+    Start,
+    Stop,
+    Restart,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct MutationSpec {
+    pub operation: MutationOperation,
+    pub container_ids: Vec<ContainerId>,
+    pub timeout_seconds: i32,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum TerminalShell {
+    Sh,
+    Bash,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TerminalSpec {
+    pub container_id: ContainerId,
+    pub shell: TerminalShell,
+    pub columns: i32,
+    pub rows: i32,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "category",
+    content = "spec",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum ConfirmationOperation {
+    Mutation(MutationSpec),
+    Terminal(TerminalSpec),
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct PrepareConfirmationRequest {
+    pub scope: SessionScope,
+    pub operation: ConfirmationOperation,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ConfirmationIntent {
+    pub id: IntentId,
+    pub scope: SessionScope,
+    pub operation: ConfirmationOperation,
+    pub expires_in_ms: u32,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct MutationRequest {
+    pub scope: SessionScope,
+    pub intent_id: IntentId,
+    pub spec: MutationSpec,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum MutationOutcome {
+    Succeeded,
+    Failed,
+    Unknown,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct MutationResponse {
+    pub scope: SessionScope,
+    pub spec: MutationSpec,
+    pub outcome: MutationOutcome,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TerminalRequest {
+    pub scope: SessionScope,
+    pub intent_id: IntentId,
+    pub spec: TerminalSpec,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TerminalResponse {
+    pub scope: SessionScope,
+    pub terminal_id: SubscriptionId,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct InspectContainerRequest {
+    pub scope: SessionScope,
+    pub container_id: ContainerId,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ContainerLogsRequest {
+    pub scope: SessionScope,
+    pub container_id: ContainerId,
+    pub tail: i32,
+    pub timeout_seconds: i32,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct LogSnapshot {
+    pub scope: SessionScope,
+    pub container_id: ContainerId,
+    pub text: String,
+    pub truncated: bool,
 }

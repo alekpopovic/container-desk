@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T18:23:17+00:00",
+  "updated_at": "2026-09-28T18:40:41+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -205,6 +205,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T18:23:48+00:00",
+      "id": "007",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T18:40:41+00:00",
+      "id": "007",
+      "action": "done",
+      "note": "26 Rust tests including direct read-only IPC denial and one-use scoped intents, 13 IPC tests, Clippy and Linux release build passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T18:23:48+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -290,12 +324,14 @@
       "note": ""
     },
     "007": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T18:23:48+00:00",
+      "finished_at": "2026-09-28T18:40:41+00:00",
+      "evidence": "codex/tracking/evidence/007.md",
+      "evidence_sha256": "d2269f798e48b501bb989bfaa3a0cebe06d82a3ca5656e4cefe6e126d68398e2",
+      "checks": [
+        "26 Rust tests including direct read-only IPC denial and one-use scoped intents, 13 IPC tests, Clippy and Linux release build passed"
+      ],
       "commit": "",
       "note": ""
     },

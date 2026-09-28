@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-inspect-container"
+description = "Enables the inspect_container command without any pre-configured scope."
+commands.allow = ["inspect_container"]
+
+[[permission]]
+identifier = "deny-inspect-container"
+description = "Denies the inspect_container command without any pre-configured scope."
+commands.deny = ["inspect_container"]

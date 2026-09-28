@@ -1,12 +1,13 @@
+use crate::policy::{PolicyEngine, registry::ReadOperation};
 use crate::{
     domain::*,
     storage::{FileStorage, SettingsStore},
 };
-use std::{collections::HashMap, sync::Mutex};
+use std::sync::Mutex;
 
 /// Resource operations remain behind identity gates. Local version probes are separately bounded.
 pub struct Backend {
-    sessions: Mutex<HashMap<SessionId, SessionScope>>,
+    policy: Mutex<PolicyEngine>,
     settings: Mutex<Result<SettingsStore, AppError>>,
     diagnostic_slot: tokio::sync::Semaphore,
 }
@@ -16,7 +17,7 @@ impl Backend {
             .map_err(|_| AppError::new(ErrorCode::StorageUnavailable))
             .and_then(|adapter| SettingsStore::load(Box::new(adapter)));
         Self {
-            sessions: Mutex::new(HashMap::new()),
+            policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(settings),
             diagnostic_slot: tokio::sync::Semaphore::new(1),
         }
@@ -137,26 +138,93 @@ impl Backend {
     }
 
     pub fn require_session(&self, scope: &SessionScope) -> Result<(), AppError> {
-        scope.validate()?;
-        let sessions = self
-            .sessions
+        self.policy
             .lock()
-            .map_err(|_| AppError::new(ErrorCode::Internal))?;
-        match sessions.get(&scope.session_id) {
-            None => Err(AppError::new(ErrorCode::SessionNotFound).in_scope(scope)),
-            Some(current) if current != scope => {
-                Err(AppError::new(ErrorCode::StaleSession).in_scope(scope))
-            }
-            Some(_) => Ok(()),
-        }
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .require_session(scope)
     }
 
     pub fn list_containers(
         &self,
         request: ListContainersRequest,
     ) -> Result<ListContainersResponse, AppError> {
-        self.require_session(&request.scope)?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(&request.scope, &ReadOperation::ListContainers)?;
         Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
+    }
+
+    pub fn inspect_container(
+        &self,
+        request: InspectContainerRequest,
+    ) -> Result<ContainerDetail, AppError> {
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(
+                &request.scope,
+                &ReadOperation::InspectContainer {
+                    container_id: request.container_id,
+                },
+            )?;
+        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
+    }
+    pub fn container_logs(&self, request: ContainerLogsRequest) -> Result<LogSnapshot, AppError> {
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(
+                &request.scope,
+                &ReadOperation::ContainerLogs {
+                    container_id: request.container_id,
+                    tail: request.tail,
+                    timeout_seconds: request.timeout_seconds,
+                },
+            )?;
+        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
+    }
+    pub fn prepare_confirmation(
+        &self,
+        request: PrepareConfirmationRequest,
+    ) -> Result<ConfirmationIntent, AppError> {
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .prepare(request)
+    }
+    pub fn mutate_container(&self, request: MutationRequest) -> Result<MutationResponse, AppError> {
+        let authorized = self
+            .policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .consume(
+                &request.scope,
+                &request.intent_id,
+                &ConfirmationOperation::Mutation(request.spec),
+            )?;
+        // A future dispatcher must accept the owned authorization and never replay it.
+        // No remote transport exists yet; do not report a synthetic mutation success.
+        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(authorized.scope()))
+    }
+    pub fn open_container_terminal(
+        &self,
+        request: TerminalRequest,
+    ) -> Result<TerminalResponse, AppError> {
+        let authorized = self
+            .policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .consume(
+                &request.scope,
+                &request.intent_id,
+                &ConfirmationOperation::Terminal(request.spec),
+            )?;
+        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(authorized.scope()))
+    }
+    #[cfg(test)]
+    pub(crate) fn register_test_session(&self, scope: SessionScope) {
+        self.policy.lock().unwrap().register(scope).unwrap();
     }
 
     pub fn cancel_subscription(
@@ -173,7 +241,7 @@ impl Backend {
 impl Default for Backend {
     fn default() -> Self {
         Self {
-            sessions: Mutex::new(HashMap::new()),
+            policy: Mutex::new(PolicyEngine::default()),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
             diagnostic_slot: tokio::sync::Semaphore::new(1),
         }
@@ -282,11 +350,7 @@ mod tests {
                 .code,
             ErrorCode::SessionNotFound
         );
-        backend
-            .sessions
-            .lock()
-            .unwrap()
-            .insert(scope().session_id.clone(), scope());
+        backend.register_test_session(scope());
         let mut candidates = vec![scope(); 4];
         candidates[0].selection.host_id = HostId(format!("h_{}", "2".repeat(32)));
         candidates[1].selection.selection_generation += 1;

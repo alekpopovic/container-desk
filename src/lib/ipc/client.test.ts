@@ -13,7 +13,7 @@ import {
   getPreferences,
   setTheme,
 } from "./client.ts";
-import type { SessionScope } from "./generated.ts";
+import type { SessionScope, PrepareConfirmationRequest } from "./generated.ts";
 
 // These values are written by Rust serde, not a hand-maintained JS fixture.
 const fixtures = JSON.parse(
@@ -230,4 +230,34 @@ test("diagnostics deserialize Rust fixture and rejected executable overrides do 
   await assert.rejects(getDependencyDiagnostics(), {
     code: "invalid_response",
   });
+});
+
+test("backend permission denial remains typed across IPC without retry", async () => {
+  let calls = 0;
+  mockIPC(() => {
+    calls += 1;
+    throw fixtures.policyError;
+  });
+  await assert.rejects(
+    listContainers(expected, () => expected),
+    { code: "permission_denied" },
+  );
+  assert.equal(calls, 1);
+  assert.equal(fixtures.mutationRequest.spec.operation, "stop");
+  assert.equal(fixtures.mutationRequest.spec.timeoutSeconds, 10);
+});
+
+test("tagged confirmation request uses the generated Rust/TypeScript shape", () => {
+  const request: PrepareConfirmationRequest = {
+    scope: expected,
+    operation: {
+      category: "mutation",
+      spec: {
+        operation: "stop",
+        containerIds: ["a".repeat(64)],
+        timeoutSeconds: 10,
+      },
+    },
+  };
+  assert.deepEqual(request, fixtures.confirmationRequest);
 });

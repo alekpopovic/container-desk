@@ -13,7 +13,7 @@ export type SessionScope = { selection: HostSelection, sessionId: SessionId,
  * Backend-issued epoch; changes after reconnect or daemon/context changes.
  */
 sessionGeneration: number, daemonId: string, };
-export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences";
+export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired";
 export type AppError = { code: ErrorCode, message: string, scope: SessionScope | null, };
 export type ConnectionState = "disconnected" | "connecting" | "connected" | "reconnecting" | "failed";
 export type HostCapabilities = { docker: boolean, compose: boolean, management: boolean, terminal: boolean, };
@@ -53,3 +53,20 @@ export type AgentDiagnostic = { status: AgentStatus, message: string, };
 export type DependencyDiagnostics = { appVersion: string, platform: string, architecture: string, ssh: SshDiagnostic, agent: AgentDiagnostic, };
 export type SetSshExecutableRequest = { expectedRevision: number, path: string | null, };
 export type SetSshExecutableResponse = { preferences: PreferencesSnapshot | null, ssh: SshDiagnostic, };
+export type IntentId = string;
+export type HostAccess = "read_only" | "manage" | "manage_and_terminal";
+export type MutationOperation = "start" | "stop" | "restart";
+export type MutationSpec = { operation: MutationOperation, containerIds: Array<ContainerId>, timeoutSeconds: number, };
+export type TerminalShell = "sh" | "bash";
+export type TerminalSpec = { containerId: ContainerId, shell: TerminalShell, columns: number, rows: number, };
+export type ConfirmationOperation = { "category": "mutation", "spec": MutationSpec } | { "category": "terminal", "spec": TerminalSpec };
+export type PrepareConfirmationRequest = { scope: SessionScope, operation: ConfirmationOperation, };
+export type ConfirmationIntent = { id: IntentId, scope: SessionScope, operation: ConfirmationOperation, expiresInMs: number, };
+export type MutationRequest = { scope: SessionScope, intentId: IntentId, spec: MutationSpec, };
+export type MutationOutcome = "succeeded" | "failed" | "unknown";
+export type MutationResponse = { scope: SessionScope, spec: MutationSpec, outcome: MutationOutcome, };
+export type TerminalRequest = { scope: SessionScope, intentId: IntentId, spec: TerminalSpec, };
+export type TerminalResponse = { scope: SessionScope, terminalId: SubscriptionId, };
+export type InspectContainerRequest = { scope: SessionScope, containerId: ContainerId, };
+export type ContainerLogsRequest = { scope: SessionScope, containerId: ContainerId, tail: number, timeoutSeconds: number, };
+export type LogSnapshot = { scope: SessionScope, containerId: ContainerId, text: string, truncated: boolean, };

@@ -294,9 +294,15 @@ mod tests {
         let mut data = [0u8; 1];
         assert_eq!(std::io::Read::read(&mut socket, &mut data).unwrap(), 0);
         drop(listener);
-        assert_eq!(
-            inspect_agent(Some(&path)).await.status,
-            AgentStatus::Inaccessible
-        );
+        // Another test may briefly fork with this listener inherited until exec closes it.
+        // The socket is truthfully reachable during that window; assert eventual closure.
+        let deadline = std::time::Instant::now() + Duration::from_secs(1);
+        while inspect_agent(Some(&path)).await.status != AgentStatus::Inaccessible {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "closed fixture listener stayed reachable"
+            );
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
     }
 }

@@ -30,6 +30,10 @@ const messages: Record<ErrorCode, string> = {
     "Local settings cannot be saved. The original files were retained.",
   storage_conflict: "Settings changed. Reload before saving again.",
   invalid_preferences: "Settings contain invalid or unsupported values.",
+  invalid_limits: "An operation limit is outside the supported range.",
+  invalid_intent:
+    "This confirmation does not match the operation or was already used.",
+  intent_expired: "This confirmation expired. Review the operation again.",
 };
 
 export class IpcError extends Error implements AppError {

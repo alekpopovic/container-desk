@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-open-container-terminal"
+description = "Enables the open_container_terminal command without any pre-configured scope."
+commands.allow = ["open_container_terminal"]
+
+[[permission]]
+identifier = "deny-open-container-terminal"
+description = "Denies the open_container_terminal command without any pre-configured scope."
+commands.deny = ["open_container_terminal"]

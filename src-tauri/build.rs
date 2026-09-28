@@ -10,6 +10,11 @@ fn main() {
             "set_theme",
             "dependency_diagnostics",
             "set_ssh_executable",
+            "inspect_container",
+            "container_logs",
+            "prepare_confirmation",
+            "mutate_container",
+            "open_container_terminal",
         ]),
     ))
     .expect("failed to build ContainerDesk application context");

@@ -1,40 +1,31 @@
 # ContainerDesk project status
 
-Updated 2026-09-28 after prompt 006. The repository now has a working Tauri v2 desktop shell with React, strict TypeScript, Vite and Tailwind. Its backend now has generated Rust/TypeScript domain types and four narrow host/session commands in addition to the version query. The workspace now includes host groups, host identity/status, six resource/settings routes, responsive inventory/details and light/dark themes. Native Linux wide and narrow layouts have been visually inspected.
+Updated 2026-09-28 after prompt 007. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations through 007 are implemented; live remote Docker management is not available yet.
 
-## Implemented and verified
+## Current implementation
 
-- One application in the existing root; the original prompt pack, AGENTS.md and immutable hashes remain intact. Prompt 002 started from clean commit `2f598de89c7f9e2386a79f03ad67cb1296e3faf5`.
-- React handles loading, actual version, bridge error/retry and browser-only states. Rust supplies version metadata through a narrow typed command. Prompt 002 initially granted only `allow-app-version`; prompt 004 extends the local capability with the four narrow host/session commands.
-- Node 24.21.0/npm 11.19.0 and Rust/Cargo 1.98.1 remain pinned. Biome 2.5.14 and Node types 24.19.0 were added with exact versions. npm's lock was updated; the committed Cargo.lock remains unchanged.
-- Strict TypeScript, recommended Biome lint, formatting and three focused IPC bridge tests passed. Rust `cargo check --locked` and Clippy with warnings denied passed.
-- Production frontend and native release builds passed. The unbundled Linux executable embeds its frontend and opens a real GTK/WebKit window; the screenshot records actual Rust-to-React version IPC, not browser mock output.
+- Responsive host/resource workspace, six routes, empty/error/offline presentation, keyboard navigation and light/dark/system themes.
+- Rust-owned generated IPC models with typed errors, validated IDs and host/selection/session/daemon scopes. Late success and error responses are rejected by renderer adapters.
+- Private versioned JSON settings, atomic replacement, recoverable previous files, corrupt-original retention, migration, revision checks and owner-only permissions. Theme save/restart and recovery were exercised in the real Linux app.
+- Native dependency diagnostics and validated absolute OpenSSH override. Real SSH -V and agent socket presence/accessibility checks have output/time/concurrency limits; keys and identities are not read. The native view works with PATH=/nonexistent.
+- Backend operation registry, default read-only access and short-lived one-use confirmation intents bound to exact operations/targets/scopes. Mutation/terminal handlers reject read-only requests directly in Rust and have no production window grant yet. Remote execution remains unavailable.
 
-Commands: [development](development.md). Sources/pins: [toolchains](toolchains.md). Initial audit: [001 evidence](../codex/tracking/evidence/001.md). Scaffold checks: [002 evidence](../codex/tracking/evidence/002.md). Current layout checks: [003 evidence](../codex/tracking/evidence/003.md).
+Design: [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
 
-Prompt 003 adds pinned Playwright 1.63.0. All 18 browser checks passed across light/dark and 1280×800, 800×700, 640×480, including keyboard navigation, state fixtures, text safety and token contrast. Production native build and real wide/narrow Linux captures passed; fixtures are excluded from the built app. See [design system](design-system.md).
+Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md).
 
-## Native environment and limits
+## Actual platform status
 
-| Area | Actual status |
+| Area | Status |
 |---|---|
-| Linux host | Ubuntu 26.04.1 LTS x86_64, glibc 2.43 |
-| Installed development libraries | User installed missing packages; pkg-config 2.5.1, GTK 3.24.52, WebKitGTK 2.52.6 confirmed |
-| Native launch | PASS on X11/XWayland with Snap-inherited library/module paths removed for this process |
-| Native screenshot | [Wide workspace](verification/003-native-wide.png) / [narrow workspace](verification/003-native-narrow.png) |
-| Native Wayland / Ubuntu 24.04 baseline | NOT RUN; current host execution is not baseline certification |
-| macOS arm64 / Intel | NOT RUN; no Mac native build or runtime evidence |
-| Installers / public signing / notarization | NOT RUN; no packages published; bundling disabled for scaffold |
-| SSH / Docker resource views / management / terminal | Not implemented or exercised in this prompt |
+| Linux runtime | Verified on Ubuntu 26.04.1 x86_64, GTK 3.24.52, WebKitGTK 2.52.6, X11/XWayland |
+| Native settings/diagnostics | Verified in isolated app-data profiles; unrelated app windows retained |
+| Launch environment | Process-local removal of incompatible Snap library/module variables required on this host; no global configuration changed |
+| Ubuntu 24.04 baseline / native Wayland | Not verified |
+| macOS arm64 / Intel | Not built or executed |
+| Installers, signing, notarization | Not performed; native unbundled Linux builds only |
+| SSH host sessions / Docker resource reads / mutations / terminal | Not implemented or exercised live yet |
 
-The first launch inherited incompatible Snap library paths and failed before opening the window. A process-local clean environment resolved the conflict; no system or user shell configuration was changed. Non-fatal missing `canberra-gtk-module` messages remain in this environment. The captured test process was terminated and reaped after inspection; no persistent development server is needed for the release binary.
+No browser fixture, mock runtime or build is counted as native server-operation proof. Existing bundle-identifier warning and GitHub moderate dependency alert remain open for the relevant later review. [Checkpoints](checkpoints.md) still require actual lab/platform evidence.
 
-Management and terminal remain planned per-host opt-ins enforced in Rust, as specified in [ADR 0001](decisions/0001-architecture.md). There is no unrestricted shell plugin, host discovery or remote mutation endpoint in the scaffold.
-
-Prompt 004 adds validated opaque IDs, scoped requests/responses, structured errors, generated TypeScript/JSON fixtures and stale-result guards. Storage and SSH transport are still unavailable; the new commands report this honestly. See [IPC contract](ipc-contract.md) and [004 evidence](../codex/tracking/evidence/004.md).
-
-Prompt 005 adds private, bounded, versioned settings with atomic writes, backup/recovery, schema migration, file locking and revision checks. Native theme saving and recovery notices are wired through narrow IPC commands. Linux native recovery and theme persistence across restart passed; host editing and connections are still later work. See [settings](settings.md) and [005 evidence](../codex/tracking/evidence/005.md).
-
-Prompt 006 adds actual native OpenSSH/agent diagnostics and a validated executable override. Linux native diagnostics passed with PATH=/nonexistent; the view showed real OpenSSH version, linux/x86_64, app 0.1.0 and absent-agent guidance. Probes have bounded output/time and one concurrent slot. An inherited-descriptor storage-lock race was fixed and regression-tested. See [native dependencies](native-dependencies.md) and [006 evidence](../codex/tracking/evidence/006.md).
-
-Next prompt: **007 — SSH config alias discovery**. Do not treat this shell as the remote-Docker MVP; checkpoints [018/030/038/046/060](checkpoints.md) still require their actual feature, lab and platform acceptance work.
+Next prompt: **008 — Synthetic fixtures and offline development mode**. Continue sequentially under the user's [execution authorization](execution.md).
