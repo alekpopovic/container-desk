@@ -22,7 +22,7 @@ def unused_port():
         return sock.getsockname()[1]
 
 
-def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, inventory=False):
+def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, inventory=False, inspect=False):
     env = os.environ.copy()
     for key in ("LD_LIBRARY_PATH", "LD_PRELOAD", "GTK_PATH", "GIO_MODULE_DIR", "SSH_AUTH_SOCK"):
         env.pop(key, None)
@@ -138,6 +138,40 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                     assert "listing-first" in script('return document.querySelector(".detail-panel").innerText')
                     (artifacts / f"native-list-{alias}.png").write_bytes(base64.b64decode(command("GET", "/screenshot"), validate=True))
                     print(f"PASS native live table {alias}: two real containers, row selection and refresh", flush=True)
+                    if inspect:
+                        def inspect_text():
+                            return script('return document.querySelector(".inspect-detail")?.innerText ?? ""')
+                        def wait_inspect(expected):
+                            deadline = time.monotonic() + 15
+                            while time.monotonic() < deadline:
+                                text = inspect_text()
+                                if expected in text:
+                                    return text
+                                time.sleep(.1)
+                            raise AssertionError("Native inspect did not reach expected state")
+                        text = wait_inspect("Sensitive values masked")
+                        assert "CHECKPOINT_TOKEN" in text
+                        assert "synthetic-inspect-021-secret" not in text
+                        assert "synthetic-label-021-secret" not in text
+                        button("Reveal sensitive values")
+                        text = wait_inspect("Sensitive values revealed")
+                        assert "synthetic-inspect-021-secret" in text
+                        assert "synthetic-label-021-secret" in text
+                        button("Hide sensitive values")
+                        text = wait_inspect("Sensitive values masked")
+                        assert "synthetic-inspect-021-secret" not in text
+                        assert "synthetic-label-021-secret" not in text
+                        # Cover multiple host-inventory poll ticks and wait for actual native paint.
+                        stable_until = time.monotonic() + 2.2
+                        while time.monotonic() < stable_until:
+                            text = inspect_text()
+                            assert "Sensitive values masked" in text, "Unchanged inventory must not reload details"
+                            assert "synthetic-inspect-021-secret" not in text
+                            time.sleep(.1)
+                        script("Array.from(document.querySelectorAll('button')).find(b => b.textContent.trim() === 'Reveal sensitive values').scrollIntoView({block: 'center'})")
+                        command("POST", "/execute/async", {"script": "const done = arguments[arguments.length - 1]; requestAnimationFrame(() => requestAnimationFrame(() => done(true)));", "args": []})
+                        (artifacts / f"native-inspect-{alias}.png").write_bytes(base64.b64decode(command("GET", "/screenshot"), validate=True))
+                        print(f"PASS native inspect {alias}: real fields, Rust default redaction, explicit reveal and hide", flush=True)
                     node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
                     command("POST", f"/element/{node}/click", {})
                 button("Disconnect saved host")
@@ -183,3 +217,11 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
             if driver.poll() is None:
                 os.killpg(driver.pid, signal.SIGTERM)
                 driver.wait(timeout=10)
+
+    if inspect:
+        for path in [root / "native-driver.log", *(root / "native-data").rglob("*")]:
+            if path.is_file():
+                data = path.read_bytes()
+                assert b"synthetic-inspect-021-secret" not in data, "Environment value leaked to app logs/storage"
+                assert b"synthetic-label-021-secret" not in data, "Label value leaked to app logs/storage"
+        print("PASS native logs and persisted app files contain no synthetic inspect values", flush=True)

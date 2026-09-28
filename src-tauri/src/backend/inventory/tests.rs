@@ -540,3 +540,138 @@ async fn checkpoint020_live_inventory_binds_reads_and_cancels_inflight_without_i
         "PASS live resource sessions: direct/ProxyJump actual IDs, old/disconnected scopes rejected, inflight read cancelled below 3s, all permits released; controlled identity drift revokes the session"
     );
 }
+
+#[tokio::test]
+#[ignore = "requires disposable real Engine with inspect secret fixtures"]
+async fn checkpoint021_live_inspect_redacts_reveals_and_rejects_disconnected_scope() {
+    let manifest = std::env::var("CONTAINERDESK_SSH_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    assert_eq!(lab["realEngine"], true);
+    let root = std::path::Path::new(&manifest)
+        .parent()
+        .unwrap()
+        .join("inspect-app-data");
+    let backend = Backend::new(&root, "/unused-lab-home".into());
+    let container = ContainerId(lab["expectedContainerIds"][0].as_str().unwrap().into());
+    let secrets = ["synthetic-inspect-021-secret", "synthetic-label-021-secret"];
+    for (revision, alias) in ["direct-known", "via-known"].into_iter().enumerate() {
+        let saved = backend
+            .save_host(SaveHostRequest {
+                mode: WorkspaceMode::Live,
+                expected_revision: revision as u32,
+                id: None,
+                draft: draft(alias, lab["config"].as_str().unwrap()),
+            })
+            .await
+            .unwrap();
+        let id = saved.saved.preferences.hosts.last().unwrap().id.clone();
+        backend
+            .connect_inventory_host(InventoryConnectRequest {
+                mode: WorkspaceMode::Live,
+                host_id: id.clone(),
+            })
+            .await
+            .unwrap();
+        let connection = ready(&backend, WorkspaceMode::Live, id.clone()).await;
+        let scope = backend
+            .connect_host(ConnectHostRequest {
+                selection: HostSelection {
+                    host_id: id.clone(),
+                    selection_generation: revision as u32 + 1,
+                },
+            })
+            .unwrap()
+            .scope;
+        let mut request = InspectContainerRequest {
+            scope: scope.clone(),
+            container_id: container.clone(),
+            reveal_sensitive: false,
+        };
+        let masked = backend.inspect_container(request.clone()).await.unwrap();
+        assert_eq!(masked.summary.id, container);
+        assert_eq!(masked.summary.name, "listing-first");
+        assert_eq!(masked.summary.state, "created");
+        assert!(masked.image_id.is_some());
+        assert!(masked.created_at.is_some());
+        assert_eq!(masked.summary.health, None);
+        let wire = serde_json::to_string(&masked).unwrap();
+        for secret in secrets {
+            assert!(!wire.contains(secret));
+        }
+        assert!(
+            masked
+                .environment
+                .iter()
+                .any(|v| v.name == "CHECKPOINT_TOKEN" && v.value.is_none())
+        );
+        request.reveal_sensitive = true;
+        let revealed = backend.inspect_container(request.clone()).await.unwrap();
+        assert_eq!(
+            revealed
+                .environment
+                .iter()
+                .find(|v| v.name == "CHECKPOINT_TOKEN")
+                .unwrap()
+                .value
+                .as_deref(),
+            Some(secrets[0])
+        );
+        assert_eq!(
+            revealed
+                .labels
+                .iter()
+                .find(|v| v.name == "innocent")
+                .unwrap()
+                .value
+                .as_deref(),
+            Some(secrets[1])
+        );
+        for secret in secrets {
+            assert!(!format!("{revealed:?}").contains(secret));
+        }
+        request.reveal_sensitive = false;
+        assert!(
+            backend
+                .inspect_container(request.clone())
+                .await
+                .unwrap()
+                .environment
+                .iter()
+                .all(|v| v.value.is_none())
+        );
+        let mut missing = request.clone();
+        missing.container_id = ContainerId("0".repeat(64));
+        assert_eq!(
+            backend.inspect_container(missing).await.unwrap_err().code,
+            ErrorCode::ContainerNotFound
+        );
+        let mut forged = request.clone();
+        forged.scope.daemon_id = "foreign".into();
+        assert!(backend.inspect_container(forged).await.is_err());
+        backend
+            .disconnect_inventory_host(InventoryDisconnectRequest {
+                mode: WorkspaceMode::Live,
+                host_id: id,
+                token: connection.token,
+            })
+            .await
+            .unwrap();
+        request.reveal_sensitive = true;
+        assert!(backend.inspect_container(request).await.is_err());
+        assert_eq!(backend.read_slots.available_permits(), 4);
+        for file in std::fs::read_dir(&root).unwrap() {
+            let path = file.unwrap().path();
+            if path.is_file() {
+                let bytes = std::fs::read(path).unwrap();
+                for secret in secrets {
+                    assert!(!String::from_utf8_lossy(&bytes).contains(secret));
+                }
+            }
+        }
+        println!(
+            "PASS real inspect {alias}: exact ID, created lifecycle/image, default masking, explicit reveal, missing ID, stale scope; no values in persisted app files or Debug"
+        );
+    }
+    backend.shutdown().await;
+}

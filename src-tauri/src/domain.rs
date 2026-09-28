@@ -117,6 +117,7 @@ pub enum ErrorCode {
     InvalidId,
     InvalidGeneration,
     HostNotFound,
+    ContainerNotFound,
     SessionNotFound,
     StaleSession,
     SubscriptionNotFound,
@@ -155,6 +156,9 @@ impl AppError {
         let message = match code {
             ErrorCode::InvalidId => "Invalid resource identifier.",
             ErrorCode::InvalidGeneration => "Invalid session or selection generation.",
+            ErrorCode::ContainerNotFound => {
+                "The container no longer exists. Refresh the inventory."
+            }
             ErrorCode::HostNotFound => "Saved host does not exist.",
             ErrorCode::SessionNotFound => "Connection session does not exist.",
             ErrorCode::StaleSession => "The connection changed. Refresh the selected host.",
@@ -275,6 +279,74 @@ pub struct ContainerDetail {
     /// No environment values or unrestricted inspect JSON cross default IPC.
     pub environment_names: Vec<String>,
     pub environment_values_masked: bool,
+    pub environment: Vec<DetailValue>,
+    pub labels: Vec<DetailValue>,
+    pub created_at: Option<String>,
+    pub started_at: Option<String>,
+    pub finished_at: Option<String>,
+    pub exit_code: Option<i32>,
+    pub restart_count: Option<u32>,
+    pub restart_policy: Option<String>,
+    pub restart_maximum_retry_count: Option<u32>,
+    pub image_id: Option<ImageId>,
+    pub mounts: Vec<DetailMount>,
+    pub networks: Vec<DetailNetwork>,
+    pub resources: ResourceConfiguration,
+}
+/// Debug never includes even explicitly revealed values.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct DetailValue {
+    pub name: String,
+    pub value: Option<String>,
+    pub masked: bool,
+}
+impl std::fmt::Debug for DetailValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("DetailValue")
+            .field("masked", &self.masked)
+            .finish_non_exhaustive()
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct DetailMount {
+    pub kind: Option<String>,
+    pub name: Option<String>,
+    pub source: Option<String>,
+    pub destination: Option<String>,
+    pub read_write: Option<bool>,
+    pub propagation: Option<String>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct DetailNetwork {
+    pub name: String,
+    pub network_id: Option<String>,
+    pub ipv4: Option<String>,
+    pub ipv6: Option<String>,
+    pub gateway: Option<String>,
+    pub mac_address: Option<String>,
+    pub aliases: Vec<String>,
+}
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ResourceConfiguration {
+    /// Exact decimal integers as strings; avoid JS precision loss. Null means unavailable.
+    pub memory_bytes: Option<String>,
+    pub memory_swap_bytes: Option<String>,
+    pub nano_cpus: Option<String>,
+    pub cpu_shares: Option<String>,
+    pub cpu_period: Option<String>,
+    pub cpu_quota: Option<String>,
+    pub cpuset_cpus: Option<String>,
+    pub pids_limit: Option<String>,
+    pub privileged: Option<bool>,
+    pub read_only_rootfs: Option<bool>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -596,6 +668,9 @@ pub struct TerminalResponse {
 pub struct InspectContainerRequest {
     pub scope: SessionScope,
     pub container_id: ContainerId,
+    /// Explicit one-request reveal, bound to the current session; never persisted.
+    #[serde(default)]
+    pub reveal_sensitive: bool,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

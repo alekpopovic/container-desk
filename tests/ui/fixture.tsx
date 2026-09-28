@@ -1,3 +1,4 @@
+import { InspectFixture } from "./inspect-fixture";
 import { ContainerFixture } from "./container-fixture";
 import { createRoot } from "react-dom/client";
 import {
@@ -25,7 +26,9 @@ if (kind === "error")
 const root = document.getElementById("root");
 if (!root) throw new Error("Fixture root missing");
 createRoot(root).render(
-  kind === "containers" ? (
+  kind === "inspect" ? (
+    <InspectFixture />
+  ) : kind === "containers" ? (
     <ContainerFixture />
   ) : (
     <WorkspaceShell state={state} />

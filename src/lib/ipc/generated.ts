@@ -14,7 +14,7 @@ export type SessionScope = { selection: HostSelection, sessionId: SessionId,
  * Backend-issued epoch; changes after reconnect or daemon/context changes.
  */
 sessionGeneration: number, daemonId: string, };
-export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
+export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "container_not_found" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
 export type AppError = { code: ErrorCode, message: string, scope: SessionScope | null, };
 export type ConnectionState = "disconnected" | "resolving" | "connecting" | "probing" | "ready" | "degraded" | "error";
 export type HostCapabilities = { docker: boolean, compose: boolean, management: boolean, terminal: boolean, };
@@ -37,7 +37,15 @@ export type ContainerDetail = { summary: ContainerSummary,
 /**
  * No environment values or unrestricted inspect JSON cross default IPC.
  */
-environmentNames: Array<string>, environmentValuesMasked: boolean, };
+environmentNames: Array<string>, environmentValuesMasked: boolean, environment: Array<DetailValue>, labels: Array<DetailValue>, createdAt: string | null, startedAt: string | null, finishedAt: string | null, exitCode: number | null, restartCount: number | null, restartPolicy: string | null, restartMaximumRetryCount: number | null, imageId: ImageId | null, mounts: Array<DetailMount>, networks: Array<DetailNetwork>, resources: ResourceConfiguration, };
+export type DetailValue = { name: string, value: string | null, masked: boolean, };
+export type DetailMount = { kind: string | null, name: string | null, source: string | null, destination: string | null, readWrite: boolean | null, propagation: string | null, };
+export type DetailNetwork = { name: string, networkId: string | null, ipv4: string | null, ipv6: string | null, gateway: string | null, macAddress: string | null, aliases: Array<string>, };
+export type ResourceConfiguration = {
+/**
+ * Exact decimal integers as strings; avoid JS precision loss. Null means unavailable.
+ */
+memoryBytes: string | null, memorySwapBytes: string | null, nanoCpus: string | null, cpuShares: string | null, cpuPeriod: string | null, cpuQuota: string | null, cpusetCpus: string | null, pidsLimit: string | null, privileged: boolean | null, readOnlyRootfs: boolean | null, };
 export type ListHostsResponse = { hosts: Array<HostSummary>, };
 export type ConnectHostRequest = { selection: HostSelection, };
 export type ConnectHostResponse = { scope: SessionScope, capabilities: HostCapabilities, };
@@ -77,7 +85,11 @@ export type MutationOutcome = "succeeded" | "failed" | "unknown";
 export type MutationResponse = { scope: SessionScope, spec: MutationSpec, outcome: MutationOutcome, };
 export type TerminalRequest = { scope: SessionScope, intentId: IntentId, spec: TerminalSpec, };
 export type TerminalResponse = { scope: SessionScope, terminalId: SubscriptionId, };
-export type InspectContainerRequest = { scope: SessionScope, containerId: ContainerId, };
+export type InspectContainerRequest = { scope: SessionScope, containerId: ContainerId,
+/**
+ * Explicit one-request reveal, bound to the current session; never persisted.
+ */
+revealSensitive: boolean, };
 export type ContainerLogsRequest = { scope: SessionScope, containerId: ContainerId, tail: number, timeoutSeconds: number, };
 export type LogSnapshot = { scope: SessionScope, containerId: ContainerId, text: string, truncated: boolean, };
 export type ContainerPort = { hostIp: string | null, publicPort: number | null, privatePort: number, protocol: string, };

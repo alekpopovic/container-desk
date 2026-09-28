@@ -35,11 +35,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", action="store_true", help="Run a real isolated empty Docker Engine in the SSH target")
     parser.add_argument("--listing", action="store_true", help="Seed two metadata-only containers in the private Engine for listing checks")
+    parser.add_argument("--inspect", action="store_true", help="Check native inspect and secret redaction; requires --inventory")
     parser.add_argument("--inventory", action="store_true", help="Check live resource sessions and cancellation; requires --listing")
     parser.add_argument("--native-artifacts", type=Path, help="Explicit directory for this run native screenshots")
     parser.add_argument("--native-driver", type=Path, help="Optional external tauri-driver executable for the real native UI journey")
     parser.add_argument("--webkit-driver", type=Path, help="WebKitWebDriver executable, required with --native-driver")
     args = parser.parse_args()
+    if args.inspect and not args.inventory:
+        parser.error("--inspect requires --inventory")
     if args.inventory and not args.listing:
         parser.error("--inventory requires --listing")
     if args.listing and not args.engine:
@@ -240,6 +243,7 @@ def main():
                 for name in ("listing-first", "listing-second"):
                     expected.append(dc("exec", names[-1], "docker", "create", "--network", "none", "--name", name,
                                        "--label", "dev.containerdesk.fixture=019", "--label", "test.value=comma,equals=next",
+                                       *(["--env", "CHECKPOINT_TOKEN=synthetic-inspect-021-secret", "--label", "innocent=synthetic-label-021-secret"] if args.inspect else []),
                                        "containerdesk-empty:019", capture_output=True).stdout.strip())
                 current = json.loads(manifest.read_text())
                 current["expectedContainerIds"] = expected
@@ -247,9 +251,11 @@ def main():
                 native_test(executable, "checkpoint019_real_listing", {**test_env, "PATH": "/nonexistent"})
             if args.inventory:
                 native_test(executable, "checkpoint020_live_inventory", {**test_env, "PATH": "/nonexistent"})
+            if args.inspect:
+                native_test(executable, "checkpoint021_live_inspect", {**test_env, "PATH": "/nonexistent"})
             if args.native_driver:
                 from native_ssh import verify
-                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory)
+                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect)
             assert not marker.exists()
             assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
             print(f"PASS: {len(cases)} native SSH cases; config/trust hashes unchanged; no askpass invoked", flush=True)

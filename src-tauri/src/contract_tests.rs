@@ -53,6 +53,10 @@ fn generated_contract_is_current() {
         ContainerSummary,
         ContainerListDisplay,
         ContainerDetail,
+        DetailValue,
+        DetailMount,
+        DetailNetwork,
+        ResourceConfiguration,
         ListHostsResponse,
         ConnectHostRequest,
         ConnectHostResponse,
@@ -151,11 +155,9 @@ fn serialized_fixtures_are_current() {
         compose: None,
         cli: None,
     };
-    let detail = ContainerDetail {
-        summary: summary.clone(),
-        environment_names: vec!["EXAMPLE_TOKEN".into()],
-        environment_values_masked: true,
-    };
+    let detail = crate::docker::inspect::parse(&scope(), &summary.id, false, serde_json::to_vec(&json!([{
+        "Id": summary.id, "Name": "/example", "Config": {"Image": "example:fixture", "Env": ["EXAMPLE_TOKEN=synthetic-value"]}, "State": {"Status": "running"}
+    }])).unwrap().as_slice()).unwrap();
     let fixtures = json!({
         "effectiveSsh": EffectiveSshConfig { selection: SshSelection { alias: "fixture-host".into(), config_path: "/fixture/.ssh/config".into(), use_default_config: false }, executable_path: "/usr/bin/ssh".into(), hostname: "192.0.2.10".into(), user: "fixture-user".into(), port: 2222, proxy_jump: Some("fixture-jump".into()), has_proxy_command: false },
         "discovery": HostDiscovery { config_path: "/fixture/.ssh/config".into(), candidates: vec![SshCandidate { alias: "fixture-host".into(), source: "/fixture/.ssh/config".into(), line: 2 }], warnings: vec![DiscoveryWarning { code: DiscoveryWarningCode::PatternsSkipped, source: "/fixture/.ssh/config".into(), line: Some(3) }] },

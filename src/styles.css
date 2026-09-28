@@ -911,3 +911,28 @@ legend {
 .container-split .detail-panel > p {
   margin: 16px;
 }
+
+.container-split .inspect-detail {
+  padding: 16px;
+  overflow-wrap: anywhere;
+}
+.container-split .inspect-detail h3,
+.container-split .inspect-detail h4 {
+  margin: 16px 0 8px;
+}
+.container-split .inspect-detail dl,
+.container-split .inspect-detail p {
+  margin: 8px 0;
+}
+.container-split .inspect-detail dt {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+}
+.container-split .inspect-detail dd {
+  margin: 4px 0 12px;
+  white-space: pre-wrap;
+}
+.container-split .inspect-detail ul {
+  padding-left: 16px;
+}

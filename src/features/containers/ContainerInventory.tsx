@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { ContainerDetails } from "./ContainerDetails";
 import type { ContainerSummary } from "../../lib/ipc/generated";
 import {
   HostIdentity,
@@ -58,11 +59,13 @@ export function ContainerInventory({
   host,
   refresh,
   select,
+  inspectEnabled = false,
 }: {
   view: InventoryView;
   host: DisplayHost | null;
   refresh: () => void;
   select: (id: string) => void;
+  inspectEnabled?: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [state, setState] = useState("all");
@@ -358,6 +361,13 @@ export function ContainerInventory({
               <dt>Health</dt>
               <dd>{chosen.health ?? "Unknown"}</dd>
             </dl>
+            {inspectEnabled && !view.stale && view.scope && (
+              <ContainerDetails
+                key={JSON.stringify([view.scope, chosen.id, view.updatedAt])}
+                scope={view.scope}
+                id={chosen.id}
+              />
+            )}
             {view.stale && (
               <p>These details are from the last successful snapshot.</p>
             )}

@@ -310,11 +310,11 @@ pub async fn set_ssh_executable(
 }
 
 #[tauri::command]
-pub fn inspect_container(
+pub async fn inspect_container(
     backend: tauri::State<'_, Backend>,
     request: InspectContainerRequest,
 ) -> Result<ContainerDetail, AppError> {
-    backend.inspect_container(request)
+    backend.inspect_container(request).await
 }
 #[tauri::command]
 pub fn container_logs(

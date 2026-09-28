@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-28T23:05:22+00:00
+Updated: 2026-09-28T23:22:57+00:00
 
-blocked: **0** | done: **20** | in_progress: **0** | pending: **40**
+blocked: **0** | done: **21** | in_progress: **0** | pending: **39**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -30,7 +30,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 018 | 02 SSH transport | SSH vertical slice checkpoint | high | done | codex/tracking/evidence/018.md |
 | 019 | 03 Read-only MVP | Container listing adapter | high | done | codex/tracking/evidence/019.md |
 | 020 | 03 Read-only MVP | Container table and host-scoped cache | medium | done | codex/tracking/evidence/020.md |
-| 021 | 03 Read-only MVP | Container inspect adapter and details | high | pending | — |
+| 021 | 03 Read-only MVP | Container inspect adapter and details | high | done | codex/tracking/evidence/021.md |
 | 022 | 03 Read-only MVP | Health, ports, mounts and environment panels | medium | pending | — |
 | 023 | 03 Read-only MVP | Bounded log snapshot retrieval | high | pending | — |
 | 024 | 03 Read-only MVP | Live log subscriptions and cancellation | high | pending | — |
@@ -113,3 +113,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T22:32:41+00:00 — 019: done; 82 Rust and 25 IPC tests passed; 18 browser regressions and Linux build passed; actual Docker populated/empty lists match full IDs/counts over direct and ProxyJump SSH with client PATH=/nonexistent; clippy/fmt passed
 - 2026-09-28T22:33:14+00:00 — 020: start;
 - 2026-09-28T23:05:22+00:00 — 020: done; PASS: 82 Rust tests, 29 IPC tests, 30 targeted browser checks; real direct/ProxyJump Engine reads and native release UI, cancellation and identity-drift revocation
+- 2026-09-28T23:05:44+00:00 — 021: start;
+- 2026-09-28T23:22:57+00:00 — 021: done; PASS 86 Rust, 32 IPC, 42 browser checks plus 12 final inspect checks; real direct/ProxyJump inspect and release UI reveal/hide; logs/storage secret scan clean

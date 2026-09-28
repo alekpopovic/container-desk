@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T23:05:22+00:00",
+  "updated_at": "2026-09-28T23:22:57+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -681,6 +681,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T23:05:44+00:00",
+      "id": "021",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T23:22:57+00:00",
+      "id": "021",
+      "action": "done",
+      "note": "PASS 86 Rust, 32 IPC, 42 browser checks plus 12 final inspect checks; real direct/ProxyJump inspect and release UI reveal/hide; logs/storage secret scan clean",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T23:05:44+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -952,12 +986,14 @@
       "note": ""
     },
     "021": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T23:05:44+00:00",
+      "finished_at": "2026-09-28T23:22:57+00:00",
+      "evidence": "codex/tracking/evidence/021.md",
+      "evidence_sha256": "f519b048e7ada536e279ae6f5f38a97fce7304dd32c94d2355d3b3b0e7a922b1",
+      "checks": [
+        "PASS 86 Rust, 32 IPC, 42 browser checks plus 12 final inspect checks; real direct/ProxyJump inspect and release UI reveal/hide; logs/storage secret scan clean"
+      ],
       "commit": "",
       "note": ""
     },

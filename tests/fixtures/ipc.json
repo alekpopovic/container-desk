@@ -38,10 +38,40 @@
     }
   },
   "detail": {
+    "createdAt": null,
+    "environment": [
+      {
+        "masked": true,
+        "name": "EXAMPLE_TOKEN",
+        "value": null
+      }
+    ],
     "environmentNames": [
       "EXAMPLE_TOKEN"
     ],
     "environmentValuesMasked": true,
+    "exitCode": null,
+    "finishedAt": null,
+    "imageId": null,
+    "labels": [],
+    "mounts": [],
+    "networks": [],
+    "resources": {
+      "cpuPeriod": null,
+      "cpuQuota": null,
+      "cpuShares": null,
+      "cpusetCpus": null,
+      "memoryBytes": null,
+      "memorySwapBytes": null,
+      "nanoCpus": null,
+      "pidsLimit": null,
+      "privileged": null,
+      "readOnlyRootfs": null
+    },
+    "restartCount": null,
+    "restartMaximumRetryCount": null,
+    "restartPolicy": null,
+    "startedAt": null,
     "summary": {
       "cli": null,
       "compose": null,
@@ -60,7 +90,7 @@
         "sessionId": "s_22222222222222222222222222222222"
       },
       "state": "running",
-      "status": "Up"
+      "status": "running"
     }
   },
   "diagnostics": {

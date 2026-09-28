@@ -5,6 +5,7 @@ use crate::{
     ssh::{quoting, runner},
 };
 use std::{ffi::OsString, fmt};
+pub(crate) mod inspect;
 pub mod listing;
 pub(crate) mod probe;
 

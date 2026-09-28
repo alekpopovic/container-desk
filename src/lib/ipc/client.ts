@@ -26,6 +26,7 @@ const messages: Record<ErrorCode, string> = {
   invalid_config_path:
     "Choose an absolute local SSH config path or use the default.",
   invalid_generation: "Invalid session or selection generation.",
+  container_not_found: "The container no longer exists. Refresh the inventory.",
   host_not_found: "Saved host does not exist.",
   session_not_found: "Connection session does not exist.",
   stale_session: "The connection changed. Refresh the selected host.",
@@ -963,4 +964,97 @@ export async function disconnectInventoryHost(
   )
     throw new IpcError("invalid_response");
   return result;
+}
+
+export async function inspectContainer(
+  request: import("./generated.ts").InspectContainerRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").ContainerDetail> {
+  const result = await call("inspect_container", request, () =>
+    sameScope(request.scope, current()),
+  );
+  const optional = (v: unknown) => v === null || text(v);
+  const integer = (v: unknown) =>
+    v === null || (typeof v === "number" && Number.isSafeInteger(v));
+  const strings = (v: unknown, max: number) =>
+    Array.isArray(v) && v.length <= max && v.every((x) => text(x));
+  const secretValues = (v: unknown) =>
+    Array.isArray(v) &&
+    v.length <= 1024 &&
+    v.every(
+      (x) =>
+        record(x) &&
+        text(x.name) &&
+        x.masked === !request.revealSensitive &&
+        (x.masked ? x.value === null : text(x.value, 65536)),
+    );
+  if (
+    !record(result) ||
+    !container(result.summary, request.scope) ||
+    result.summary.id !== request.containerId ||
+    result.environmentValuesMasked !== !request.revealSensitive ||
+    !strings(result.environmentNames, 1024) ||
+    !secretValues(result.environment) ||
+    !secretValues(result.labels) ||
+    ![
+      result.createdAt,
+      result.startedAt,
+      result.finishedAt,
+      result.restartPolicy,
+    ].every(optional) ||
+    ![
+      result.exitCode,
+      result.restartCount,
+      result.restartMaximumRetryCount,
+    ].every(integer) ||
+    !(
+      result.imageId === null ||
+      (text(result.imageId, 71) &&
+        /^(sha256:)?[a-f0-9]{64}$/.test(result.imageId))
+    ) ||
+    !Array.isArray(result.mounts) ||
+    result.mounts.length > 128 ||
+    !result.mounts.every(
+      (m) =>
+        record(m) &&
+        [m.kind, m.name, m.source, m.destination, m.propagation].every(
+          optional,
+        ) &&
+        (m.readWrite === null || typeof m.readWrite === "boolean"),
+    ) ||
+    !Array.isArray(result.networks) ||
+    result.networks.length > 128 ||
+    !result.networks.every(
+      (n) =>
+        record(n) &&
+        text(n.name) &&
+        [n.networkId, n.ipv4, n.ipv6, n.gateway, n.macAddress].every(
+          optional,
+        ) &&
+        strings(n.aliases, 128),
+    ) ||
+    !record(result.resources) ||
+    ![
+      "memoryBytes",
+      "memorySwapBytes",
+      "nanoCpus",
+      "cpuShares",
+      "cpuPeriod",
+      "cpuQuota",
+      "pidsLimit",
+    ].every(
+      (k) =>
+        result.resources !== null &&
+        record(result.resources) &&
+        (result.resources[k] === null ||
+          (text(result.resources[k], 21) &&
+            /^-?[0-9]+$/.test(result.resources[k] as string))),
+    ) ||
+    !optional(result.resources.cpusetCpus) ||
+    ![result.resources.privileged, result.resources.readOnlyRootfs].every(
+      (x) => x === null || typeof x === "boolean",
+    )
+  )
+    throw new IpcError("invalid_response");
+  return result as import("./generated.ts").ContainerDetail;
 }

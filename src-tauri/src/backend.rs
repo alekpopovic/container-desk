@@ -546,20 +546,34 @@ impl Backend {
         Ok(response)
     }
 
-    pub fn inspect_container(
+    pub async fn inspect_container(
         &self,
         request: InspectContainerRequest,
     ) -> Result<ContainerDetail, AppError> {
+        let _permit = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
         self.policy
             .lock()
             .map_err(|_| AppError::new(ErrorCode::Internal))?
             .authorize_read(
                 &request.scope,
                 &ReadOperation::InspectContainer {
-                    container_id: request.container_id,
+                    container_id: request.container_id.clone(),
                 },
             )?;
-        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
+        self.require_session(&request.scope)?;
+        if self.workspace_mode()?.mode != WorkspaceMode::Live {
+            return Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope));
+        }
+        let result = self.sessions.inspect(&request).await;
+        self.require_session(&request.scope)?;
+        let detail = result?;
+        if detail.summary.scope != request.scope || detail.summary.id != request.container_id {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(detail)
     }
     pub fn container_logs(&self, request: ContainerLogsRequest) -> Result<LogSnapshot, AppError> {
         self.policy
