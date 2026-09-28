@@ -811,3 +811,103 @@ legend {
 .host-inventory dd {
   margin: 4px 0 14px;
 }
+
+/* Bounded container viewport; 56 px rows keep virtual scroll positions deterministic. */
+.container-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  padding: 16px;
+}
+.container-tools label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+.container-tools input,
+.container-tools select {
+  padding: 8px;
+  min-width: 130px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: inherit;
+}
+.snapshot-state,
+.table-count {
+  padding: 0 16px;
+  font-size: 0.82rem;
+}
+.container-scroll {
+  overflow: auto;
+  max-height: 480px;
+  width: 100%;
+}
+.container-table {
+  table-layout: fixed;
+  min-width: 800px;
+  width: 100%;
+}
+.container-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+.container-table th button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+}
+.container-table tbody tr:not(.table-spacer) {
+  height: 56px;
+}
+.container-table td {
+  padding: 8px 16px;
+  line-height: 18px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.container-table tr[data-selected="true"] {
+  background: var(--accent-soft);
+}
+.container-table .table-spacer td {
+  padding: 0;
+  border: 0;
+}
+.container-select {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.selected-container {
+  display: grid;
+  gap: 6px;
+  overflow-wrap: anywhere;
+}
+.selected-container dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 12px;
+}
+.selected-container dd {
+  margin: 0;
+}
+
+.container-split .detail-panel > h3,
+.container-split .detail-panel > .selected-container,
+.container-split .detail-panel > p {
+  margin: 16px;
+}

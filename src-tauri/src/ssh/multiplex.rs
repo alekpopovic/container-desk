@@ -165,6 +165,63 @@ impl Connection {
             .await;
         super::auth::report(self.selection.clone(), result)
     }
+    pub fn client(&self) -> Client {
+        Client {
+            policy: self.policy.clone(),
+            executable: self.executable.clone(),
+            channels: self.channels.clone(),
+            control: self.control.clone(),
+            shutdown: self.shutdown.clone(),
+            mode: self.mode.clone(),
+            activity: self.activity.clone(),
+            persistence_seconds: self.persistence_seconds,
+        }
+    }
+    pub fn start_fixed(&self, encoded: String, limits: Limits) -> Result<Job, AppError> {
+        self.client().start_fixed(encoded, limits)
+    }
+    pub async fn healthy(&self) -> bool {
+        self.client().healthy().await
+    }
+    #[cfg(test)]
+    pub async fn wait_lost(&self) {
+        self.client().wait_lost().await
+    }
+    #[cfg(test)]
+    fn start_channel(
+        &self,
+        encoded: String,
+        limits: Limits,
+        terminal: bool,
+    ) -> Result<Job, AppError> {
+        self.client().start_channel(encoded, limits, terminal)
+    }
+    pub async fn close(mut self) {
+        self.closed = true;
+        self.shutdown.send_replace(true);
+        cleanup(
+            self.policy.clone(),
+            self.channels.clone(),
+            self.control.clone(),
+            self.executable.clone(),
+            self.launched_master,
+        )
+        .await;
+    }
+}
+/// Cloned command/health capability. Only Connection owns and closes the master.
+#[derive(Clone)]
+pub(crate) struct Client {
+    policy: Arc<PolicyConfig>,
+    executable: String,
+    channels: Runner,
+    control: Runner,
+    shutdown: watch::Sender<bool>,
+    mode: SshTransportMode,
+    activity: Arc<Mutex<Activity>>,
+    persistence_seconds: u32,
+}
+impl Client {
     pub fn start_fixed(&self, encoded: String, limits: Limits) -> Result<Job, AppError> {
         self.start_channel(encoded, limits, false)
     }
@@ -195,7 +252,7 @@ impl Connection {
         encoded: String,
         terminal: bool,
     ) -> Result<Vec<OsString>, AppError> {
-        if self.closed || *self.shutdown.borrow() || self.mode == SshTransportMode::Unconnected {
+        if *self.shutdown.borrow() || self.mode == SshTransportMode::Unconnected {
             return Err(AppError::new(ErrorCode::Disconnected));
         }
         let mut args = Vec::new();
@@ -228,11 +285,11 @@ impl Connection {
         Ok(args)
     }
     pub async fn healthy(&self) -> bool {
-        if self.closed || *self.shutdown.borrow() {
+        if *self.shutdown.borrow() {
             return false;
         }
         if self.mode == SshTransportMode::DirectFallback {
-            return !self.closed;
+            return !*self.shutdown.borrow();
         }
         self.policy.runtime.owns_socket()
             && control_command(&self.control, &self.executable, &self.policy, "check").await
@@ -257,18 +314,6 @@ impl Connection {
                 return;
             }
         }
-    }
-    pub async fn close(mut self) {
-        self.closed = true;
-        self.shutdown.send_replace(true);
-        cleanup(
-            self.policy.clone(),
-            self.channels.clone(),
-            self.control.clone(),
-            self.executable.clone(),
-            self.launched_master,
-        )
-        .await;
     }
 }
 impl Drop for Connection {

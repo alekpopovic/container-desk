@@ -11,9 +11,11 @@ test("explicit demo displays states, IPv6 and Compose with a persistent label", 
   await expect(page.getByRole("status", { name: "Demo mode" })).toHaveCount(0);
   await page.getByRole("button", { name: "Open demo" }).click();
   await expect(page.getByRole("status", { name: "Demo mode" })).toBeVisible();
-  await expect(page.getByText("demo-web", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "running · healthy", exact: true }),
+    page.getByRole("button", { name: "demo-web", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "healthy", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "exited", exact: true }),
@@ -22,7 +24,7 @@ test("explicit demo displays states, IPv6 and Compose with a persistent label", 
     page.getByRole("cell", { name: "restarting", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "running · unhealthy", exact: true }),
+    page.getByRole("cell", { name: "unhealthy", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText("[::1]:8080 → 80/tcp", { exact: true }),
@@ -60,7 +62,9 @@ test("explicit demo displays states, IPv6 and Compose with a persistent label", 
   ).toBe(true);
   await page.getByRole("button", { name: "Exit demo" }).click();
   await expect(page.getByRole("status", { name: "Demo mode" })).toHaveCount(0);
-  await expect(page.getByText("demo-web", { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "demo-web", exact: true }),
+  ).toHaveCount(0);
   await expect(
     page.getByText("Select a host to get started", { exact: true }),
   ).toBeVisible();
@@ -77,16 +81,20 @@ test("fixture errors clear rows and remain labeled DEMO until explicit exit", as
     ["permission_failure", "This operation is not permitted."],
     ["invalid_json", "The desktop returned an invalid response."],
     ["huge_record", "The operation exceeded an application limit."],
-    ["disconnect", "Host is offline"],
+    ["disconnect", "The connection closed. Reconnect before refreshing."],
     ["timeout", "The command exceeded its deadline."],
   ]) {
     await select.selectOption(scenario ?? "");
-    await expect(page.getByText(text ?? "", { exact: true })).toBeVisible();
-    await expect(page.getByText("demo-web", { exact: true })).toHaveCount(0);
+    await expect(page.getByText(text ?? "", { exact: false })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "demo-web", exact: true }),
+    ).toHaveCount(0);
     await expect(page.getByRole("status", { name: "Demo mode" })).toBeVisible();
   }
   await select.selectOption("standard");
-  await expect(page.getByText("demo-web", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "demo-web", exact: true }),
+  ).toBeVisible();
 });
 
 test("native bridge failure never activates browser demo as fallback", async ({
@@ -109,5 +117,7 @@ test("native bridge failure never activates browser demo as fallback", async ({
   await page.getByRole("button", { name: "Open demo" }).click();
   await expect(page.getByRole("alert")).toContainText("not permitted");
   await expect(page.getByRole("status", { name: "Demo mode" })).toHaveCount(0);
-  await expect(page.getByText("demo-web", { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "demo-web", exact: true }),
+  ).toHaveCount(0);
 });

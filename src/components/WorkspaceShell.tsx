@@ -64,7 +64,7 @@ function readRoute(): Route {
   return routes.find((item) => item === route) ?? "containers";
 }
 
-function HostIdentity({ state }: { state: WorkspaceState }) {
+export function HostIdentity({ state }: { state: WorkspaceState }) {
   return (
     <div className="host-identity">
       <span className="eyebrow">Host identity</span>
@@ -127,6 +127,7 @@ export function WorkspaceShell({
   preferences,
   settingsExtra,
   hostsExtra,
+  containersExtra,
   savedHosts = [],
   demo,
 }: {
@@ -134,6 +135,7 @@ export function WorkspaceShell({
   preferences?: WorkspacePreferences | undefined;
   settingsExtra?: ReactNode;
   hostsExtra?: ReactNode;
+  containersExtra?: ReactNode;
   savedHosts?: SavedHost[];
   demo?: DemoControls;
 }) {
@@ -416,6 +418,8 @@ export function WorkspaceShell({
                 </p>
               </div>
             </section>
+          ) : route === "containers" && containersExtra ? (
+            containersExtra
           ) : (
             <ResourceWorkspace route={route} state={state} />
           )}

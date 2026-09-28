@@ -17,7 +17,7 @@ import tempfile
 import time
 
 REPO = Path(__file__).resolve().parents[2]
-IMAGE = "containerdesk-ssh-lab:018"
+IMAGE = "containerdesk-ssh-lab:020"
 BASE = "alpine@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce"
 
 
@@ -35,9 +35,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", action="store_true", help="Run a real isolated empty Docker Engine in the SSH target")
     parser.add_argument("--listing", action="store_true", help="Seed two metadata-only containers in the private Engine for listing checks")
+    parser.add_argument("--inventory", action="store_true", help="Check live resource sessions and cancellation; requires --listing")
+    parser.add_argument("--native-artifacts", type=Path, help="Explicit directory for this run native screenshots")
     parser.add_argument("--native-driver", type=Path, help="Optional external tauri-driver executable for the real native UI journey")
     parser.add_argument("--webkit-driver", type=Path, help="WebKitWebDriver executable, required with --native-driver")
     args = parser.parse_args()
+    if args.inventory and not args.listing:
+        parser.error("--inventory requires --listing")
     if args.listing and not args.engine:
         parser.error("--listing requires --engine")
     if args.native_driver and (not args.engine or not args.webkit_driver):
@@ -241,9 +245,11 @@ def main():
                 current["expectedContainerIds"] = expected
                 manifest.write_text(json.dumps(current))
                 native_test(executable, "checkpoint019_real_listing", {**test_env, "PATH": "/nonexistent"})
+            if args.inventory:
+                native_test(executable, "checkpoint020_live_inventory", {**test_env, "PATH": "/nonexistent"})
             if args.native_driver:
                 from native_ssh import verify
-                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine)
+                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory)
             assert not marker.exists()
             assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
             print(f"PASS: {len(cases)} native SSH cases; config/trust hashes unchanged; no askpass invoked", flush=True)

@@ -1,5 +1,6 @@
 use super::*;
 use crate::contract_tests::scope;
+use crate::ssh::multiplex::Connection;
 use serde_json::json;
 fn record(n: usize) -> serde_json::Value {
     json!({"ID": format!("{n:064x}"), "Names": "web", "Image": "example:latest",
@@ -197,7 +198,7 @@ async fn checkpoint019_real_listing_matches_engine_ids_through_direct_and_proxyj
         let mut current = scope();
         current.daemon_id = report.daemon_id.unwrap();
         let binding = binding.unwrap();
-        let result = read(&connection, &options, &binding, &current)
+        let result = read(&connection.client(), &options, &binding, &current)
             .await
             .unwrap();
         let actual: HashSet<_> = result
@@ -237,7 +238,7 @@ async fn checkpoint019_real_listing_matches_engine_ids_through_direct_and_proxyj
         let mut wrong = current;
         wrong.daemon_id = "not-this-daemon".into();
         assert_eq!(
-            read(&connection, &options, &binding, &wrong)
+            read(&connection.client(), &options, &binding, &wrong)
                 .await
                 .unwrap_err()
                 .code,

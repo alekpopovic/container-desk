@@ -174,8 +174,8 @@ mod tests {
         );
         assert_eq!(
             invoke("list_containers", json!({"scope":scope})).unwrap_err()["code"],
-            "feature_unavailable",
-            "read is authorized; only the absent transport blocks it"
+            "session_not_found",
+            "policy registration alone cannot invent an owned native session"
         );
         request["spec"]["force"] = true.into();
         assert!(invoke("mutate_container", request.clone()).is_err());

@@ -22,12 +22,16 @@ def unused_port():
         return sock.getsockname()[1]
 
 
-def verify(root, tauri_driver, webkit_driver, config, engine):
+def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, inventory=False):
     env = os.environ.copy()
     for key in ("LD_LIBRARY_PATH", "LD_PRELOAD", "GTK_PATH", "GIO_MODULE_DIR", "SSH_AUTH_SOCK"):
         env.pop(key, None)
     env.update(XDG_DATA_HOME=str(root / "native-data"), GDK_BACKEND="x11", PATH="/nonexistent")
     port, native_port = unused_port(), unused_port()
+    while native_port == port:
+        native_port = unused_port()
+    artifacts = artifacts or root / "native-artifacts"
+    artifacts.mkdir(parents=True, exist_ok=True)
     session = None
     with (root / "native-driver.log").open("w") as log:
         driver = subprocess.Popen([str(tauri_driver), "--port", str(port), "--native-port", str(native_port),
@@ -107,9 +111,35 @@ def verify(root, tauri_driver, webkit_driver, config, engine):
                     assert expected in text, f"Missing {expected!r} in native details"
                 script('document.querySelector("[aria-label=\\"Selected saved host\\"]").scrollIntoView()')
                 screenshot = command("GET", "/screenshot")
-                artifact = REPO / "docs/checkpoints" / f"018-native-{alias}.png"
+                artifact = artifacts / f"native-{alias}.png"
                 artifact.parent.mkdir(exist_ok=True)
                 artifact.write_bytes(base64.b64decode(screenshot, validate=True))
+                if inventory:
+                    node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
+                    command("POST", f"/element/{node}/click", {})
+                    deadline = time.monotonic() + 20
+                    while time.monotonic() < deadline:
+                        if script('return document.querySelectorAll("[data-container-id]").length') == 2:
+                            break
+                        time.sleep(.1)
+                    else:
+                        raise AssertionError("Native live container table did not load two rows")
+                    button("listing-first")
+                    assert "Selected container" in script('return document.querySelector(".detail-panel").innerText')
+                    previous_read = script('return document.querySelector("time").dateTime')
+                    button("Refresh containers")
+                    deadline = time.monotonic() + 15
+                    while time.monotonic() < deadline:
+                        if script('return document.querySelector("time").dateTime') != previous_read:
+                            break
+                        time.sleep(.1)
+                    else:
+                        raise AssertionError("Native refresh did not record a new successful timestamp")
+                    assert "listing-first" in script('return document.querySelector(".detail-panel").innerText')
+                    (artifacts / f"native-list-{alias}.png").write_bytes(base64.b64decode(command("GET", "/screenshot"), validate=True))
+                    print(f"PASS native live table {alias}: two real containers, row selection and refresh", flush=True)
+                    node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
+                    command("POST", f"/element/{node}/click", {})
                 button("Disconnect saved host")
                 wait_text("Disconnected · Read-only session")
                 assert engine["engineId"] not in details()

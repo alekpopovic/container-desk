@@ -1,5 +1,7 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ContainerInventory } from "./features/containers/ContainerInventory";
+import { useContainerInventory } from "./features/containers/useContainerInventory";
 import { HostInventory } from "./features/hosts/HostInventory";
 import type { WorkspaceState } from "./components/WorkspaceShell";
 import type { HostInventory as Inventory } from "./lib/ipc/generated";
@@ -112,9 +114,40 @@ export default function App() {
               }
             : { kind: "loading", host };
   }
+  const containers = useContainerInventory(
+    native,
+    workspace.mode,
+    connection ?? null,
+  );
+  if (containers.view.scope && displayState.kind !== "empty") {
+    displayState =
+      containers.view.error && !containers.view.rows.length
+        ? {
+            kind: "error",
+            host: displayState.host,
+            message: containers.view.error,
+          }
+        : containers.view.updatedAt !== null && !containers.view.stale
+          ? {
+              kind: "ready",
+              host: displayState.host,
+              containers: containers.view.rows,
+            }
+          : { kind: "connected", host: displayState.host };
+  }
   return (
     <WorkspaceShell
       state={displayState}
+      containersExtra={
+        <ContainerInventory
+          view={containers.view}
+          host={displayState.kind === "empty" ? null : displayState.host}
+          refresh={() => {
+            void containers.refresh();
+          }}
+          select={containers.select}
+        />
+      }
       savedHosts={
         currentInventory?.saved.preferences.hosts ??
         (workspace.mode.mode === "live"

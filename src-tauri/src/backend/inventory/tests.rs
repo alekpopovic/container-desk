@@ -310,3 +310,233 @@ async fn editing_metadata_keeps_identity_but_editing_target_cancels_the_old_sess
     assert!(ready(&backend, WorkspaceMode::Demo, id).await.has_jump);
     backend.shutdown().await;
 }
+
+#[tokio::test]
+#[ignore = "requires disposable real Engine with two listing containers"]
+async fn checkpoint020_live_inventory_binds_reads_and_cancels_inflight_without_idle_mutex_deadlock()
+{
+    let manifest = std::env::var("CONTAINERDESK_SSH_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    assert_eq!(lab["realEngine"], true);
+    let root = std::path::Path::new(&manifest)
+        .parent()
+        .unwrap()
+        .join("resource-app-data");
+    let backend = std::sync::Arc::new(Backend::new(&root, "/unused-lab-home".into()));
+    let config = lab["config"].as_str().unwrap();
+    let expected: std::collections::HashSet<String> =
+        serde_json::from_value(lab["expectedContainerIds"].clone()).unwrap();
+    let mut ids = vec![];
+    for (revision, alias) in ["direct-known", "via-known"].into_iter().enumerate() {
+        let host = draft(alias, config);
+        let saved = backend
+            .save_host(SaveHostRequest {
+                mode: WorkspaceMode::Live,
+                expected_revision: revision as u32,
+                id: None,
+                draft: host,
+            })
+            .await
+            .unwrap();
+        ids.push(saved.saved.preferences.hosts.last().unwrap().id.clone());
+    }
+    let mut previous = None;
+    for (index, id) in ids.iter().enumerate() {
+        backend
+            .connect_inventory_host(InventoryConnectRequest {
+                mode: WorkspaceMode::Live,
+                host_id: id.clone(),
+            })
+            .await
+            .unwrap();
+        let connected = ready(&backend, WorkspaceMode::Live, id.clone()).await;
+        let response = backend
+            .connect_host(ConnectHostRequest {
+                selection: HostSelection {
+                    host_id: id.clone(),
+                    selection_generation: index as u32 + 1,
+                },
+            })
+            .unwrap();
+        assert!(!response.capabilities.management && !response.capabilities.terminal);
+        if let Some(old) = previous.take() {
+            assert!(
+                backend
+                    .list_containers(ListContainersRequest { scope: old })
+                    .await
+                    .is_err()
+            );
+        }
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            backend.list_containers(ListContainersRequest {
+                scope: response.scope.clone(),
+            }),
+        )
+        .await
+        .expect("idle watcher must not retain connection lock")
+        .unwrap();
+        assert_eq!(
+            result
+                .containers
+                .iter()
+                .map(|row| row.id.0.clone())
+                .collect::<std::collections::HashSet<_>>(),
+            expected
+        );
+        backend
+            .disconnect_inventory_host(InventoryDisconnectRequest {
+                mode: WorkspaceMode::Live,
+                host_id: id.clone(),
+                token: connected.token,
+            })
+            .await
+            .unwrap();
+        assert!(
+            backend
+                .list_containers(ListContainersRequest {
+                    scope: response.scope.clone()
+                })
+                .await
+                .is_err()
+        );
+        previous = Some(response.scope);
+    }
+    let mut slow = draft("via-known", config);
+    slow.docker.executable = Some("/opt/fixture/docker-list-hang".into());
+    backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 2,
+            id: Some(ids[1].clone()),
+            draft: slow,
+        })
+        .await
+        .unwrap();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: ids[1].clone(),
+        })
+        .await
+        .unwrap();
+    let connected = ready(&backend, WorkspaceMode::Live, ids[1].clone()).await;
+    let bound = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: ids[1].clone(),
+                selection_generation: 3,
+            },
+        })
+        .unwrap();
+    let reader = backend.clone();
+    let reading = tokio::spawn(async move {
+        reader
+            .list_containers(ListContainersRequest { scope: bound.scope })
+            .await
+    });
+    let mut observer = crate::ssh::multiplex::Connection::new(
+        "/usr/bin/ssh",
+        SshSelection {
+            alias: "direct-known".into(),
+            config_path: config.into(),
+            use_default_config: false,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        observer.start().await.unwrap().status,
+        SshAccessStatus::Verified
+    );
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        loop {
+            let check = observer
+                .start_fixed(
+                    crate::ssh::quoting::command(&[
+                        "test".into(),
+                        "-f".into(),
+                        "/tmp/list-inflight".into(),
+                    ])
+                    .unwrap(),
+                    crate::ssh::runner::Limits::default(),
+                )
+                .unwrap()
+                .wait()
+                .await
+                .unwrap();
+            if check.status.success() {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(25)).await;
+        }
+    })
+    .await
+    .expect("the controlled ps command must actually be dispatched before cancellation");
+    observer.close().await;
+    assert!(
+        !reading.is_finished(),
+        "slow list must actually be in flight"
+    );
+    tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        backend.disconnect_inventory_host(InventoryDisconnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: ids[1].clone(),
+            token: connected.token,
+        }),
+    )
+    .await
+    .expect("disconnect must cancel reads without waiting for their connection mutex")
+    .unwrap();
+    assert!(reading.await.unwrap().is_err());
+    assert_eq!(backend.read_slots.available_permits(), 4);
+    assert_eq!(backend.diagnostic_slot.available_permits(), 1);
+    let mut drift = draft("direct-known", config);
+    drift.docker.executable = Some("/opt/fixture/docker-list-change".into());
+    backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 3,
+            id: Some(ids[0].clone()),
+            draft: drift,
+        })
+        .await
+        .unwrap();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: ids[0].clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, ids[0].clone()).await;
+    let bound = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: ids[0].clone(),
+                selection_generation: 4,
+            },
+        })
+        .unwrap();
+    assert_eq!(
+        backend
+            .list_containers(ListContainersRequest {
+                scope: bound.scope.clone()
+            })
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::StaleSession
+    );
+    assert!(backend.require_session(&bound.scope).is_err());
+    assert_eq!(
+        backend.sessions.current().unwrap().unwrap().state,
+        ConnectionState::Disconnected
+    );
+    assert_eq!(backend.diagnostic_slot.available_permits(), 1);
+    backend.shutdown().await;
+    println!(
+        "PASS live resource sessions: direct/ProxyJump actual IDs, old/disconnected scopes rejected, inflight read cancelled below 3s, all permits released; controlled identity drift revokes the session"
+    );
+}

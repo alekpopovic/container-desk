@@ -3,7 +3,7 @@ use crate::{
     domain::*,
     policy::registry::{self, ReadOperation},
     ssh::{
-        multiplex::Connection,
+        multiplex::Client,
         runner::{Limits, RunError},
     },
 };
@@ -144,12 +144,8 @@ fn decode(
 
 /// Called with a backend-owned current connection/binding. IPC registration is integrated in 020.
 /// The caller must fence its session before/after this future; closing the connection cancels jobs.
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "Live inventory dispatcher follows in prompt 020")
-)]
 pub(crate) async fn read(
-    connection: &Connection,
+    connection: &Client,
     options: &DockerOptions,
     binding: &super::probe::VerifiedDocker,
     scope: &SessionScope,

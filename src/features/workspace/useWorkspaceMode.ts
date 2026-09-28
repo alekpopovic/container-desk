@@ -4,7 +4,6 @@ import * as browserBridge from "../../demo/browser";
 import type { WorkspaceState } from "../../components/WorkspaceShell";
 import type {
   DemoScenario,
-  SessionScope,
   SwitchWorkspaceRequest,
   WorkspaceModeSnapshot,
 } from "../../lib/ipc/generated";
@@ -20,7 +19,6 @@ export function useWorkspaceMode(native: boolean) {
   const [state, setState] = useState<WorkspaceState>({ kind: "empty" });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const activeScope = useRef<SessionScope | null>(null);
   const mounted = useRef(false);
   const working = useRef(false);
   const serial = useRef(0);
@@ -29,44 +27,23 @@ export function useWorkspaceMode(native: boolean) {
     async (snapshot: WorkspaceModeSnapshot, request: number) => {
       if (!mounted.current || serial.current !== request) return;
       setMode(snapshot);
-      activeScope.current = snapshot.scope;
       if (!snapshot.scope || !snapshot.host) {
         setState({ kind: "empty" });
         return;
       }
-      const scope = snapshot.scope;
-      const host = {
-        name: snapshot.host.displayName,
-        alias: snapshot.host.alias,
-        endpoint: "Synthetic Docker data",
-      };
-      setState({ kind: "loading", host });
-      try {
-        const response = await bridge.listContainers(
-          scope,
-          () => activeScope.current,
-        );
-        if (mounted.current && serial.current === request)
-          setState({ kind: "ready", host, containers: response.containers });
-      } catch (error) {
-        if (!mounted.current || serial.current !== request) return;
-        if (
-          error instanceof nativeBridge.IpcError &&
-          error.code === "disconnected"
-        )
-          setState({ kind: "offline", host });
-        else
-          setState({
-            kind: "error",
-            host,
-            message:
-              error instanceof nativeBridge.IpcError
-                ? error.message
-                : "Resource data could not be loaded.",
-          });
-      }
+      setState({
+        kind: "connected",
+        host: {
+          name: snapshot.host.displayName,
+          alias: snapshot.host.alias,
+          endpoint:
+            snapshot.mode === "demo"
+              ? "Synthetic Docker data"
+              : "Connected Docker host",
+        },
+      });
     },
-    [bridge],
+    [],
   );
   // Only bootstrap an already-selected mode; no failure ever enables demo.
   useEffect(() => {
@@ -83,7 +60,6 @@ export function useWorkspaceMode(native: boolean) {
       });
     return () => {
       mounted.current = false;
-      activeScope.current = null;
       serial.current += 1;
     };
   }, [bridge, apply]);

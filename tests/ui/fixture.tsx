@@ -1,3 +1,4 @@
+import { ContainerFixture } from "./container-fixture";
 import { createRoot } from "react-dom/client";
 import {
   WorkspaceShell,
@@ -23,4 +24,10 @@ if (kind === "error")
   };
 const root = document.getElementById("root");
 if (!root) throw new Error("Fixture root missing");
-createRoot(root).render(<WorkspaceShell state={state} />);
+createRoot(root).render(
+  kind === "containers" ? (
+    <ContainerFixture />
+  ) : (
+    <WorkspaceShell state={state} />
+  ),
+);

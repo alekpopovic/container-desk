@@ -131,7 +131,7 @@ test("all routes remain usable with honest empty state and host identity", async
   );
   await page.getByRole("button", { name: "Add host" }).click();
   await expect(
-    page.getByRole("heading", { name: "Hosts", level: 2 }),
+    page.getByRole("main").getByRole("heading", { name: "Hosts", level: 2 }),
   ).toBeVisible();
   await page.goto("/#/containers");
   await assertContrast(page);

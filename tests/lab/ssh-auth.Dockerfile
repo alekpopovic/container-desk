@@ -6,11 +6,13 @@ RUN apk add --no-cache openssh-server docker-cli docker-engine python3 sudo \
     && passwd -d lab \
     && mkdir -p /run/sshd /lab
 COPY docker_probe_fixture.py /opt/fixture/docker_probe_fixture.py
+COPY docker_list_change.sh /opt/fixture/docker-list-change
+COPY docker_list_hang.sh /opt/fixture/docker-list-hang
 COPY docker_probe_fault.sh /opt/fixture/docker_probe_fault.sh
 RUN mkdir -p /opt/fixture \
     && printf 'lab ALL=(root) ALL\n' > /etc/sudoers.d/lab \
     && chmod 0440 /etc/sudoers.d/lab \
-    && chmod 0755 /opt/fixture/docker_probe_fault.sh \
+    && chmod 0755 /opt/fixture/docker_probe_fault.sh /opt/fixture/docker-list-hang /opt/fixture/docker-list-change \
     && ln -s docker_probe_fault.sh /opt/fixture/docker-flood \
     && ln -s docker_probe_fault.sh /opt/fixture/docker-hang \
     && for scenario in rootless stopped denied windows; do \

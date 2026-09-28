@@ -1,16 +1,16 @@
 //! Fixed read-only capability commands; no remote scripts, credentials or raw output cross IPC.
 use super::*;
 use crate::ssh::{
-    multiplex::Connection,
+    multiplex::{Client, Connection},
     runner::{Captured, Limits, RunError},
 };
 use serde::Deserialize;
 use std::{future::Future, pin::Pin, time::Duration};
 type ProbeFuture<'a> = Pin<Box<dyn Future<Output = Result<Captured, RunError>> + Send + 'a>>;
-trait Executor {
+pub(crate) trait Executor {
     fn execute(&self, encoded: String) -> ProbeFuture<'_>;
 }
-impl Executor for Connection {
+impl Executor for Client {
     fn execute(&self, encoded: String) -> ProbeFuture<'_> {
         Box::pin(async move {
             self.start_fixed(
@@ -25,6 +25,11 @@ impl Executor for Connection {
             .wait()
             .await
         })
+    }
+}
+impl Executor for Connection {
+    fn execute(&self, encoded: String) -> ProbeFuture<'_> {
+        Box::pin(async move { self.client().execute(encoded).await })
     }
 }
 #[derive(Clone, Copy)]
@@ -66,6 +71,7 @@ impl DockerProbeReport {
 }
 /// Backend-only binding. Future dispatchers must refresh identity before using this preparation method.
 /// No renderer-supplied report or unverified config may authorize a resource operation.
+#[derive(Clone)]
 pub(crate) struct VerifiedDocker {
     config: DockerCommandConfig,
     report: DockerProbeReport,
@@ -88,7 +94,7 @@ impl VerifiedDocker {
     }
 }
 pub(crate) async fn run(
-    connection: &Connection,
+    connection: &impl Executor,
     options: &DockerOptions,
 ) -> (DockerProbeReport, Option<VerifiedDocker>) {
     let mut report = DockerProbeReport::empty(options.sudo);

@@ -28,6 +28,12 @@ pub(crate) trait StageDriver: Send + Sync {
     fn idle(&self) -> StageFuture<'_, Option<ConnectionDiagnosticCode>> {
         Box::pin(std::future::pending())
     }
+    fn list<'a>(
+        &'a self,
+        scope: &'a SessionScope,
+    ) -> StageFuture<'a, Result<ListContainersResponse, AppError>> {
+        Box::pin(async move { Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(scope)) })
+    }
     fn quiesce(&self) -> StageFuture<'_, ()>;
 }
 pub(crate) struct NativeDriver {
@@ -134,11 +140,38 @@ impl StageDriver for NativeDriver {
     }
     fn idle(&self) -> StageFuture<'_, Option<ConnectionDiagnosticCode>> {
         Box::pin(async move {
-            let owner = self.connection.lock().await;
-            if let Some(connection) = owner.as_ref() {
-                connection.wait_lost().await;
+            let client = self
+                .connection
+                .lock()
+                .await
+                .as_ref()
+                .map(|owner| owner.client());
+            if let Some(client) = client {
+                client.wait_lost().await;
             }
             Some(ConnectionDiagnosticCode::ConnectionLost)
+        })
+    }
+    fn list<'a>(
+        &'a self,
+        scope: &'a SessionScope,
+    ) -> StageFuture<'a, Result<ListContainersResponse, AppError>> {
+        Box::pin(async move {
+            let client = self
+                .connection
+                .lock()
+                .await
+                .as_ref()
+                .map(|owner| owner.client())
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+            let binding = self
+                .docker_binding
+                .lock()
+                .await
+                .as_ref()
+                .cloned()
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+            crate::docker::listing::read(&client, &self.docker_options, &binding, scope).await
         })
     }
     fn quiesce(&self) -> StageFuture<'_, ()> {
@@ -157,6 +190,7 @@ struct State {
     snapshot: Option<ConnectionSnapshot>,
 }
 struct Worker {
+    driver: std::sync::Weak<dyn StageDriver>,
     cancel: oneshot::Sender<()>,
     task: tokio::task::JoinHandle<()>,
 }
@@ -247,10 +281,15 @@ impl Sessions {
         let (cancel, cancelled) = oneshot::channel();
         let state = self.state.clone();
         let initial = snapshot.clone();
+        let weak = Arc::downgrade(&driver);
         let task = tokio::spawn(async move {
             drive(state, initial, driver, cancelled).await;
         });
-        *control = Some(Worker { cancel, task });
+        *control = Some(Worker {
+            cancel,
+            task,
+            driver: weak,
+        });
         Ok(snapshot)
     }
     fn invalidate(&self) -> Result<(), AppError> {
@@ -294,6 +333,47 @@ impl Sessions {
             return Err(AppError::new(ErrorCode::StaleSession));
         }
         Ok(current.clone())
+    }
+    pub fn require_scope(&self, scope: &SessionScope) -> Result<(), AppError> {
+        scope.validate()?;
+        let current = self.snapshot(&ConnectionToken {
+            session_id: scope.session_id.clone(),
+            session_generation: scope.session_generation,
+        })?;
+        if current.host_id.as_ref() != Some(&scope.selection.host_id)
+            || current.state != ConnectionState::Ready
+            || current.docker.as_ref().and_then(|d| d.daemon_id.as_deref())
+                != Some(scope.daemon_id.as_str())
+        {
+            return Err(AppError::new(ErrorCode::StaleSession).in_scope(scope));
+        }
+        Ok(())
+    }
+    pub async fn list(&self, scope: &SessionScope) -> Result<ListContainersResponse, AppError> {
+        self.require_scope(scope)?;
+        let driver = self
+            .control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+            .as_ref()
+            .and_then(|worker| worker.driver.upgrade())
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+        let result = driver.list(scope).await;
+        self.require_scope(scope)?;
+        if result
+            .as_ref()
+            .is_err_and(|error| error.code == ErrorCode::StaleSession)
+        {
+            // Actual daemon/context drift revokes this read session. Foreign requests fail before dispatch.
+            drop(driver);
+            let _ = self
+                .disconnect(&ConnectionToken {
+                    session_id: scope.session_id.clone(),
+                    session_generation: scope.session_generation,
+                })
+                .await;
+        }
+        result
     }
     pub async fn disconnect(
         &self,

@@ -418,29 +418,83 @@ impl Backend {
         })
     }
 
+    /// Bind read resources only after the explicitly selected saved host reached native Ready.
     pub fn connect_host(
         &self,
         request: ConnectHostRequest,
     ) -> Result<ConnectHostResponse, AppError> {
+        let _control = self
+            .inventory_control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
         request.selection.validate()?;
         self.require_live_mode()?;
-        if !self
+        let host = self
             .preferences()?
             .preferences
             .hosts
-            .iter()
-            .any(|host| host.id == request.selection.host_id)
-        {
-            return Err(AppError::new(ErrorCode::HostNotFound));
+            .into_iter()
+            .find(|h| h.id == request.selection.host_id)
+            .ok_or_else(|| AppError::new(ErrorCode::HostNotFound))?;
+        let current = self
+            .sessions
+            .current()?
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+        let docker = current
+            .docker
+            .as_ref()
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+        let scope = SessionScope {
+            selection: request.selection,
+            session_id: current.token.session_id,
+            session_generation: current.token.session_generation,
+            daemon_id: docker
+                .daemon_id
+                .clone()
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?,
+        };
+        self.sessions.require_scope(&scope)?;
+        let mut workspace = self
+            .workspace
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?;
+        let mut policy = self
+            .policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?;
+        if workspace.snapshot.scope.as_ref() != Some(&scope) {
+            *policy = PolicyEngine::default();
+            policy.register(scope.clone())?;
         }
-        Err(AppError::new(ErrorCode::FeatureUnavailable))
+        workspace.snapshot.scope = Some(scope.clone());
+        workspace.snapshot.host = Some(HostSummary {
+            id: host.id,
+            alias: host.alias,
+            display_name: host.display_name,
+            group: host.group,
+            read_only: true,
+            connection_state: ConnectionState::Ready,
+        });
+        Ok(ConnectHostResponse {
+            scope,
+            capabilities: HostCapabilities {
+                docker: true,
+                compose: docker.compose == ComposeAvailability::Available,
+                management: false,
+                terminal: false,
+            },
+        })
     }
 
     pub fn require_session(&self, scope: &SessionScope) -> Result<(), AppError> {
         self.policy
             .lock()
             .map_err(|_| AppError::new(ErrorCode::Internal))?
-            .require_session(scope)
+            .require_session(scope)?;
+        if self.workspace_mode()?.mode == WorkspaceMode::Live {
+            self.sessions.require_scope(scope)?;
+        }
+        Ok(())
     }
 
     pub async fn list_containers(
@@ -468,9 +522,17 @@ impl Backend {
             }
             workspace.active.clone()
         };
-        let result = transport
-            .list_containers(request.scope.clone(), authorized.into_plan())
-            .await;
+        let live = self.workspace_mode()?.mode == WorkspaceMode::Live;
+        let result = if live {
+            self.sessions.list(&request.scope).await
+        } else {
+            transport
+                .list_containers(request.scope.clone(), authorized.into_plan())
+                .await
+        };
+        if live {
+            self.sessions.require_scope(&request.scope)?;
+        }
         self.require_session(&request.scope)?;
         let response = result?;
         if response.scope != request.scope
@@ -809,7 +871,7 @@ mod tests {
                 .await
                 .unwrap_err()
                 .code,
-            ErrorCode::PermissionDenied
+            ErrorCode::SessionNotFound
         );
         assert_eq!(backend.workspace_mode().unwrap().mode, WorkspaceMode::Live);
         let demo = backend
@@ -827,8 +889,8 @@ mod tests {
         assert_eq!(snapshot.containers.len(), 4);
         assert_eq!(
             calls.load(std::sync::atomic::Ordering::SeqCst),
-            1,
-            "demo cannot call the live provider"
+            0,
+            "neither demo nor an absent native session can call the old provider"
         );
         assert_eq!(
             backend.diagnostics().await.unwrap_err().code,
@@ -863,9 +925,9 @@ mod tests {
                 .await
                 .unwrap_err()
                 .code,
-            ErrorCode::PermissionDenied
+            ErrorCode::SessionNotFound
         );
-        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 2);
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
     }
     #[tokio::test]
     async fn demo_blocks_native_executable_before_any_spawn() {
@@ -1136,7 +1198,7 @@ mod tests {
                 .await
                 .unwrap_err()
                 .code,
-            ErrorCode::FeatureUnavailable
+            ErrorCode::SessionNotFound
         );
     }
 }
