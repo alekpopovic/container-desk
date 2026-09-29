@@ -16,7 +16,7 @@ A second LaunchServices launch uses a minimal PATH and an empty temporary `/usr/
 
 ## Distribution status
 
-These are local unsigned or linker-ad-hoc-signed development packages. No Developer ID certificate, Apple account, notarization ticket or release token is supplied. The packager refuses signing-related environment values. Local Finder execution of an unquarantined CI-created app does not establish Gatekeeper acceptance for an internet download. Signing/notarization readiness belongs to 055; do not prescribe Gatekeeper/security-control bypasses as installation requirements.
+These are local unsigned or linker-ad-hoc-signed development packages. No Developer ID certificate, Apple account, notarization ticket or release token is supplied. The packager refuses signing-related environment values. Local Finder execution of an unquarantined CI-created app does not establish Gatekeeper acceptance for an internet download. Optional [signing/notarization readiness](signing.md) is configuration-ready without credentials in 055; do not prescribe Gatekeeper/security-control bypasses as installation requirements.
 
 No public publishing workflow is included, by the user's explicit scope decision. A CI artifact is not an approved public installer. Flatpak/Snap/store sandboxing and Mac App Store entitlement design are outside this first package set.
 
