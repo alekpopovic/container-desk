@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T12:54:32+00:00",
+  "updated_at": "2026-09-29T14:02:19+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1871,6 +1871,23 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T14:02:19+00:00",
+      "id": "054",
+      "action": "done",
+      "note": "CI 36574232761 green on all five jobs; both Mac architectures passed native app/DMG Finder launch, private app-data, system OpenSSH and owned-agent checks; independently verified downloaded package and runtime hashes",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T12:54:32+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2538,12 +2555,14 @@
       "note": ""
     },
     "054": {
-      "status": "in_progress",
+      "status": "done",
       "started_at": "2026-09-29T12:54:32+00:00",
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "finished_at": "2026-09-29T14:02:19+00:00",
+      "evidence": "codex/tracking/evidence/054.md",
+      "evidence_sha256": "776a5ec83096befbfe83c11f613194009acef12a22af213b15028f90f1ce4b95",
+      "checks": [
+        "CI 36574232761 green on all five jobs; both Mac architectures passed native app/DMG Finder launch, private app-data, system OpenSSH and owned-agent checks; independently verified downloaded package and runtime hashes"
+      ],
       "commit": "",
       "note": ""
     },

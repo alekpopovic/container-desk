@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "architecture": "x86_64",
+  "osVersion": "ProductName:\t\tmacOS\nProductVersion:\t\t15.7.9\nBuildVersion:\t\t24G830\n",
+  "dmgSha256": "83ce5a066fc9054fae269a6c30eb6c2628f044766abcbab4d0dfe5e19477fbc4",
+  "signing": "local_unsigned_or_linker_adhoc",
+  "notarization": "not_requested",
+  "gatekeeperApproved": false,
+  "dmgApplicationLink": true,
+  "bundleIdentifier": "dev.containerdesk.app",
+  "version": "0.1.0",
+  "minimumSystemVersion": "15.0",
+  "machOArchitecture": "x86_64",
+  "installedExecutableSha256": "f8d65af8906582ed268e3f51dbe7c7d5bee1543dbbe843892c9009a58c0261be",
+  "iconSha256": "c74d1b3e9c64c1dd9023dea47176c80c73286f0ab8b23e43fb8787e7d51559cb",
+  "signatureInspection": {
+    "exit": 1,
+    "details": "/private/tmp/cd054-gylmexx9/Applications/ContainerDesk.app: code object is not signed at all\n"
+  },
+  "nativeAppDataPath": "/Users/runner/Library/Application Support/dev.containerdesk.app",
+  "privatePreferencesPermissions": true,
+  "finder": {
+    "accessibilityTrusted": true,
+    "installedBundlePath": "/private/tmp/cd054-gylmexx9/Applications/ContainerDesk.app",
+    "mode": "finder",
+    "nativeWindow": true,
+    "normalTermination": true,
+    "passed": true,
+    "screenshotExit": 0
+  },
+  "diagnostics": {
+    "accessibilityTrusted": true,
+    "installedBundlePath": "/private/tmp/cd054-gylmexx9/Applications/ContainerDesk.app",
+    "mode": "diagnostics",
+    "nativeOpenSshAvailable": true,
+    "nativeWindow": true,
+    "normalTermination": true,
+    "ownedAgentSocketReachable": true,
+    "passed": true,
+    "screenshotExit": 0
+  },
+  "ownedAgentReaped": true,
+  "ownedProfileRemoved": true
+}

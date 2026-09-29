@@ -5,10 +5,10 @@ The [checks workflow](../.github/workflows/ci.yml) runs on pull requests, pushes
 | Runner label | Native architecture | Rust target | Initial package |
 |---|---|---|---|
 | `ubuntu-24.04` | x86_64 | x86_64-unknown-linux-gnu | deb + AppImage |
-| `macos-15` | Apple Silicon / arm64 | aarch64-apple-darwin | app archive |
-| `macos-15-intel` | Intel / x86_64 | x86_64-apple-darwin | app archive |
+| `macos-15` | Apple Silicon / arm64 | aarch64-apple-darwin | app archive + DMG |
+| `macos-15-intel` | Intel / x86_64 | x86_64-apple-darwin | app archive + DMG |
 
-The job asserts both `uname -m` and the Rust compiler host triple. These are native builds, not cross-compiles. Native GUI/runtime acceptance is a separate gate. Linux deb/AppImage packaging and the clean Ubuntu deb smoke test are recorded in [053](../codex/tracking/evidence/053.md); macOS DMG and further platform acceptance belong to subsequent prompts. CI builds the formats shown above. macOS minimum is 15.0. Labels follow the [official runner mapping](https://docs.github.com/en/actions/reference/runners/github-hosted-runners); they do not pin an immutable OS image, so actual OS/tool metadata is recorded.
+The job asserts both `uname -m` and the Rust compiler host triple. These are native builds, not cross-compiles. Native GUI/runtime acceptance is a separate gate. Linux deb/AppImage packaging and the clean Ubuntu deb smoke test are recorded in [053](../codex/tracking/evidence/053.md); native Mac app/DMG launch and SSH diagnostics are recorded in [054](../codex/tracking/evidence/054.md); full remote-operation platform acceptance remains later. CI builds the formats shown above. macOS minimum is 15.0. Labels follow the [official runner mapping](https://docs.github.com/en/actions/reference/runners/github-hosted-runners); they do not pin an immutable OS image, so actual OS/tool metadata is recorded.
 
 Each isolated job selects the exact Node/npm and Rust toolchains, installs locked dependencies, runs packaging failure-boundary tests and all [standard verification](verification-command.md), then packages the ordinary executable. The verifier records its SHA-256 and Git revision; packaging rejects a different executable/revision or incomplete/failed checks. Build/registry caches are not shared across jobs or trust boundaries. No `--all-features` or native-automation binary enters packaging.
 

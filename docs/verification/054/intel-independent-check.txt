@@ -1,0 +1,1 @@
+PASS package/metadata/report SHA-256 and lengths; clean source 7c8d699; DMG hash matches native test; app archive executable mode/hash matches actual installed executable and checked build; bundle identity/minimum version match. Native JSON proves Finder and SSH/agent diagnostics, normal termination and owned cleanup.

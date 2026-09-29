@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T12:54:32+00:00
+Updated: 2026-09-29T14:02:19+00:00
 
-blocked: **0** | done: **53** | in_progress: **1** | pending: **6**
+blocked: **0** | done: **54** | in_progress: **0** | pending: **6**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -63,7 +63,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 051 | 06 Quality and delivery | Local verification command and clean builds | medium | done | codex/tracking/evidence/051.md |
 | 052 | 06 Quality and delivery | Linux and macOS CI build matrix | high | done | codex/tracking/evidence/052.md |
 | 053 | 06 Quality and delivery | Linux package builds | high | done | codex/tracking/evidence/053.md |
-| 054 | 06 Quality and delivery | macOS application and DMG builds | high | in_progress | — |
+| 054 | 06 Quality and delivery | macOS application and DMG builds | high | done | codex/tracking/evidence/054.md |
 | 055 | 06 Quality and delivery | Signing and notarization integration | high | pending | — |
 | 056 | 06 Quality and delivery | Versioning updates and rollback guidance | medium | pending | — |
 | 057 | 06 Quality and delivery | User and contributor documentation | medium | pending | — |
@@ -183,3 +183,4 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T12:28:17+00:00 — 053: start;
 - 2026-09-29T12:54:16+00:00 — 053: done; Ubuntu 24.04 CI all 13 checks passed; deb and AppImage hashes verified; clean Ubuntu 24.04.5 VM installed deb and passed native desktop launch, SSH config/Include discovery, native ssh resolution and cleanup
 - 2026-09-29T12:54:32+00:00 — 054: start;
+- 2026-09-29T14:02:19+00:00 — 054: done; CI 36574232761 green on all five jobs; both Mac architectures passed native app/DMG Finder launch, private app-data, system OpenSSH and owned-agent checks; independently verified downloaded package and runtime hashes

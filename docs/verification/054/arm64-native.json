@@ -1,0 +1,44 @@
+{
+  "passed": true,
+  "architecture": "arm64",
+  "osVersion": "ProductName:\t\tmacOS\nProductVersion:\t\t15.7.9\nBuildVersion:\t\t24G830\n",
+  "dmgSha256": "d87673c54caad3ae16815158c96701f803c92e1e405a791a9ff4fbc7f37a8898",
+  "signing": "local_unsigned_or_linker_adhoc",
+  "notarization": "not_requested",
+  "gatekeeperApproved": false,
+  "dmgApplicationLink": true,
+  "bundleIdentifier": "dev.containerdesk.app",
+  "version": "0.1.0",
+  "minimumSystemVersion": "15.0",
+  "machOArchitecture": "arm64",
+  "installedExecutableSha256": "0e2b85f445a5c29a7a9366f2bd400dafedb5258306db064fd15025f257d31a02",
+  "iconSha256": "c74d1b3e9c64c1dd9023dea47176c80c73286f0ab8b23e43fb8787e7d51559cb",
+  "signatureInspection": {
+    "exit": 0,
+    "details": "Executable=/private/tmp/cd054-khwu71l9/Applications/ContainerDesk.app/Contents/MacOS/containerdesk\nIdentifier=containerdesk-9c60cb1d4bd5983f\nFormat=app bundle with Mach-O thin (arm64)\nCodeDirectory v=20400 size=130584 flags=0x20002(adhoc,linker-signed) hashes=4077+0 location=embedded\nVersionPlatform=1\nVersionMin=983040\nVersionSDK=984320\nHash type=sha256 size=32\nCandidateCDHash sha256=a89c506f8b46dd0c0ea10a3f24b2399efbf22c5e\nCandidateCDHashFull sha256=a89c506f8b46dd0c0ea10a3f24b2399efbf22c5ec0e2e81d1e8487657a2a3bd7\nHash choices=sha256\nCMSDigest=a89c506f8b46dd0c0ea10a3f24b2399efbf22c5ec0e2e81d1e8487657a2a3bd7\nCMSDigestType=2\nExecutable Segment base=0\nExecutable Segment limit=11321344\nExecutable Segment flags=0x1\nPage size=4096\nCDHash=a89c506f8b46dd0c0ea10a3f24b2399efbf22c5e\nSignature=adhoc\nInfo.plist=not bound\nTeamIdentifier=not set\nSealed Resources=none\nInternal requirements=none\n"
+  },
+  "nativeAppDataPath": "/Users/runner/Library/Application Support/dev.containerdesk.app",
+  "privatePreferencesPermissions": true,
+  "finder": {
+    "accessibilityTrusted": true,
+    "installedBundlePath": "/private/tmp/cd054-khwu71l9/Applications/ContainerDesk.app",
+    "mode": "finder",
+    "nativeWindow": true,
+    "normalTermination": true,
+    "passed": true,
+    "screenshotExit": 0
+  },
+  "diagnostics": {
+    "accessibilityTrusted": true,
+    "installedBundlePath": "/private/tmp/cd054-khwu71l9/Applications/ContainerDesk.app",
+    "mode": "diagnostics",
+    "nativeOpenSshAvailable": true,
+    "nativeWindow": true,
+    "normalTermination": true,
+    "ownedAgentSocketReachable": true,
+    "passed": true,
+    "screenshotExit": 0
+  },
+  "ownedAgentReaped": true,
+  "ownedProfileRemoved": true
+}
