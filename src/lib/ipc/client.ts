@@ -32,6 +32,8 @@ const messages: Record<ErrorCode, string> = {
   log_driver_unsupported:
     "This container logging driver does not support reading logs.",
   container_not_found: "The container no longer exists. Refresh the inventory.",
+  volume_not_found:
+    "The volume no longer exists. Refresh the volume inventory.",
   image_not_found: "The image no longer exists. Refresh the image inventory.",
   container_not_stopped: "Only stopped containers can be removed.",
   host_not_found: "Saved host does not exist.",
@@ -1771,4 +1773,106 @@ export async function inspectImage(
     ids.add(row.containerId);
   }
   return value as unknown as import("./generated.ts").ImageDetail;
+}
+
+const volumeName = (value: unknown): value is string =>
+  typeof value === "string" && /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,254}$/.test(value);
+function volumeSummary(
+  value: unknown,
+  expected: SessionScope,
+): value is import("./generated.ts").VolumeSummary {
+  return (
+    record(value) &&
+    scope(value.scope) &&
+    sameScope(value.scope, expected) &&
+    volumeName(value.name) &&
+    (value.driver === null || text(value.driver)) &&
+    (value.volumeScope === null || text(value.volumeScope))
+  );
+}
+export async function listVolumes(
+  expected: SessionScope,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").ListVolumesResponse> {
+  const value = await scheduledRead(
+    "list_volumes",
+    { scope: expected },
+    current,
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, expected) ||
+    !Array.isArray(value.volumes) ||
+    value.volumes.length > 5000 ||
+    !value.volumes.every((row) => volumeSummary(row, expected)) ||
+    new Set(value.volumes.map((row) => row.name)).size !== value.volumes.length
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as import("./generated.ts").ListVolumesResponse;
+}
+export async function inspectVolume(
+  request: import("./generated.ts").InspectVolumeRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").VolumeDetail> {
+  const value = await scheduledRead("inspect_volume", request, current);
+  const masked = (rows: unknown) =>
+    Array.isArray(rows) &&
+    rows.length <= 256 &&
+    rows.every(
+      (row) =>
+        record(row) &&
+        text(row.name) &&
+        row.value === null &&
+        row.masked === true,
+    ) &&
+    new Set(rows.map((row) => row.name)).size === rows.length;
+  if (
+    !record(value) ||
+    !volumeSummary(value.summary, request.scope) ||
+    value.summary.name !== request.name ||
+    ![value.createdAt, value.mountpointReported].every(
+      (v) => v === null || text(v),
+    ) ||
+    !masked(value.labels) ||
+    !masked(value.options) ||
+    !Array.isArray(value.references) ||
+    value.references.length > 5000 ||
+    !["referenced", "unreferenced", "incomplete"].includes(
+      String(value.referenceObservation),
+    ) ||
+    !Array.isArray(value.unresolvedContainerIds) ||
+    value.unresolvedContainerIds.length > 5000 ||
+    !value.unresolvedContainerIds.every(
+      (id) => typeof id === "string" && /^[a-f0-9]{64}$/.test(id),
+    ) ||
+    new Set(value.unresolvedContainerIds).size !==
+      value.unresolvedContainerIds.length
+  )
+    throw new IpcError("invalid_response");
+  const keys = new Set<string>();
+  for (const row of value.references) {
+    if (
+      !record(row) ||
+      typeof row.containerId !== "string" ||
+      !/^[a-f0-9]{64}$/.test(row.containerId) ||
+      !text(row.name) ||
+      !text(row.state) ||
+      !(row.destination === null || text(row.destination)) ||
+      !(row.readOnly === null || typeof row.readOnly === "boolean") ||
+      value.unresolvedContainerIds.includes(row.containerId)
+    )
+      throw new IpcError("invalid_response");
+    const key = JSON.stringify([row.containerId, row.destination]);
+    if (keys.has(key)) throw new IpcError("invalid_response");
+    keys.add(key);
+  }
+  if (
+    (value.referenceObservation === "referenced" &&
+      (!value.references.length || value.unresolvedContainerIds.length)) ||
+    (value.referenceObservation === "unreferenced" &&
+      (value.references.length || value.unresolvedContainerIds.length))
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as import("./generated.ts").VolumeDetail;
 }

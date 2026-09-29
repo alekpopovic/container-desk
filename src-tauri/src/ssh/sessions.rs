@@ -34,6 +34,22 @@ pub(crate) trait StageDriver: Send + Sync {
     ) -> StageFuture<'a, Result<ListContainersResponse, AppError>> {
         Box::pin(async move { Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(scope)) })
     }
+    fn volumes<'a>(
+        &'a self,
+        request: &'a ListVolumesRequest,
+    ) -> StageFuture<'a, Result<ListVolumesResponse, AppError>> {
+        Box::pin(async move {
+            Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
+        })
+    }
+    fn inspect_volume<'a>(
+        &'a self,
+        request: &'a InspectVolumeRequest,
+    ) -> StageFuture<'a, Result<VolumeDetail, AppError>> {
+        Box::pin(async move {
+            Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
+        })
+    }
     fn images<'a>(
         &'a self,
         request: &'a ListImagesRequest,
@@ -272,6 +288,52 @@ impl StageDriver for NativeDriver {
                 .cloned()
                 .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
             crate::docker::listing::read(&client, &self.docker_options, &binding, scope).await
+        })
+    }
+    fn volumes<'a>(
+        &'a self,
+        request: &'a ListVolumesRequest,
+    ) -> StageFuture<'a, Result<ListVolumesResponse, AppError>> {
+        Box::pin(async move {
+            let scope = &request.scope;
+            let client = self
+                .connection
+                .lock()
+                .await
+                .as_ref()
+                .map(|owner| owner.client())
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+            let binding = self
+                .docker_binding
+                .lock()
+                .await
+                .as_ref()
+                .cloned()
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+            crate::docker::volumes::list(&client, &self.docker_options, &binding, scope).await
+        })
+    }
+    fn inspect_volume<'a>(
+        &'a self,
+        request: &'a InspectVolumeRequest,
+    ) -> StageFuture<'a, Result<VolumeDetail, AppError>> {
+        Box::pin(async move {
+            let scope = &request.scope;
+            let client = self
+                .connection
+                .lock()
+                .await
+                .as_ref()
+                .map(|owner| owner.client())
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+            let binding = self
+                .docker_binding
+                .lock()
+                .await
+                .as_ref()
+                .cloned()
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+            crate::docker::volumes::inspect(&client, &self.docker_options, &binding, request).await
         })
     }
     fn images<'a>(
@@ -714,6 +776,64 @@ impl Sessions {
             .is_err_and(|error| error.code == ErrorCode::StaleSession)
         {
             // Actual daemon/context drift revokes this read session. Foreign requests fail before dispatch.
+            drop(driver);
+            let _ = self
+                .disconnect(&ConnectionToken {
+                    session_id: scope.session_id.clone(),
+                    session_generation: scope.session_generation,
+                })
+                .await;
+        }
+        result
+    }
+    pub async fn volumes(
+        &self,
+        request: &ListVolumesRequest,
+    ) -> Result<ListVolumesResponse, AppError> {
+        let scope = &request.scope;
+        self.require_scope(scope)?;
+        let driver = self
+            .control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+            .as_ref()
+            .and_then(|worker| worker.driver.upgrade())
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+        let result = driver.volumes(request).await;
+        self.require_scope(scope)?;
+        if result
+            .as_ref()
+            .is_err_and(|error| error.code == ErrorCode::StaleSession)
+        {
+            drop(driver);
+            let _ = self
+                .disconnect(&ConnectionToken {
+                    session_id: scope.session_id.clone(),
+                    session_generation: scope.session_generation,
+                })
+                .await;
+        }
+        result
+    }
+    pub async fn inspect_volume(
+        &self,
+        request: &InspectVolumeRequest,
+    ) -> Result<VolumeDetail, AppError> {
+        let scope = &request.scope;
+        self.require_scope(scope)?;
+        let driver = self
+            .control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+            .as_ref()
+            .and_then(|worker| worker.driver.upgrade())
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+        let result = driver.inspect_volume(request).await;
+        self.require_scope(scope)?;
+        if result
+            .as_ref()
+            .is_err_and(|error| error.code == ErrorCode::StaleSession)
+        {
             drop(driver);
             let _ = self
                 .disconnect(&ConnectionToken {

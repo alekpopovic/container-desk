@@ -19,6 +19,9 @@ pub enum ResponseKind {
     ContainerDetail,
     ImageDetail,
     ImageList,
+    VolumeList,
+    VolumeDetail,
+    VolumeReferences,
     ImageReferences,
     LogSnapshot,
     LogStream,
@@ -29,6 +32,16 @@ pub enum ResponseKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReadOperation {
     ListContainers,
+    ListVolumes,
+    InspectVolume {
+        name: VolumeName,
+    },
+    VolumeContainerIds {
+        name: VolumeName,
+    },
+    InspectVolumeMounts {
+        container_ids: Vec<ContainerId>,
+    },
     ListImages {
         dangling_only: bool,
     },
@@ -254,6 +267,74 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
                 ResponseKind::StatsState,
                 30,
             )
+        }
+        ReadOperation::ListVolumes => plan(
+            &[
+                "docker",
+                "volume",
+                "ls",
+                "--format",
+                crate::docker::volumes::LIST_TEMPLATE,
+            ],
+            OperationCategory::Read,
+            ResponseKind::VolumeList,
+            30,
+        ),
+        ReadOperation::InspectVolume { name } => {
+            name.validate()?;
+            plan(
+                &["docker", "volume", "inspect", "--", &name.0],
+                OperationCategory::Read,
+                ResponseKind::VolumeDetail,
+                30,
+            )
+        }
+        ReadOperation::VolumeContainerIds { name } => {
+            name.validate()?;
+            plan(
+                &[
+                    "docker",
+                    "ps",
+                    "--all",
+                    "--quiet",
+                    "--no-trunc",
+                    "--filter",
+                    &format!("volume={}", name.0),
+                ],
+                OperationCategory::Read,
+                ResponseKind::VolumeReferences,
+                30,
+            )
+        }
+        ReadOperation::InspectVolumeMounts { container_ids } => {
+            if container_ids.is_empty() || container_ids.len() > 64 {
+                return Err(AppError::new(ErrorCode::InvalidLimits));
+            }
+            let mut seen = HashSet::new();
+            for id in container_ids {
+                id.validate()?;
+                if !seen.insert(id) {
+                    return Err(AppError::new(ErrorCode::InvalidId));
+                }
+            }
+            let mut command = plan(
+                &[
+                    "docker",
+                    "inspect",
+                    "--type",
+                    "container",
+                    "--format",
+                    crate::docker::volumes::MOUNTS_TEMPLATE,
+                    "--",
+                ],
+                OperationCategory::Read,
+                ResponseKind::VolumeReferences,
+                30,
+            );
+            command
+                .args
+                .extend(container_ids.iter().map(|id| id.0.clone()));
+            command
         }
         ReadOperation::ListImages { dangling_only } => {
             let mut command = plan(

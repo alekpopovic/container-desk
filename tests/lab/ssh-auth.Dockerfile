@@ -14,6 +14,8 @@ RUN apk add --no-cache docker-cli-compose \
     && test -x /opt/fixture/compose-plugins/docker-compose
 COPY docker_compose_enabled.sh /opt/fixture/docker-with-compose
 RUN chmod 0755 /opt/fixture/docker-with-compose
+COPY docker_volume_read.py /opt/fixture/docker-volume-read
+RUN chmod 0755 /opt/fixture/docker-volume-read
 COPY docker_probe_fixture.py /opt/fixture/docker_probe_fixture.py
 COPY docker_list_change.sh /opt/fixture/docker-list-change
 COPY docker_list_hang.sh /opt/fixture/docker-list-hang

@@ -567,6 +567,62 @@ impl Backend {
         Ok(response)
     }
 
+    pub async fn list_volumes(
+        &self,
+        request: ListVolumesRequest,
+    ) -> Result<ListVolumesResponse, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(&request.scope, &ReadOperation::ListVolumes)?;
+        self.require_session(&request.scope)?;
+        let _host = self.read_hosts.acquire(&request.scope.selection.host_id)?;
+        let _read = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let response = self.sessions.volumes(&request).await;
+        self.require_session(&request.scope)?;
+        let response = response?;
+        if response.scope != request.scope
+            || response
+                .volumes
+                .iter()
+                .any(|volume| volume.scope != request.scope)
+        {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(response)
+    }
+    pub async fn inspect_volume(
+        &self,
+        request: InspectVolumeRequest,
+    ) -> Result<VolumeDetail, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(
+                &request.scope,
+                &ReadOperation::InspectVolume {
+                    name: request.name.clone(),
+                },
+            )?;
+        self.require_session(&request.scope)?;
+        let _host = self.read_hosts.acquire(&request.scope.selection.host_id)?;
+        let _read = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let response = self.sessions.inspect_volume(&request).await;
+        self.require_session(&request.scope)?;
+        let response = response?;
+        if response.summary.scope != request.scope || response.summary.name != request.name {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(response)
+    }
     pub async fn list_images(
         &self,
         request: ListImagesRequest,

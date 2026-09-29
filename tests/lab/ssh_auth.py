@@ -35,6 +35,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", action="store_true", help="Run a real isolated empty Docker Engine in the SSH target")
     parser.add_argument("--listing", action="store_true", help="Seed two metadata-only containers in the private Engine for listing checks")
+    parser.add_argument("--volumes", action="store_true", help="035 volume metadata and mount references on isolated Engine; requires --inventory")
     parser.add_argument("--images", action="store_true", help="034 read-only image inventory on isolated Engine; requires --inventory")
     parser.add_argument("--compose", action="store_true", help="Native Compose project reads on isolated Engine; requires --inventory")
     parser.add_argument("--inspect", action="store_true", help="Check native inspect and secret redaction; requires --inventory")
@@ -43,6 +44,8 @@ def main():
     parser.add_argument("--native-driver", type=Path, help="Optional external tauri-driver executable for the real native UI journey")
     parser.add_argument("--webkit-driver", type=Path, help="WebKitWebDriver executable, required with --native-driver")
     args = parser.parse_args()
+    if args.volumes and not args.inventory:
+        parser.error("--volumes requires --inventory")
     if args.images and not args.inventory:
         parser.error("--images requires --inventory")
     if args.compose and not args.inventory:
@@ -248,12 +251,16 @@ def main():
                         tar.addfile(info, io.BytesIO(data))
                 subprocess.run(docker + ["exec", "-i", names[-1], "docker", "load"], input=archive.getvalue(),
                                env=env, check=True, timeout=30, stdout=subprocess.DEVNULL)
+                if args.volumes:
+                    dc("exec",names[-1],"docker","volume","create","--label","token=synthetic-volume-035-secret","checkpoint-named",capture_output=True)
+                    dc("exec",names[-1],"docker","volume","create","--opt","type=tmpfs","--opt","device=tmpfs","--opt","o=size=64k","checkpoint-unused",capture_output=True)
                 expected = []
                 for index, name in enumerate(("listing-first", "listing-second")):
                     expected.append(dc("exec", names[-1], "docker", "create", "--network", "none", "--name", name,
                                        "--label", "dev.containerdesk.fixture=019", "--label", "test.value=comma,equals=next",
                                        *(["--env", "CHECKPOINT_TOKEN=synthetic-inspect-021-secret", "--label", "innocent=synthetic-label-021-secret", "--expose", "8080/tcp", "--expose", "53/udp"] if args.inspect else []),
                                        *(["--label", "com.docker.compose.project=" + ("checkpoint-a" if index == 0 else "checkpoint-b"), "--label", "com.docker.compose.service=web", "--label", "com.docker.compose.config-hash=fixture", "--label", "com.docker.compose.project.working_dir=/remote/missing"] + (["--label", "com.docker.compose.project.config_files=/remote/nonexistent/compose.yml"] if index == 0 else []) if args.compose else []),
+                                       *(["--mount","type=volume,source=checkpoint-named,target=/data"+(",readonly" if index==0 else "")] + (["--volume","/cache"] if index==1 else []) if args.volumes else []),
                                        "containerdesk-empty:019", capture_output=True).stdout.strip())
                 current = json.loads(manifest.read_text())
                 current["expectedContainerIds"] = expected
@@ -284,9 +291,23 @@ def main():
                 native_test(executable, "checkpoint029_owned_compose", {**test_env, "PATH": "/nonexistent"})
             if args.images:
                 native_test(executable, "checkpoint034_owned_images", {**test_env, "PATH": "/nonexistent"})
+            if args.volumes:
+                race=dc("exec",names[-1],"docker","create","--network","none","--name","volume-race","--label","dev.containerdesk.fixture=035-race","--mount","type=volume,source=checkpoint-named,target=/race","containerdesk-empty:019",capture_output=True).stdout.strip()
+                dc("exec","-u","lab",names[-1],"python3","-c","from pathlib import Path; import sys; Path('/tmp/volume-race-id').write_text(sys.argv[1])",race)
+                oracle=json.loads(dc("exec",names[-1],"docker","volume","inspect","checkpoint-named","checkpoint-unused",capture_output=True).stdout)
+                containers=json.loads(dc("exec",names[-1],"docker","inspect","--type","container",*expected,capture_output=True).stdout)
+                anonymous=next(mount['Name'] for row in containers for mount in row['Mounts'] if mount['Type']=='volume' and mount['Destination']=='/cache')
+                current=json.loads(manifest.read_text())
+                current['volumeOracle']={'named':'checkpoint-named','unused':'checkpoint-unused','anonymous':anonymous,'raceId':race,'references':sorted(expected),'mountpoint':oracle[0]['Mountpoint']}
+                manifest.write_text(json.dumps(current))
+                native_test(executable,"checkpoint035_owned_volumes",{**test_env,"PATH":"/nonexistent"})
+                trace=[json.loads(line) for line in dc("exec",names[-1],"cat","/tmp/volume-read-commands.jsonl",capture_output=True).stdout.splitlines()]
+                assert trace and all(row[0] in ('version','info','context','compose','volume','ps','inspect') for row in trace)
+                assert not any(row[0] in ('ls','cat','find','du','tar') or any('_data' in arg for arg in row) for row in trace)
+                print('PASS volume command gate: only fixed Docker metadata/probe argv admitted; no returned mountpoint used as a command argument or filesystem read.',flush=True)
             if args.native_driver:
                 from native_ssh import verify
-                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect, args.compose, args.images)
+                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect, args.compose, args.images, args.volumes)
             assert not marker.exists()
             assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
             print(f"PASS: {len(cases)} native SSH cases; config/trust hashes unchanged; no askpass invoked", flush=True)

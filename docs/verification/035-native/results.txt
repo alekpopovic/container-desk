@@ -1,0 +1,30 @@
+035 native Linux volume verification, 2026-09-29
+Release SHA-256: 2333698994134101d91d2ecb3903d973a7e55dfcfe3231ce9b0816da7a7d3ff4
+Owned private Engine 28.3.3; X11/Xvfb native WebKit; not macOS or package evidence.
+Command: python3 /tmp/containerdesk-035-xvfb.py (ssh_auth.py --engine --listing --inventory --volumes plus native drivers)
+Exit status: 0
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 141 filtered out; finished in 6.48s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+PASS real Engine direct-known: native SSH, fresh daemon identity, version 28.3.3, empty docker ps JSONL, 5 s / 16 MiB bounds; PATH=/nonexistent
+PASS real Engine via-known: native SSH, fresh daemon identity, version 28.3.3, empty docker ps JSONL, 5 s / 16 MiB bounds; PATH=/nonexistent
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 147 filtered out; finished in 1.63s
+PASS real Docker listing direct-known: 2 complete IDs/count match independent native CLI and provisioning; wrong daemon rejected; client PATH=/nonexistent
+PASS real Docker listing via-known: 2 complete IDs/count match independent native CLI and provisioning; wrong daemon rejected; client PATH=/nonexistent
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 147 filtered out; finished in 2.52s
+PASS live resource sessions: direct/ProxyJump actual IDs, old/disconnected scopes rejected, inflight read cancelled below 3s, all permits released; controlled identity drift revokes the session
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 147 filtered out; finished in 3.76s
+PASS native volumes direct and ProxyJump: named/anonymous/unused metadata matched isolated Engine oracle; actual container deletion during inspect retained two correct mount references and marked incomplete, reread reconciled; RO/RW mounts, masked labels/options, typed missing volume, old scope rejection, unchanged read-only management; PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 147 filtered out; finished in 7.74s
+PASS volume command gate: only fixed Docker metadata/probe argv admitted; no returned mountpoint used as a command argument or filesystem read.
+PASS native live table direct-known: two real containers, row selection and refresh
+PASS native volumes direct-known: named/anonymous/unused, metadata-only mountpoint, masked labels/options, actual RO/RW mounts, snapshot warning, shared container detail navigation.
+PASS native UI direct-known: actual Engine identity/version, Direct, readonly, disconnect; PATH=/nonexistent
+PASS native live table via-known: two real containers, row selection and refresh
+PASS native volumes via-known: named/anonymous/unused, metadata-only mountpoint, masked labels/options, actual RO/RW mounts, snapshot warning, shared container detail navigation.
+PASS native UI via-known: actual Engine identity/version, jump-known, readonly, disconnect; PATH=/nonexistent
+PASS native UI direct-unknown: bounded diagnostic, explicit disconnect
+PASS native UI direct-changed: bounded diagnostic, explicit disconnect
+PASS native UI via-jump-absent: bounded diagnostic, explicit disconnect
+PASS native UI cancellation and explicit reconnect: old probe cannot populate new session
+PASS: 15 native SSH cases; config/trust hashes unchanged; no askpass invoked
+Cleaned owned containers, network, agent and temporary key directory.

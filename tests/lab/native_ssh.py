@@ -22,7 +22,7 @@ def unused_port():
         return sock.getsockname()[1]
 
 
-def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, inventory=False, inspect=False, compose=False, images=False):
+def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, inventory=False, inspect=False, compose=False, images=False, volumes=False):
     env = os.environ.copy()
     for key in ("LD_LIBRARY_PATH", "LD_PRELOAD", "GTK_PATH", "GIO_MODULE_DIR", "SSH_AUTH_SOCK"):
         env.pop(key, None)
@@ -293,6 +293,52 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                             (artifacts/'native-image-navigation-failure.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
                             raise AssertionError('Image reference did not open native container detail')
                         print(f'PASS native images {alias}: two deduplicated identities, shared tags, masked labels, actual dangling filter with no tags, exact container reference opens existing detail view.',flush=True)
+                    if volumes:
+                        node=element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Volumes"]')
+                        command("POST",f"/element/{node}/click",{})
+                        deadline=time.monotonic()+20
+                        while time.monotonic()<deadline:
+                            if script('return document.querySelectorAll(".volume-choice").length')==3:break
+                            time.sleep(.1)
+                        else:raise AssertionError('Native volumes did not load three volumes')
+                        def choose_volume(name, expected):
+                            node=element(f'//button[contains(@class,"volume-choice") and contains(.,"{name}")]')
+                            script('arguments[0].scrollIntoView({block:"center",behavior:"instant"})',{ELEMENT:node})
+                            command("POST", "/execute/async", {"script":"const done=arguments[arguments.length-1]; requestAnimationFrame(()=>requestAnimationFrame(()=>done(true)));", "args":[]})
+                            command("POST",f"/element/{node}/click",{})
+                            deadline=time.monotonic()+20
+                            while time.monotonic()<deadline:
+                                text=script('return document.querySelector(".volume-detail")?.innerText ?? ""')
+                                if name in text and expected in text:return text
+                                time.sleep(.1)
+                            raise AssertionError('Native volume detail did not reach '+expected)
+                        text=choose_volume('checkpoint-named','listing-second')
+                        assert 'Read-only mount' in text and 'Read/write mount' in text
+                        assert 'token: Masked' in text and 'synthetic-volume-035-secret' not in text
+                        assert 'metadata only' in text and '2 mount reference(s) observed' in text
+                        script('document.querySelector(".volume-detail").scrollIntoView({block:"center",behavior:"instant"})')
+                        (artifacts/f'native-volumes-{alias}.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                        text=choose_volume('checkpoint-unused','No container references were observed')
+                        assert 'not proof that deletion is safe' in text and 'o: Masked' in text
+                        (artifacts/f'native-volume-unused-{alias}.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                        anonymous=script('return Array.from(document.querySelectorAll(".volume-choice strong"),e=>e.textContent).find(name=>/^[a-f0-9]{64}$/.test(name))')
+                        assert anonymous
+                        text=choose_volume(anonymous,'listing-second')
+                        assert '/cache' in text and '1 mount reference(s) observed' in text
+                        choose_volume('checkpoint-named','listing-second')
+                        script('window.__volumeClicks=[]; document.addEventListener("click",event=>window.__volumeClicks.push({target:event.target.textContent,trusted:event.isTrusted}),{capture:true,once:true})')
+                        for _ in range(3):
+                            command("POST", "/execute/async", {"script":"const done=arguments[arguments.length-1]; requestAnimationFrame(()=>requestAnimationFrame(()=>done(true)));", "args":[]})
+                            button('listing-second')
+                            time.sleep(.25)
+                            if script('return window.__volumeClicks.length>0'):break
+                        assert script('return window.__volumeClicks.some(event=>event.trusted && event.target==="listing-second")')
+                        deadline=time.monotonic()+15
+                        while time.monotonic()<deadline:
+                            if script('return location.hash==="#/containers" && document.querySelector(".detail-panel")?.innerText.includes("listing-second")'):break
+                            time.sleep(.1)
+                        else:raise AssertionError('Volume reference did not open native container detail')
+                        print(f'PASS native volumes {alias}: named/anonymous/unused, metadata-only mountpoint, masked labels/options, actual RO/RW mounts, snapshot warning, shared container detail navigation.',flush=True)
                     node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
                     command("POST", f"/element/{node}/click", {})
                 else:

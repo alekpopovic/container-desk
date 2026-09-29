@@ -16,6 +16,8 @@ fn main() {
             "list_containers",
             "list_compose",
             "list_images",
+            "list_volumes",
+            "inspect_volume",
             "inspect_image",
             "cancel_subscription",
             "get_preferences",

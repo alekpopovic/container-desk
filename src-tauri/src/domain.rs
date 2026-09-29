@@ -12,6 +12,7 @@ identifier!(HostId);
 identifier!(SessionId);
 identifier!(ContainerId);
 identifier!(ImageId);
+identifier!(VolumeName);
 identifier!(SubscriptionId);
 identifier!(IntentId);
 
@@ -52,6 +53,22 @@ impl ImageId {
             Ok(())
         } else {
             Err(AppError::new(ErrorCode::InvalidId))
+        }
+    }
+}
+impl VolumeName {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if self.0.is_empty()
+            || self.0.len() > 255
+            || !self.0.as_bytes()[0].is_ascii_alphanumeric()
+            || !self
+                .0
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b"_.-".contains(&b))
+        {
+            Err(AppError::new(ErrorCode::InvalidId))
+        } else {
+            Ok(())
         }
     }
 }
@@ -120,6 +137,7 @@ pub enum ErrorCode {
     ContainerNotFound,
     ContainerNotStopped,
     ImageNotFound,
+    VolumeNotFound,
     LogDriverUnsupported,
     ExportFailed,
     SessionNotFound,
@@ -165,6 +183,9 @@ impl AppError {
             }
             ErrorCode::LogDriverUnsupported => {
                 "This container logging driver does not support reading logs."
+            }
+            ErrorCode::VolumeNotFound => {
+                "The volume no longer exists. Refresh the volume inventory."
             }
             ErrorCode::ImageNotFound => "The image no longer exists. Refresh the image inventory.",
             ErrorCode::ContainerNotStopped => "Only stopped containers can be removed.",
@@ -1438,4 +1459,65 @@ pub struct ImageDetail {
     pub variant: Option<String>,
     pub labels: Vec<DetailValue>,
     pub containers: Vec<ImageContainerReference>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ListVolumesRequest {
+    pub scope: SessionScope,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct InspectVolumeRequest {
+    pub scope: SessionScope,
+    pub name: VolumeName,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct VolumeSummary {
+    pub scope: SessionScope,
+    pub name: VolumeName,
+    pub driver: Option<String>,
+    pub volume_scope: Option<String>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ListVolumesResponse {
+    pub scope: SessionScope,
+    pub volumes: Vec<VolumeSummary>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct VolumeMountReference {
+    pub container_id: ContainerId,
+    pub name: String,
+    pub state: String,
+    pub destination: Option<String>,
+    pub read_only: Option<bool>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum ReferenceObservation {
+    Referenced,
+    Unreferenced,
+    Incomplete,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct VolumeDetail {
+    pub summary: VolumeSummary,
+    pub created_at: Option<String>,
+    pub mountpoint_reported: Option<String>,
+    pub labels: Vec<DetailValue>,
+    pub options: Vec<DetailValue>,
+    pub references: Vec<VolumeMountReference>,
+    pub reference_observation: ReferenceObservation,
+    pub unresolved_container_ids: Vec<ContainerId>,
 }

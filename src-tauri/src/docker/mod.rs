@@ -157,3 +157,5 @@ pub(crate) mod events;
 pub(crate) mod compose;
 
 pub(crate) mod images;
+
+pub(crate) mod volumes;

@@ -130,6 +130,7 @@ export function WorkspaceShell({
   containersExtra,
   composeExtra,
   imagesExtra,
+  volumesExtra,
   savedHosts = [],
   demo,
 }: {
@@ -140,6 +141,7 @@ export function WorkspaceShell({
   containersExtra?: ReactNode;
   composeExtra?: ReactNode;
   imagesExtra?: ReactNode;
+  volumesExtra?: ReactNode;
   savedHosts?: SavedHost[];
   demo?: DemoControls;
 }) {
@@ -428,6 +430,8 @@ export function WorkspaceShell({
             composeExtra
           ) : route === "images" && imagesExtra ? (
             imagesExtra
+          ) : route === "volumes" && volumesExtra ? (
+            volumesExtra
           ) : (
             <ResourceWorkspace route={route} state={state} />
           )}

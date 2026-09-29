@@ -16,6 +16,8 @@
     "allow-list-containers",
     "allow-list-compose",
     "allow-list-images",
+    "allow-list-volumes",
+    "allow-inspect-volume",
     "allow-inspect-image",
     "allow-cancel-subscription",
     "allow-get-preferences",

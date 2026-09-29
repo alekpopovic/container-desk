@@ -110,10 +110,15 @@ test("all routes remain usable with honest empty state and host identity", async
     await expect(
       page.getByRole("heading", { name: "No host selected", level: 1 }),
     ).toBeVisible();
-    if (name === "Images" || name === "Compose") {
+    if (name === "Images" || name === "Compose" || name === "Volumes") {
       await expect(
         page.getByRole("heading", {
-          name: name === "Images" ? "No live image data" : "No Compose data",
+          name:
+            name === "Images"
+              ? "No live image data"
+              : name === "Volumes"
+                ? "No live volume data"
+                : "No Compose data",
         }),
       ).toBeVisible();
     } else if (name !== "Settings") {

@@ -40,6 +40,8 @@ pub fn run() {
             commands::list_containers,
             commands::list_compose,
             commands::list_images,
+            commands::list_volumes,
+            commands::inspect_volume,
             commands::inspect_image,
             commands::cancel_subscription,
             commands::get_preferences,

@@ -2203,3 +2203,192 @@ async fn checkpoint034_owned_images_dangling_tags_metadata_and_exact_references(
         "PASS native images direct and ProxyJump: isolated Engine oracle matched two immutable identities, multiple tags deduplicated, real dangling filter, metadata size and exact two container references; all label values masked, missing image typed, foreign host scope rejected, read-only permission unchanged; PATH=/nonexistent."
     );
 }
+
+#[tokio::test]
+#[ignore = "requires explicitly owned isolated Engine volume fixtures and SSH manifest"]
+async fn checkpoint035_owned_volumes_metadata_mounts_and_disappearing_container() {
+    let manifest = std::env::var("CONTAINERDESK_SSH_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest).parent().unwrap();
+    let oracle = &lab["volumeOracle"];
+    let mut previous_scope = None;
+    for (index, alias) in ["direct-known", "via-known"].into_iter().enumerate() {
+        let data = root.join(format!("volumes-{index}"));
+        let backend = Backend::new(&data, "/unused-lab-home".into());
+        let mut host = draft(alias, lab["config"].as_str().unwrap());
+        host.docker.executable = Some("/opt/fixture/docker-volume-read".into());
+        let saved = backend
+            .save_host(SaveHostRequest {
+                mode: WorkspaceMode::Live,
+                expected_revision: 0,
+                id: None,
+                draft: host,
+            })
+            .await
+            .unwrap();
+        let id = saved.saved.preferences.hosts[0].id.clone();
+        backend
+            .connect_inventory_host(InventoryConnectRequest {
+                mode: WorkspaceMode::Live,
+                host_id: id.clone(),
+            })
+            .await
+            .unwrap();
+        ready(&backend, WorkspaceMode::Live, id.clone()).await;
+        let scope = backend
+            .connect_host(ConnectHostRequest {
+                selection: HostSelection {
+                    host_id: id,
+                    selection_generation: 1,
+                },
+            })
+            .unwrap()
+            .scope;
+        if let Some(foreign) = previous_scope.take() {
+            assert!(
+                backend
+                    .list_volumes(ListVolumesRequest { scope: foreign })
+                    .await
+                    .is_err()
+            );
+        }
+        let inventory = backend
+            .list_volumes(ListVolumesRequest {
+                scope: scope.clone(),
+            })
+            .await
+            .unwrap();
+        assert_eq!(inventory.volumes.len(), 3);
+        for key in ["named", "unused", "anonymous"] {
+            assert!(
+                inventory
+                    .volumes
+                    .iter()
+                    .any(|row| row.name.0 == oracle[key].as_str().unwrap())
+            );
+        }
+        let request = InspectVolumeRequest {
+            scope: scope.clone(),
+            name: VolumeName(oracle["named"].as_str().unwrap().into()),
+        };
+        let detail = backend.inspect_volume(request.clone()).await.unwrap();
+        assert_eq!(
+            detail.mountpoint_reported.as_deref(),
+            oracle["mountpoint"].as_str()
+        );
+        assert_eq!(detail.references.len(), 2);
+        assert_eq!(
+            serde_json::to_value(
+                detail
+                    .references
+                    .iter()
+                    .map(|row| &row.container_id)
+                    .collect::<Vec<_>>()
+            )
+            .unwrap(),
+            oracle["references"]
+        );
+        assert!(
+            detail
+                .references
+                .iter()
+                .all(|row| row.destination.as_deref() == Some("/data"))
+        );
+        assert!(
+            detail
+                .references
+                .iter()
+                .any(|row| row.read_only == Some(true))
+        );
+        assert!(
+            detail
+                .references
+                .iter()
+                .any(|row| row.read_only == Some(false))
+        );
+        assert_eq!(detail.labels.len(), 1);
+        assert!(detail.labels[0].masked && detail.labels[0].value.is_none());
+        assert!(
+            !serde_json::to_string(&detail)
+                .unwrap()
+                .contains("synthetic-volume-035-secret")
+        );
+        if index == 0 {
+            assert_eq!(
+                detail.reference_observation,
+                ReferenceObservation::Incomplete
+            );
+            assert_eq!(
+                detail.unresolved_container_ids,
+                vec![ContainerId(oracle["raceId"].as_str().unwrap().into())]
+            );
+        } else {
+            assert_eq!(
+                detail.reference_observation,
+                ReferenceObservation::Referenced
+            );
+        }
+        let reconciled = backend.inspect_volume(request).await.unwrap();
+        assert_eq!(
+            reconciled.reference_observation,
+            ReferenceObservation::Referenced
+        );
+        assert!(reconciled.unresolved_container_ids.is_empty());
+        for key in ["anonymous", "unused"] {
+            let detail = backend
+                .inspect_volume(InspectVolumeRequest {
+                    scope: scope.clone(),
+                    name: VolumeName(oracle[key].as_str().unwrap().into()),
+                })
+                .await
+                .unwrap();
+            if key == "anonymous" {
+                assert_eq!(
+                    detail.reference_observation,
+                    ReferenceObservation::Referenced
+                );
+                assert_eq!(detail.references.len(), 1);
+                assert_eq!(detail.references[0].destination.as_deref(), Some("/cache"));
+            } else {
+                assert_eq!(
+                    detail.reference_observation,
+                    ReferenceObservation::Unreferenced
+                );
+                assert!(detail.references.is_empty());
+                assert_eq!(detail.options.len(), 3);
+                assert!(
+                    detail
+                        .options
+                        .iter()
+                        .all(|row| row.masked && row.value.is_none())
+                );
+            }
+        }
+        assert_eq!(
+            backend
+                .inspect_volume(InspectVolumeRequest {
+                    scope: scope.clone(),
+                    name: VolumeName("missing-checkpoint-volume".into())
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::VolumeNotFound
+        );
+        assert!(!backend.management_state(scope.clone()).unwrap().enabled);
+        previous_scope = Some(scope);
+        backend.shutdown().await;
+        for file in [
+            data.join("activity/history.json"),
+            data.join("preferences/settings.json"),
+        ] {
+            if let Ok(bytes) = std::fs::read(file) {
+                assert!(!String::from_utf8_lossy(&bytes).contains("synthetic-volume-035-secret"));
+            }
+        }
+    }
+    println!(
+        "PASS native volumes direct and ProxyJump: named/anonymous/unused metadata matched isolated Engine oracle; actual container deletion during inspect retained two correct mount references and marked incomplete, reread reconciled; RO/RW mounts, masked labels/options, typed missing volume, old scope rejection, unchanged read-only management; PATH=/nonexistent."
+    );
+}

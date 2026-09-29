@@ -578,3 +578,19 @@ pub async fn inspect_image(
 ) -> Result<ImageDetail, AppError> {
     backend.inspect_image(request).await
 }
+
+#[tauri::command]
+pub async fn list_volumes(
+    backend: tauri::State<'_, Backend>,
+    request: ListVolumesRequest,
+) -> Result<ListVolumesResponse, AppError> {
+    backend.list_volumes(request).await
+}
+
+#[tauri::command]
+pub async fn inspect_volume(
+    backend: tauri::State<'_, Backend>,
+    request: InspectVolumeRequest,
+) -> Result<VolumeDetail, AppError> {
+    backend.inspect_volume(request).await
+}
