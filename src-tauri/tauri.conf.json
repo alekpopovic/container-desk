@@ -32,6 +32,19 @@
     "macOS": {
       "minimumSystemVersion": "15.0"
     },
-    "icon": ["icons/icon.png"]
+    "icon": ["icons/icon.png"],
+    "category": "DeveloperTool",
+    "shortDescription": "Manage remote Docker through OpenSSH",
+    "longDescription": "Native desktop read views and explicitly enabled lifecycle, Compose and terminal operations over your existing OpenSSH configuration.",
+    "linux": {
+      "deb": {
+        "depends": ["openssh-client", "libc6 (>= 2.39)", "libxdo3"],
+        "section": "utils",
+        "priority": "optional"
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
   }
 }

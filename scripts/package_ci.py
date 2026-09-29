@@ -48,10 +48,14 @@ def main():
     if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?', version):
         raise ValueError('Version is not safe for artifact names')
     system, arch = platform.system(), platform.machine()
-    targets = {('Linux', 'x86_64'): ('x86_64-unknown-linux-gnu', 'deb'),
+    targets = {('Linux', 'x86_64'): ('x86_64-unknown-linux-gnu', 'deb,appimage'),
                ('Darwin', 'arm64'): ('aarch64-apple-darwin', 'app'),
                ('Darwin', 'x86_64'): ('x86_64-apple-darwin', 'app')}
     target, bundles = targets[(system, arch)]
+    if system == 'Linux':
+        release = platform.freedesktop_os_release()
+        if release.get('ID') != 'ubuntu' or release.get('VERSION_ID') != '24.04':
+            raise ValueError('Linux distribution packages require the Ubuntu 24.04 baseline')
     root = Path(os.environ.get('CARGO_TARGET_DIR', str(REPO/'src-tauri/target'))).resolve()
     binary = root/'release/containerdesk'
     if not binary.is_file(): raise ValueError('Ordinary release executable is missing')
@@ -71,32 +75,39 @@ def main():
     code = execute('unsigned native bundle', ['npm', 'exec', 'tauri', '--', 'bundle', '--ci', '--no-sign',
                    '--bundles', bundles, '--config', '{"bundle":{"active":true}}'], 600)
     if code: return code
-    files = sorted(bundle_root.glob('deb/*.deb')) if system == 'Linux' else sorted(bundle_root.glob('macos/*.app'))
-    if len(files) != 1: raise ValueError(f'Expected one {bundles} package; found {len(files)}')
+    formats = [('deb/*.deb', '.deb'), ('appimage/*.AppImage', '.AppImage')] if system == 'Linux' else [('macos/*.app', '.app.tar.gz')]
+    selected = []
+    for pattern, suffix in formats:
+        found = sorted(bundle_root.glob(pattern))
+        if len(found) != 1: raise ValueError(f'Expected one {pattern} package; found {len(found)}')
+        selected.append((found[0], suffix))
     args.output.mkdir(parents=True, exist_ok=True)
     stem = f'containerdesk-{version}-{target}'
-    if system == 'Linux':
-        package = args.output/(stem+'.deb')
-        shutil.copyfile(files[0], package)
-    else:
-        package = args.output/(stem+'.app.tar.gz')
-        with tarfile.open(package, 'w:gz', dereference=False) as archive:
-            archive.add(files[0], arcname=files[0].name)
+    packages = []
+    for source, suffix in selected:
+        package = args.output/(stem+suffix)
+        if suffix == '.app.tar.gz':
+            with tarfile.open(package, 'w:gz', dereference=False) as archive:
+                archive.add(source, arcname=source.name)
+        else:
+            shutil.copy2(source, package)
+            if suffix == '.AppImage': package.chmod(0o755)
+        packages.append(package)
     revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=REPO, text=True, timeout=10).strip()
     dirty = bool(subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=no'], cwd=REPO, timeout=10))
-    metadata = {'schemaVersion': 1, 'version': version, 'sourceCommit': revision, 'sourceDirty': dirty,
+    metadata = {'schemaVersion': 2, 'version': version, 'sourceCommit': revision, 'sourceDirty': dirty,
                 'target': target, 'os': platform.platform(), 'toolchains': tools,
                 'runId': os.environ.get('GITHUB_RUN_ID'), 'runAttempt': os.environ.get('GITHUB_RUN_ATTEMPT'),
                 'event': os.environ.get('GITHUB_EVENT_NAME', 'local'),
                 'verificationReportSha256': sha256(args.report),
-                'package': {'file': package.name, 'bytes': package.stat().st_size, 'sha256': sha256(package)},
+                'packages': [{'file': p.name, 'bytes': p.stat().st_size, 'sha256': sha256(p)} for p in packages],
                 'executableSha256BeforeBundle': before, 'executableSha256AfterBundle': sha256(binary),
                 'signing': 'disabled', 'notarization': 'not_requested', 'runtimeAcceptance': 'not_run',
                 'releaseApproved': False,
                 'locks': {p: sha256(REPO/p) for p in ['package-lock.json', 'src-tauri/Cargo.lock']}}
     meta = args.output/(stem+'.json')
     meta.write_text(json.dumps(metadata, indent=2)+'\n')
-    (args.output/'SHA256SUMS').write_text(''.join(f'{sha256(p)}  {p.name}\n' for p in [package, meta]))
+    (args.output/'SHA256SUMS').write_text(''.join(f'{sha256(p)}  {p.name}\n' for p in [*packages, meta]))
     if os.environ.get('GITHUB_OUTPUT'):
         with open(os.environ['GITHUB_OUTPUT'], 'a') as output: output.write('version='+version+'\n')
     print(json.dumps(metadata, indent=2))

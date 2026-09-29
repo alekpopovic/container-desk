@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T12:27:42+00:00
+Updated: 2026-09-29T12:28:17+00:00
 
-blocked: **0** | done: **52** | in_progress: **0** | pending: **8**
+blocked: **0** | done: **52** | in_progress: **1** | pending: **7**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -62,7 +62,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 050 | 06 Quality and delivery | Native desktop integration tests | high | done | codex/tracking/evidence/050.md |
 | 051 | 06 Quality and delivery | Local verification command and clean builds | medium | done | codex/tracking/evidence/051.md |
 | 052 | 06 Quality and delivery | Linux and macOS CI build matrix | high | done | codex/tracking/evidence/052.md |
-| 053 | 06 Quality and delivery | Linux package builds | high | pending | — |
+| 053 | 06 Quality and delivery | Linux package builds | high | in_progress | — |
 | 054 | 06 Quality and delivery | macOS application and DMG builds | high | pending | — |
 | 055 | 06 Quality and delivery | Signing and notarization integration | high | pending | — |
 | 056 | 06 Quality and delivery | Versioning updates and rollback guidance | medium | pending | — |
@@ -180,3 +180,4 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T11:44:26+00:00 — 052: block; CI and unsigned packages passed on Ubuntu 24.04 and macOS arm64/x86_64 (run 36560379638). Automatic approval review rejected adding the required separate manual public-publisher workflow with contents: write. User authorization or explicit scope change is pending; publisher absent. See codex/tracking/evidence/052.md.
 - 2026-09-29T12:26:53+00:00 — 052: start;
 - 2026-09-29T12:27:42+00:00 — 052: done; User explicitly omitted public-publisher workflow; previously verified three-platform CI retained; actionlint, tracker validate and git diff --check passed
+- 2026-09-29T12:28:17+00:00 — 053: start;
