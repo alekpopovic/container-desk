@@ -2392,3 +2392,119 @@ async fn checkpoint035_owned_volumes_metadata_mounts_and_disappearing_container(
         "PASS native volumes direct and ProxyJump: named/anonymous/unused metadata matched isolated Engine oracle; actual container deletion during inspect retained two correct mount references and marked incomplete, reread reconciled; RO/RW mounts, masked labels/options, typed missing volume, old scope rejection, unchanged read-only management; PATH=/nonexistent."
     );
 }
+
+#[tokio::test]
+#[ignore = "requires explicitly owned dual-stack network and strict SSH log lab"]
+async fn checkpoint036_owned_networks_match_real_attachment_oracle() {
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest).parent().unwrap();
+    let backend = Backend::new(&root.join("network-app-data"), "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id,
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    let oracle = &lab["networkOracle"];
+    let list = backend
+        .list_networks(ListNetworksRequest {
+            scope: scope.clone(),
+        })
+        .await
+        .unwrap();
+    assert_eq!(list.networks.len(), 1);
+    let row = &list.networks[0];
+    assert_eq!(row.id.0, oracle["Id"].as_str().unwrap());
+    assert_eq!(row.name, oracle["Name"].as_str().unwrap());
+    assert_eq!(row.internal, Some(true));
+    assert_eq!(row.ipv6, Some(true));
+    let detail = backend
+        .inspect_network(InspectNetworkRequest {
+            scope: scope.clone(),
+            network_id: row.id.clone(),
+        })
+        .await
+        .unwrap();
+    assert!(detail.attachments_reported && !detail.metadata_incomplete);
+    let expected = oracle["Containers"].as_object().unwrap();
+    assert_eq!(detail.attachments.len(), expected.len());
+    assert_eq!(detail.attachments.len(), 1);
+    for attachment in &detail.attachments {
+        let raw = &expected[&attachment.endpoint_key];
+        assert_eq!(
+            attachment.container_id.as_ref().unwrap().0,
+            lab["liveId"].as_str().unwrap()
+        );
+        assert_eq!(
+            attachment.ipv4_address.as_deref(),
+            raw["IPv4Address"].as_str()
+        );
+        assert_eq!(
+            attachment.ipv6_address.as_deref(),
+            raw["IPv6Address"].as_str()
+        );
+        assert!(attachment.ipv4_address.is_some() && attachment.ipv6_address.is_some());
+    }
+    let configs = oracle["IPAM"]["Config"].as_array().unwrap();
+    assert_eq!(detail.ipam_config.len(), configs.len());
+    for (entry, raw) in detail.ipam_config.iter().zip(configs) {
+        assert_eq!(entry.subnet.as_deref(), raw["Subnet"].as_str());
+        assert_eq!(entry.gateway.as_deref(), raw["Gateway"].as_str());
+    }
+    assert!(
+        detail
+            .labels
+            .iter()
+            .chain(&detail.options)
+            .all(|row| row.masked && row.value.is_none())
+    );
+    assert!(
+        !serde_json::to_string(&detail)
+            .unwrap()
+            .contains("synthetic-network-036-secret")
+    );
+    assert!(!backend.management_state(scope.clone()).unwrap().enabled);
+    let mut foreign = scope.clone();
+    foreign.daemon_id = "other-network-daemon".into();
+    assert!(
+        backend
+            .list_networks(ListNetworksRequest { scope: foreign })
+            .await
+            .is_err()
+    );
+    backend.shutdown().await;
+    assert!(
+        backend
+            .list_networks(ListNetworksRequest { scope })
+            .await
+            .is_err()
+    );
+    println!(
+        "PASS actual network over strict ProxyJump: owned internal dual-stack bridge, full network identity, exact nonzero attachment count and container identity, both IP families/IPAM matched independent Docker inspect; options/labels masked, foreign/disconnected scope refused, management stayed read-only; PATH=/nonexistent."
+    );
+}

@@ -594,3 +594,18 @@ pub async fn inspect_volume(
 ) -> Result<VolumeDetail, AppError> {
     backend.inspect_volume(request).await
 }
+#[tauri::command]
+pub async fn list_networks(
+    backend: tauri::State<'_, Backend>,
+    request: ListNetworksRequest,
+) -> Result<ListNetworksResponse, AppError> {
+    backend.list_networks(request).await
+}
+
+#[tauri::command]
+pub async fn inspect_network(
+    backend: tauri::State<'_, Backend>,
+    request: InspectNetworkRequest,
+) -> Result<NetworkDetail, AppError> {
+    backend.inspect_network(request).await
+}

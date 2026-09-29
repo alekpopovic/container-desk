@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T04:42:38+00:00",
+  "updated_at": "2026-09-29T04:56:34+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1208,6 +1208,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T04:43:02+00:00",
+      "id": "036",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T04:56:34+00:00",
+      "id": "036",
+      "action": "done",
+      "note": "130 Rust, 69 Node, 54 browser tests passed; actual production native network UI and strict ProxyJump Docker oracle matched one real dual-stack attachment and IPAM; unknown/stale endpoint and masking tests passed.",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T04:43:02+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1659,12 +1693,14 @@
       "note": ""
     },
     "036": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T04:43:02+00:00",
+      "finished_at": "2026-09-29T04:56:34+00:00",
+      "evidence": "codex/tracking/evidence/036.md",
+      "evidence_sha256": "25f232dbca3fe39bc8588f736fd2a4713abea543d29498169f0742db2a839df8",
+      "checks": [
+        "130 Rust, 69 Node, 54 browser tests passed; actual production native network UI and strict ProxyJump Docker oracle matched one real dual-stack attachment and IPAM; unknown/stale endpoint and masking tests passed."
+      ],
       "commit": "",
       "note": ""
     },

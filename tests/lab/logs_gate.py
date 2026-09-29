@@ -11,6 +11,7 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mvp', action='store_true')
+parser.add_argument('--networks', action='store_true')
 parser.add_argument('--batch', action='store_true')
 parser.add_argument('--management', action='store_true')
 parser.add_argument('--config', required=True)
@@ -34,6 +35,18 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
     if operation[:2] == ['--host', 'unix:///var/run/docker.sock']:
         operation = operation[2:]
     allowed = (len(operation) == 3 and operation[0] in ('version', 'info') and operation[1] == '--format') or (len(operation) == 4 and operation[:3] == ['context', 'inspect', '--format']) or operation in (['compose', 'version'], ['compose', 'version', '--format', 'json'])
+    if args.networks and args.control:
+        import json
+        network=(args.control/'owned-network-id').read_text().strip()
+        template='{"id":{{json .ID}},"name":{{json .Name}},"driver":{{json .Driver}},"scope":{{json .Scope}},"internal":{{json .Internal}},"ipv6":{{json .IPv6}}}'
+        if operation==['network','ls','--no-trunc','--format',template]:
+            allowed=True
+            words.extend(['--filter','id='+network])
+            original='exec '+' '.join(shlex.quote(word) for word in words)
+        if operation==['network','inspect','--',network]:allowed=True
+        if operation and operation[0]=='network':
+            if not allowed:sys.exit(126)
+            with (args.control/'network-commands.jsonl').open('a') as trace:trace.write(json.dumps(operation)+'\n')
     if args.management and args.control and (args.control / 'mutation-identity-drift').exists() and len(operation) == 3 and operation[:2] == ['info', '--format']:
         print('{"id":"controlled-drift-032","os":"linux","security":[]}')
         sys.exit(0)

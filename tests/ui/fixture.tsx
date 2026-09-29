@@ -1,3 +1,4 @@
+import { NetworksFixture } from "./networks-fixture";
 import { VolumesFixture } from "./volumes-fixture";
 import { ImagesFixture } from "./images-fixture";
 import { BatchFixture } from "./batch-fixture";
@@ -34,7 +35,9 @@ if (kind === "error")
 const root = document.getElementById("root");
 if (!root) throw new Error("Fixture root missing");
 createRoot(root).render(
-  kind === "volumes" ? (
+  kind === "networks" ? (
+    <NetworksFixture />
+  ) : kind === "volumes" ? (
     <VolumesFixture />
   ) : kind === "images" ? (
     <ImagesFixture />

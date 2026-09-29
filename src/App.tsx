@@ -1,3 +1,4 @@
+import { NetworkInventory } from "./features/networks/NetworkInventory";
 import { VolumeInventory } from "./features/volumes/VolumeInventory";
 import { ImageInventory } from "./features/images/ImageInventory";
 import { ComposeInventory } from "./features/compose/ComposeInventory";
@@ -183,6 +184,20 @@ export default function App() {
       }
       volumesExtra={
         <VolumeInventory
+          view={containers.view}
+          native={native && workspace.mode.mode === "live"}
+          refreshContainers={() => {
+            void containers.refresh();
+          }}
+          openContainer={(scope, id) => {
+            if (scope !== containers.view.scope) return;
+            containers.select(id);
+            window.location.hash = "/containers";
+          }}
+        />
+      }
+      networksExtra={
+        <NetworkInventory
           view={containers.view}
           native={native && workspace.mode.mode === "live"}
           refreshContainers={() => {

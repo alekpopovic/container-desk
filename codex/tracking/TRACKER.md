@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T04:42:38+00:00
+Updated: 2026-09-29T04:56:34+00:00
 
-blocked: **0** | done: **35** | in_progress: **0** | pending: **25**
+blocked: **0** | done: **36** | in_progress: **0** | pending: **24**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -45,7 +45,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 033 | 04 Management | Multi-container actions and stopped-container removal | high | done | codex/tracking/evidence/033.md |
 | 034 | 04 Management | Image inventory and inspection | medium | done | codex/tracking/evidence/034.md |
 | 035 | 04 Management | Volume inventory and mount relationships | medium | done | codex/tracking/evidence/035.md |
-| 036 | 04 Management | Network inventory and container attachments | medium | pending | — |
+| 036 | 04 Management | Network inventory and container attachments | medium | done | codex/tracking/evidence/036.md |
 | 037 | 04 Management | Verified remote Compose project actions | high | pending | — |
 | 038 | 04 Management | Management MVP checkpoint | high | pending | — |
 | 039 | 05 Terminal and resilience | PTY terminal transport | high | pending | — |
@@ -144,3 +144,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T04:20:58+00:00 — 034: done; PASS: 124 Rust tests, 63 Node tests, 18 image UI + 36 route/demo browser tests; isolated Engine direct/ProxyJump CLI oracle and actual release image UI/reference navigation; build, clippy, formatting and tracker validation.
 - 2026-09-29T04:21:59+00:00 — 035: start;
 - 2026-09-29T04:42:38+00:00 — 035: done; 127 Rust, 66 Node and 54 browser checks passed; production Linux native direct/ProxyJump volume lab and actual disappearance/reconciliation passed; fixed metadata gate verified no volume data reads.
+- 2026-09-29T04:43:02+00:00 — 036: start;
+- 2026-09-29T04:56:34+00:00 — 036: done; 130 Rust, 69 Node, 54 browser tests passed; actual production native network UI and strict ProxyJump Docker oracle matched one real dual-stack attachment and IPAM; unknown/stale endpoint and masking tests passed.

@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -95,6 +95,33 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
             wait('return document.querySelectorAll("[data-container-id]").length === 3')
             click(f'//tr[@data-container-id="{live_id}"]//button')
+            if networks:
+                oracle=json.loads((root/'manifest.json').read_text())['networkOracle']
+                click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Networks"]')
+                wait('return document.querySelectorAll(".network-choice").length===1 && document.querySelector(".network-detail")?.innerText.includes("1 endpoint(s) reported")')
+                text=script('return document.querySelector(".network-detail").innerText')
+                assert oracle['Name'] in text and oracle['Id'] in text and 'token: Masked' in text
+                assert 'synthetic-network-036-secret' not in text
+                endpoint=oracle['Containers'][live_id]
+                for value in [endpoint['IPv4Address'],endpoint['IPv6Address']]:assert value and value in text
+                for config in oracle['IPAM']['Config']:assert config['Subnet'] in text
+                assert script('return !document.querySelector(".network-detail button").disabled')
+                script('document.querySelector(".network-detail").scrollIntoView({block:"start",behavior:"instant"})')
+                (artifacts/'native-network-metadata.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                script('document.querySelector(".network-detail li:last-child").scrollIntoView({block:"center",behavior:"instant"})')
+                (artifacts/'native-network-attachment.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                script('window.__networkClicks=[];document.addEventListener("click",event=>window.__networkClicks.push(event.isTrusted),{capture:true,once:true})')
+                for _ in range(3):
+                    command('POST','/execute/async',{'script':'const done=arguments[arguments.length-1];requestAnimationFrame(()=>requestAnimationFrame(()=>done(true)));','args':[]})
+                    button(endpoint['Name']);time.sleep(.25)
+                    if script('return window.__networkClicks.length>0'):break
+                assert script('return window.__networkClicks.includes(true)')
+                wait('return location.hash==="#/containers" && document.querySelector(".detail-panel")?.innerText.includes(arguments[0])'.replace('arguments[0]',json.dumps(live_id)))
+                click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
+                button('Disconnect saved host')
+                wait('return document.body.innerText.includes("Disconnected · SSH session")')
+                print('PASS native network UI: actual custom bridge/internal flag, IPv4/IPv6 IPAM and endpoint addresses, masked metadata, full-ID attachment navigation and disconnect over strict ProxyJump.',flush=True)
+                return
             if batch:
                 ids = script('return Array.from(document.querySelectorAll("[data-container-id]"), row => row.dataset.containerId)')
                 stopped = [ident for ident in ids if ident != live_id]

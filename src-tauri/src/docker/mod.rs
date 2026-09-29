@@ -159,3 +159,5 @@ pub(crate) mod compose;
 pub(crate) mod images;
 
 pub(crate) mod volumes;
+
+pub(crate) mod networks;

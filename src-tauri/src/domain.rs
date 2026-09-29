@@ -13,6 +13,7 @@ identifier!(SessionId);
 identifier!(ContainerId);
 identifier!(ImageId);
 identifier!(VolumeName);
+identifier!(NetworkId);
 identifier!(SubscriptionId);
 identifier!(IntentId);
 
@@ -50,6 +51,25 @@ impl ContainerId {
 impl ImageId {
     pub fn validate(&self) -> Result<(), AppError> {
         if full_sha256(self.0.strip_prefix("sha256:").unwrap_or(&self.0)) {
+            Ok(())
+        } else {
+            Err(AppError::new(ErrorCode::InvalidId))
+        }
+    }
+}
+impl NetworkId {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if (self.0.len() == 64
+            && self
+                .0
+                .bytes()
+                .all(|b| b.is_ascii_hexdigit() && !b.is_ascii_uppercase()))
+            || (self.0.len() == 25
+                && self
+                    .0
+                    .bytes()
+                    .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit()))
+        {
             Ok(())
         } else {
             Err(AppError::new(ErrorCode::InvalidId))
@@ -138,6 +158,7 @@ pub enum ErrorCode {
     ContainerNotStopped,
     ImageNotFound,
     VolumeNotFound,
+    NetworkNotFound,
     LogDriverUnsupported,
     ExportFailed,
     SessionNotFound,
@@ -183,6 +204,9 @@ impl AppError {
             }
             ErrorCode::LogDriverUnsupported => {
                 "This container logging driver does not support reading logs."
+            }
+            ErrorCode::NetworkNotFound => {
+                "The network no longer exists. Refresh the network inventory."
             }
             ErrorCode::VolumeNotFound => {
                 "The volume no longer exists. Refresh the volume inventory."
@@ -1520,4 +1544,86 @@ pub struct VolumeDetail {
     pub references: Vec<VolumeMountReference>,
     pub reference_observation: ReferenceObservation,
     pub unresolved_container_ids: Vec<ContainerId>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ListNetworksRequest {
+    pub scope: SessionScope,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct InspectNetworkRequest {
+    pub scope: SessionScope,
+    pub network_id: NetworkId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct NetworkSummary {
+    pub scope: SessionScope,
+    pub id: NetworkId,
+    pub name: String,
+    pub driver: Option<String>,
+    pub network_scope: Option<String>,
+    pub internal: Option<bool>,
+    pub ipv6: Option<bool>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ListNetworksResponse {
+    pub scope: SessionScope,
+    pub networks: Vec<NetworkSummary>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct NetworkAddress {
+    pub name: String,
+    pub address: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct NetworkIpamConfig {
+    pub subnet: Option<String>,
+    pub ip_range: Option<String>,
+    pub gateway: Option<String>,
+    pub auxiliary_addresses: Vec<NetworkAddress>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct NetworkAttachment {
+    pub endpoint_key: String,
+    pub container_id: Option<ContainerId>,
+    pub name: Option<String>,
+    pub endpoint_id: Option<String>,
+    pub ipv4_address: Option<String>,
+    pub ipv6_address: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct NetworkDetail {
+    pub summary: NetworkSummary,
+    pub created_at: Option<String>,
+    pub ipam_driver: Option<String>,
+    pub ipam_config: Vec<NetworkIpamConfig>,
+    pub labels: Vec<DetailValue>,
+    pub options: Vec<DetailValue>,
+    pub ipam_options: Vec<DetailValue>,
+    pub attachments: Vec<NetworkAttachment>,
+    pub attachments_reported: bool,
+    pub metadata_incomplete: bool,
 }

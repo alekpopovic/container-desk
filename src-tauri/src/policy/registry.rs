@@ -19,6 +19,8 @@ pub enum ResponseKind {
     ContainerDetail,
     ImageDetail,
     ImageList,
+    NetworkList,
+    NetworkDetail,
     VolumeList,
     VolumeDetail,
     VolumeReferences,
@@ -32,6 +34,10 @@ pub enum ResponseKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReadOperation {
     ListContainers,
+    ListNetworks,
+    InspectNetwork {
+        network_id: NetworkId,
+    },
     ListVolumes,
     InspectVolume {
         name: VolumeName,
@@ -265,6 +271,28 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
                 ],
                 OperationCategory::Read,
                 ResponseKind::StatsState,
+                30,
+            )
+        }
+        ReadOperation::ListNetworks => plan(
+            &[
+                "docker",
+                "network",
+                "ls",
+                "--no-trunc",
+                "--format",
+                crate::docker::networks::LIST_TEMPLATE,
+            ],
+            OperationCategory::Read,
+            ResponseKind::NetworkList,
+            30,
+        ),
+        ReadOperation::InspectNetwork { network_id } => {
+            network_id.validate()?;
+            plan(
+                &["docker", "network", "inspect", "--", &network_id.0],
+                OperationCategory::Read,
+                ResponseKind::NetworkDetail,
                 30,
             )
         }

@@ -567,6 +567,62 @@ impl Backend {
         Ok(response)
     }
 
+    pub async fn list_networks(
+        &self,
+        request: ListNetworksRequest,
+    ) -> Result<ListNetworksResponse, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(&request.scope, &ReadOperation::ListNetworks)?;
+        self.require_session(&request.scope)?;
+        let _host = self.read_hosts.acquire(&request.scope.selection.host_id)?;
+        let _read = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let response = self.sessions.networks(&request).await;
+        self.require_session(&request.scope)?;
+        let response = response?;
+        if response.scope != request.scope
+            || response
+                .networks
+                .iter()
+                .any(|network| network.scope != request.scope)
+        {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(response)
+    }
+    pub async fn inspect_network(
+        &self,
+        request: InspectNetworkRequest,
+    ) -> Result<NetworkDetail, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(
+                &request.scope,
+                &ReadOperation::InspectNetwork {
+                    network_id: request.network_id.clone(),
+                },
+            )?;
+        self.require_session(&request.scope)?;
+        let _host = self.read_hosts.acquire(&request.scope.selection.host_id)?;
+        let _read = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let response = self.sessions.inspect_network(&request).await;
+        self.require_session(&request.scope)?;
+        let response = response?;
+        if response.summary.scope != request.scope || response.summary.id != request.network_id {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(response)
+    }
     pub async fn list_volumes(
         &self,
         request: ListVolumesRequest,

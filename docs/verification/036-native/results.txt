@@ -1,0 +1,12 @@
+036 native network verification, 2026-09-29
+Ubuntu 26.04.1 x86_64 X11/Xvfb/WebKit; actual release binary and native OpenSSH ProxyJump.
+Release SHA-256: b2057e26a3a81a63fe9d55231a870019e133e0d9a0d87386a1c341ad1526a594
+Command: python3 /tmp/containerdesk-036-xvfb.py, invoking logs.py --stream --jump --networks with native drivers.
+Exit status: 0
+PASS native network UI: actual custom bridge/internal flag, IPv4/IPv6 IPAM and endpoint addresses, masked metadata, full-ID attachment navigation and disconnect over strict ProxyJump.
+PASS actual network over strict ProxyJump: owned internal dual-stack bridge, full network identity, exact nonzero attachment count and container identity, both IP families/IPAM matched independent Docker inspect; options/labels masked, foreign/disconnected scope refused, management stayed read-only; PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 151 filtered out; finished in 1.87s
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: owned network metadata and nonzero IPv4/IPv6 attachment count matched real Docker inspect over strict ProxyJump.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
+Owned custom network removed after its containers; no other networks mutated.

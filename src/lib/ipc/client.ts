@@ -32,6 +32,8 @@ const messages: Record<ErrorCode, string> = {
   log_driver_unsupported:
     "This container logging driver does not support reading logs.",
   container_not_found: "The container no longer exists. Refresh the inventory.",
+  network_not_found:
+    "The network no longer exists. Refresh the network inventory.",
   volume_not_found:
     "The volume no longer exists. Refresh the volume inventory.",
   image_not_found: "The image no longer exists. Refresh the image inventory.",
@@ -1875,4 +1877,119 @@ export async function inspectVolume(
   )
     throw new IpcError("invalid_response");
   return value as unknown as import("./generated.ts").VolumeDetail;
+}
+
+const networkId = (value: unknown): value is string =>
+  typeof value === "string" && /^(?:[a-f0-9]{64}|[a-z0-9]{25})$/.test(value);
+const optionalNetworkText = (value: unknown) => value === null || text(value);
+const optionalNetworkFlag = (value: unknown) =>
+  value === null || typeof value === "boolean";
+function networkSummary(
+  value: unknown,
+  expected: SessionScope,
+): value is import("./generated.ts").NetworkSummary {
+  return (
+    record(value) &&
+    scope(value.scope) &&
+    sameScope(value.scope, expected) &&
+    networkId(value.id) &&
+    text(value.name) &&
+    optionalNetworkText(value.driver) &&
+    optionalNetworkText(value.networkScope) &&
+    optionalNetworkFlag(value.internal) &&
+    optionalNetworkFlag(value.ipv6)
+  );
+}
+export async function listNetworks(
+  expected: SessionScope,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").ListNetworksResponse> {
+  const value = await scheduledRead(
+    "list_networks",
+    { scope: expected },
+    current,
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, expected) ||
+    !Array.isArray(value.networks) ||
+    value.networks.length > 5000 ||
+    !value.networks.every((row) => networkSummary(row, expected)) ||
+    new Set(value.networks.map((row) => row.id)).size !== value.networks.length
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as import("./generated.ts").ListNetworksResponse;
+}
+export async function inspectNetwork(
+  request: import("./generated.ts").InspectNetworkRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").NetworkDetail> {
+  const value = await scheduledRead("inspect_network", request, current);
+  const masked = (rows: unknown) =>
+    Array.isArray(rows) &&
+    rows.length <= 256 &&
+    rows.every(
+      (row) =>
+        record(row) &&
+        text(row.name) &&
+        row.value === null &&
+        row.masked === true,
+    ) &&
+    new Set(rows.map((row) => row.name)).size === rows.length;
+  if (
+    !record(value) ||
+    !networkSummary(value.summary, request.scope) ||
+    value.summary.id !== request.networkId ||
+    !optionalNetworkText(value.createdAt) ||
+    !optionalNetworkText(value.ipamDriver) ||
+    !masked(value.labels) ||
+    !masked(value.options) ||
+    !masked(value.ipamOptions) ||
+    typeof value.metadataIncomplete !== "boolean" ||
+    typeof value.attachmentsReported !== "boolean" ||
+    !Array.isArray(value.ipamConfig) ||
+    value.ipamConfig.length > 128 ||
+    !Array.isArray(value.attachments) ||
+    value.attachments.length > 5000 ||
+    (!value.attachmentsReported && value.attachments.length > 0)
+  )
+    throw new IpcError("invalid_response");
+  for (const entry of value.ipamConfig) {
+    if (
+      !record(entry) ||
+      ![entry.subnet, entry.ipRange, entry.gateway].every(
+        optionalNetworkText,
+      ) ||
+      !Array.isArray(entry.auxiliaryAddresses) ||
+      entry.auxiliaryAddresses.length > 256 ||
+      !entry.auxiliaryAddresses.every(
+        (row) =>
+          record(row) && text(row.name) && optionalNetworkText(row.address),
+      ) ||
+      new Set(entry.auxiliaryAddresses.map((row) => row.name)).size !==
+        entry.auxiliaryAddresses.length
+    )
+      throw new IpcError("invalid_response");
+  }
+  const keys = new Set<string>();
+  for (const row of value.attachments) {
+    if (
+      !record(row) ||
+      !text(row.endpointKey) ||
+      keys.has(row.endpointKey) ||
+      !(
+        row.containerId === null ||
+        (typeof row.containerId === "string" &&
+          /^[a-f0-9]{64}$/.test(row.containerId) &&
+          row.containerId === row.endpointKey)
+      ) ||
+      ![row.name, row.endpointId, row.ipv4Address, row.ipv6Address].every(
+        optionalNetworkText,
+      )
+    )
+      throw new IpcError("invalid_response");
+    keys.add(row.endpointKey);
+  }
+  return value as unknown as import("./generated.ts").NetworkDetail;
 }

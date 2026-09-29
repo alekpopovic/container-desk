@@ -3,6 +3,8 @@ export type ReadCommand =
   | "list_containers"
   | "list_compose"
   | "list_images"
+  | "list_networks"
+  | "inspect_network"
   | "list_volumes"
   | "inspect_volume"
   | "inspect_image"
