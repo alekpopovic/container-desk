@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T12:28:17+00:00",
+  "updated_at": "2026-09-29T12:54:16+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1837,6 +1837,23 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T12:54:16+00:00",
+      "id": "053",
+      "action": "done",
+      "note": "Ubuntu 24.04 CI all 13 checks passed; deb and AppImage hashes verified; clean Ubuntu 24.04.5 VM installed deb and passed native desktop launch, SSH config/Include discovery, native ssh resolution and cleanup",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T12:28:17+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2492,12 +2509,14 @@
       "note": ""
     },
     "053": {
-      "status": "in_progress",
+      "status": "done",
       "started_at": "2026-09-29T12:28:17+00:00",
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "finished_at": "2026-09-29T12:54:16+00:00",
+      "evidence": "codex/tracking/evidence/053.md",
+      "evidence_sha256": "859c12add9ace81e94e5b0fe81c1cecf1f55ce70e2bbee207595f6764a723ecd",
+      "checks": [
+        "Ubuntu 24.04 CI all 13 checks passed; deb and AppImage hashes verified; clean Ubuntu 24.04.5 VM installed deb and passed native desktop launch, SSH config/Include discovery, native ssh resolution and cleanup"
+      ],
       "commit": "",
       "note": ""
     },

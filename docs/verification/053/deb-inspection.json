@@ -1,0 +1,9 @@
+{
+  "packageSha256": "e1c730db28d50d52254a5b0defa8a9b2e714fc3871c8ec998ed7517ff3e2c68e",
+  "installedExecutableSha256": "81946e3fe231fcbf6a265ef47a3120bee19e9ac549b6bf82e2a195ea4369253d",
+  "executableMode": "0o755",
+  "desktopEntry": "[Desktop Entry]\nCategories=Development;\nComment=Manage remote Docker through OpenSSH\nExec=containerdesk\nStartupWMClass=containerdesk\nIcon=containerdesk\nName=ContainerDesk\nTerminal=false\nType=Application\n",
+  "declaredDependencies": "openssh-client, libc6 (>= 2.39), libxdo3, libwebkit2gtk-4.1-0, libgtk-3-0",
+  "verifiedOriginalAfterReversingOnlyTauriDebMarker": true,
+  "originalExecutableSha256": "775f52481308c01befe86ddb3111d1df8c54e2ad93c37a459b8e440cda78503a"
+}

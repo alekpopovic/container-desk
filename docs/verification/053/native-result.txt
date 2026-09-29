@@ -1,0 +1,59 @@
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activating service name='org.a11y.Bus' requested by ':1.0' (uid=1000 pid=5654 comm="xfce4-panel" label="unconfined")
+dbus-daemon[5651]: [session uid=1000 pid=5651] Successfully activated service 'org.a11y.Bus'
+dbus-daemon[5665]: Activating service name='org.a11y.atspi.Registry' requested by ':1.1' (uid=1000 pid=5654 comm="xfce4-panel" label="unconfined")
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activating service name='org.xfce.Xfconf' requested by ':1.3' (uid=1000 pid=5654 comm="xfce4-panel" label="unconfined")
+dbus-daemon[5665]: Successfully activated service 'org.a11y.atspi.Registry'
+SpiRegistry daemon is running with well-known name - org.a11y.atspi.Registry
+dbus-daemon[5651]: [session uid=1000 pid=5651] Successfully activated service 'org.xfce.Xfconf'
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activating service name='org.xfce.FileManager' requested by ':1.2' (uid=1000 pid=5655 comm="xfdesktop" label="unconfined")
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activating service name='org.freedesktop.FileManager1' requested by ':1.2' (uid=1000 pid=5655 comm="xfdesktop" label="unconfined")
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activated service 'org.xfce.FileManager' failed: Failed to execute program org.xfce.FileManager: No such file or directory
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activating service name='ca.desrt.dconf' requested by ':1.1' (uid=1000 pid=5659 comm="/usr/libexec/at-spi-bus-launcher" label="unconfined")
+dbus-daemon[5651]: [session uid=1000 pid=5651] Successfully activated service 'ca.desrt.dconf'
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activating service name='org.freedesktop.portal.Desktop' requested by ':1.12' (uid=1000 pid=5721 comm="/usr/bin/containerdesk" label="unconfined")
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activating service name='org.freedesktop.portal.Documents' requested by ':1.13' (uid=1000 pid=5729 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activating service name='org.freedesktop.impl.portal.PermissionStore' requested by ':1.14' (uid=1000 pid=5735 comm="/usr/libexec/xdg-document-portal" label="unconfined")
+dbus-daemon[5651]: [session uid=1000 pid=5651] Successfully activated service 'org.freedesktop.impl.portal.PermissionStore'
+dbus-daemon[5651]: [session uid=1000 pid=5651] Successfully activated service 'org.freedesktop.portal.Documents'
+Ignoring invalid max threads value 4294967295 > max (100000).
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.741: Choosing gtk.portal for org.freedesktop.impl.portal.Lockdown as a last-resort fallback
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.741: The preferred method to match portal implementations to desktop environments is to use the portals.conf(5) configuration file
+dbus-daemon[5651]: [session uid=1000 pid=5651] Activating service name='org.freedesktop.impl.portal.desktop.gtk' requested by ':1.13' (uid=1000 pid=5729 comm="/usr/libexec/xdg-desktop-portal" label="unconfined")
+dbus-daemon[5651]: [session uid=1000 pid=5651] Successfully activated service 'org.freedesktop.impl.portal.desktop.gtk'
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.776: Failed to load RealtimeKit property: GDBus.Error:org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.RealtimeKit1 was not provided by any .service files
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.777: Failed to load RealtimeKit property: GDBus.Error:org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.RealtimeKit1 was not provided by any .service files
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.777: Failed to load RealtimeKit property: GDBus.Error:org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.RealtimeKit1 was not provided by any .service files
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.777: No skeleton to export
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.777: Choosing gtk.portal for org.freedesktop.impl.portal.FileChooser as a last-resort fallback
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.778: Choosing gtk.portal for org.freedesktop.impl.portal.AppChooser as a last-resort fallback
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.778: Choosing gtk.portal for org.freedesktop.impl.portal.Print as a last-resort fallback
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.779: Choosing gtk.portal for org.freedesktop.impl.portal.Notification as a last-resort fallback
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.780: Choosing gtk.portal for org.freedesktop.impl.portal.Inhibit as a last-resort fallback
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.781: Choosing gtk.portal for org.freedesktop.impl.portal.Access as a last-resort fallback
+[W][00063.592760] pw.conf      | [          conf.c: 1031 try_load_conf()] can't load config client.conf: No such file or directory
+[E][00063.592820] pw.conf      | [          conf.c: 1060 pw_conf_load_conf_for_context()] can't load config client.conf: No such file or directory
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.783: Failed connect to PipeWire: Couldn't create PipeWire context
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.783: Choosing gtk.portal for org.freedesktop.impl.portal.Account as a last-resort fallback
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.784: Choosing gtk.portal for org.freedesktop.impl.portal.Email as a last-resort fallback
+
+(/usr/libexec/xdg-desktop-portal:5729): xdg-desktop-portal-WARNING **: 12:52:16.784: Choosing gtk.portal for org.freedesktop.impl.portal.DynamicLauncher as a last-resort fallback
+dbus-daemon[5651]: [session uid=1000 pid=5651] Successfully activated service 'org.freedesktop.portal.Desktop'
+PASS installed ordinary package: desktop entry, SSH config/include discovery, native ssh resolution, unchanged trust/config and graceful close.
+
+(xfconfd:5676): xfconfd-WARNING **: 12:52:18.816: Name org.xfce.Xfconf lost on the message dbus, exiting.
+X connection to :99 broken (explicit kill or server shutdown).

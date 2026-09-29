@@ -1,0 +1,8 @@
+Actual package_ci.py execution on Ubuntu 26.04: exit 1; rejected before creating output.
+Traceback (most recent call last):
+  File "/home/popac/containerdesk/scripts/package_ci.py", line 118, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/home/popac/containerdesk/scripts/package_ci.py", line 58, in main
+    raise ValueError('Linux distribution packages require the Ubuntu 24.04 baseline')
+ValueError: Linux distribution packages require the Ubuntu 24.04 baseline
