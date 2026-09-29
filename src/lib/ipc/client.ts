@@ -1,3 +1,4 @@
+import { ReadScheduler, type ReadCommand } from "../reads/scheduler.ts";
 import { Channel, invoke } from "@tauri-apps/api/core";
 import type {
   AppError,
@@ -63,6 +64,23 @@ export class IpcError extends Error implements AppError {
     this.code = code;
     this.scope = scope;
   }
+}
+
+const reads = new ReadScheduler((code) => new IpcError(code));
+function scheduledRead(
+  command: ReadCommand,
+  request: { scope: SessionScope },
+  current: () => SessionScope | null,
+) {
+  const captured = structuredClone(request);
+  // Exact request (including session, full ID and reveal flag) is the single-flight identity.
+  return reads.run(
+    JSON.stringify([captured.scope.selection.hostId, captured.scope.daemonId]),
+    JSON.stringify([command, captured]),
+    command,
+    () => sameScope(captured.scope, current()),
+    () => call(command, captured),
+  );
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -263,8 +281,10 @@ export async function listContainers(
   expected: SessionScope,
   current: () => SessionScope | null,
 ): Promise<ListContainersResponse> {
-  const result = await call("list_containers", { scope: expected }, () =>
-    sameScope(expected, current()),
+  const result = await scheduledRead(
+    "list_containers",
+    { scope: expected },
+    current,
   );
   if (
     !record(result) ||
@@ -975,9 +995,7 @@ export async function inspectContainer(
   request: import("./generated.ts").InspectContainerRequest,
   current: () => SessionScope | null,
 ): Promise<import("./generated.ts").ContainerDetail> {
-  const result = await call("inspect_container", request, () =>
-    sameScope(request.scope, current()),
-  );
+  const result = await scheduledRead("inspect_container", request, current);
   const optional = (v: unknown) => v === null || text(v);
   const integer = (v: unknown) =>
     v === null || (typeof v === "number" && Number.isSafeInteger(v));
@@ -1079,9 +1097,7 @@ export async function containerLogs(
   request: import("./generated.ts").ContainerLogsRequest,
   current: () => SessionScope | null,
 ): Promise<import("./generated.ts").LogSnapshot> {
-  const result = await call("container_logs", request, () =>
-    sameScope(request.scope, current()),
-  );
+  const result = await scheduledRead("container_logs", request, current);
   if (
     !record(result) ||
     !scope(result.scope) ||
@@ -1347,9 +1363,7 @@ export async function containerStats(
   request: import("./generated.ts").ContainerStatsRequest,
   current: () => SessionScope | null,
 ): Promise<import("./generated.ts").StatsSample> {
-  const result = await call("container_stats", request, () =>
-    sameScope(request.scope, current()),
-  );
+  const result = await scheduledRead("container_stats", request, current);
   if (
     !record(result) ||
     !scope(result.scope) ||

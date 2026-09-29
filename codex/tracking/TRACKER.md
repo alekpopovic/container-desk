@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T01:55:35+00:00
+Updated: 2026-09-29T02:09:20+00:00
 
-blocked: **0** | done: **27** | in_progress: **0** | pending: **33**
+blocked: **0** | done: **28** | in_progress: **0** | pending: **32**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -37,7 +37,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 025 | 03 Read-only MVP | Log viewer usability and export | medium | done | codex/tracking/evidence/025.md |
 | 026 | 03 Read-only MVP | Container resource statistics | high | done | codex/tracking/evidence/026.md |
 | 027 | 03 Read-only MVP | Docker event stream and inventory invalidation | high | done | codex/tracking/evidence/027.md |
-| 028 | 03 Read-only MVP | Read refresh scheduling and stale data | high | pending | — |
+| 028 | 03 Read-only MVP | Read refresh scheduling and stale data | high | done | codex/tracking/evidence/028.md |
 | 029 | 03 Read-only MVP | Compose project discovery and read views | high | pending | — |
 | 030 | 03 Read-only MVP | Read-only MVP checkpoint | high | pending | — |
 | 031 | 04 Management | Mutation intents and local activity records | high | pending | — |
@@ -128,3 +128,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T01:34:18+00:00 — 026: done; PASS: 102 Rust, 45 IPC, 54 browser checks; clippy/fmt and Linux build; actual native stats charts/pause, SSH/Docker running/stopped/disappearance/concurrency/disconnect tests
 - 2026-09-29T01:34:50+00:00 — 027: start;
 - 2026-09-29T01:55:35+00:00 — 027: done; 104 Rust tests; 49 IPC tests; 60 affected browser cases; clippy/fmt; actual owned SSH/Docker event and release Tauri GUI acceptance passed
+- 2026-09-29T01:56:22+00:00 — 028: start;
+- 2026-09-29T02:09:20+00:00 — 028: done; 105 Rust tests; 54 IPC tests; 66 browser cases plus final 12 recovery cases; real slow SSH read cancellation and native release stats/log regression passed

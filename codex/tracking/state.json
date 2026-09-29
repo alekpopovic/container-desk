@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T01:55:35+00:00",
+  "updated_at": "2026-09-29T02:09:20+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -936,6 +936,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T01:56:22+00:00",
+      "id": "028",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T02:09:20+00:00",
+      "id": "028",
+      "action": "done",
+      "note": "105 Rust tests; 54 IPC tests; 66 browser cases plus final 12 recovery cases; real slow SSH read cancellation and native release stats/log regression passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T01:56:22+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1291,12 +1325,14 @@
       "note": ""
     },
     "028": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T01:56:22+00:00",
+      "finished_at": "2026-09-29T02:09:20+00:00",
+      "evidence": "codex/tracking/evidence/028.md",
+      "evidence_sha256": "f554e6bdc8073771e63dde53f2a608b6c64e548d66ca581d0f099cc7650fcc3e",
+      "checks": [
+        "105 Rust tests; 54 IPC tests; 66 browser cases plus final 12 recovery cases; real slow SSH read cancellation and native release stats/log regression passed"
+      ],
       "commit": "",
       "note": ""
     },

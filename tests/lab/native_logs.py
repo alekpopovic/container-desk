@@ -90,8 +90,11 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             if stats:
                 wait('return document.querySelector(".container-stats")?.innerText.includes("Sample received")')
                 assert script('return document.querySelectorAll(".stats-chart polyline").length') == 2
-                script('document.querySelector(".container-stats").scrollIntoView({block:"center"})')
+                wait('return document.querySelector(".inspect-detail")?.getAttribute("aria-busy") === "false"')
+                script('document.querySelector(".container-stats").scrollIntoView({block:"start",behavior:"instant"})')
                 time.sleep(.2)
+                # Snapshot refresh can replace detail content and move the scroll anchor.
+                script('document.querySelector(".container-stats").scrollIntoView({block:"start",behavior:"instant"})')
                 (artifacts / 'native-statistics.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
                 button('Pause statistics')
                 wait('return document.querySelector(".container-stats")?.innerText.includes("Statistics paused.")')

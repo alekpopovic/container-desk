@@ -31,3 +31,27 @@ test("event bursts stay bounded; snapshots determine deletion, gap reconnect rea
     reads ?? "",
   );
 });
+
+test("foreground/network recovery coalesces and suspended clock requests a fresh snapshot", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto("/tests/ui/fixture.html?state=events");
+  await expect(page.getByLabel("Starts", { exact: true })).toHaveText("1");
+  await page.clock.runFor(600);
+  await expect(page.getByLabel("Reads", { exact: true })).toHaveText("2");
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("online"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  await page.clock.runFor(2100);
+  await expect(page.getByLabel("Reads", { exact: true })).toHaveText("3");
+  const now = await page.evaluate(() => Date.now());
+  await page.clock.setSystemTime(now + 120000);
+  await page.clock.runFor(16000);
+  await expect(page.getByLabel("Reads", { exact: true })).toHaveText("4");
+  await page.getByRole("button", { name: "Fixture disconnect" }).click();
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await page.clock.runFor(16000);
+  await expect(page.getByLabel("Reads", { exact: true })).toHaveText("4");
+});

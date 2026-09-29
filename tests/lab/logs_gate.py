@@ -55,6 +55,11 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
             original = 'exec ' + ' '.join(shlex.quote(word) for word in words)
     if operation == ['ps', '--all', '--no-trunc', '--format', '{{json .}}']:
         allowed = True
+        if args.control and (args.control / 'delay-list').exists():
+            (args.control / ('list-started-' + str(os.getpid()))).write_text('owned read started')
+            deadline = time.monotonic() + 15
+            while (args.control / 'delay-list').exists() and time.monotonic() < deadline: time.sleep(.02)
+            if (args.control / 'delay-list').exists(): sys.exit(124)
         for ident in args.owned: words.extend(['--filter', 'id=' + ident])
         original = 'exec ' + ' '.join("'" + word.replace("'", "'\\''") + "'" for word in words)
     if len(operation) == 5 and operation[:4] == ['inspect', '--type', 'container', '--'] and operation[4] in args.owned:

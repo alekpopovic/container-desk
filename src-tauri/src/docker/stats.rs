@@ -1,4 +1,5 @@
 //! One finite selected-container sample. CLI strings are approximate measurements, never API counters.
+pub(crate) use crate::ssh::read_limits::Slots;
 use crate::{
     domain::*,
     policy::registry::{self, ReadOperation},
@@ -8,41 +9,8 @@ use crate::{
     },
 };
 use serde::Deserialize;
-use std::{
-    collections::HashSet,
-    sync::Mutex,
-    time::{Duration, SystemTime, UNIX_EPOCH},
-};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-#[derive(Default)]
-pub(crate) struct Slots(Mutex<HashSet<HostId>>);
-pub(crate) struct Slot<'a> {
-    owner: &'a Slots,
-    id: HostId,
-}
-impl Slots {
-    pub fn acquire(&self, id: &HostId) -> Result<Slot<'_>, AppError> {
-        id.validate()?;
-        let mut active = self
-            .0
-            .lock()
-            .map_err(|_| AppError::new(ErrorCode::Internal))?;
-        if active.len() >= 3 || !active.insert(id.clone()) {
-            return Err(AppError::new(ErrorCode::ResourceLimit));
-        }
-        Ok(Slot {
-            owner: self,
-            id: id.clone(),
-        })
-    }
-}
-impl Drop for Slot<'_> {
-    fn drop(&mut self) {
-        if let Ok(mut active) = self.owner.0.lock() {
-            active.remove(&self.id);
-        }
-    }
-}
 #[derive(Deserialize)]
 struct Record {
     #[serde(rename = "ID")]

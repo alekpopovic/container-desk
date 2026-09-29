@@ -1,3 +1,4 @@
+import { watchReadRecovery } from "../../lib/reads/recovery";
 import { useEffect, useState } from "react";
 import { followDockerEvents } from "../../lib/ipc/client";
 import type { SessionScope } from "../../lib/ipc/generated";
@@ -72,8 +73,10 @@ export function useContainerEvents(
         if (!signal.aborted) recover();
       }
     }
+    const stopRecovery = watchReadRecovery(() => invalidator.invalidate());
     void start();
     return () => {
+      stopRecovery();
       lifetime.abort();
       attempt?.abort();
       if (retry !== null) clearTimeout(retry);

@@ -1266,3 +1266,127 @@ async fn checkpoint027_owned_events_reconnect_gap_and_deleted_before_inspect() {
         "PASS native events: scoped start/die/destroy records; one-stream bound; foreign cancel denied; stop releases permits; deletion during gap gives ContainerNotFound and authoritative snapshot removal; replay still marks gap; real SSH loss reaps without ACK."
     );
 }
+
+#[tokio::test]
+#[ignore = "requires owned SSH/Docker slow-read command gate"]
+async fn checkpoint028_owned_reads_bound_slow_daemon_and_cancel_old_generation() {
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest).parent().unwrap();
+    let backend = Backend::new(&root.join("reads-app-data"), "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    let connected = ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id.clone(),
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    std::fs::write(root.join("delay-list"), b"owned delayed read").unwrap();
+    let first = backend.list_containers(ListContainersRequest {
+        scope: scope.clone(),
+    });
+    let second = backend.list_containers(ListContainersRequest {
+        scope: scope.clone(),
+    });
+    let control = async {
+        tokio::time::timeout(Duration::from_secs(10), async {
+            loop {
+                let started = std::fs::read_dir(root)
+                    .unwrap()
+                    .filter_map(Result::ok)
+                    .filter(|e| e.file_name().to_string_lossy().starts_with("list-started-"))
+                    .count();
+                if started == 2 {
+                    break;
+                }
+                assert!(started < 3);
+                tokio::time::sleep(Duration::from_millis(25)).await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(backend.read_hosts.count(&id), 2);
+        assert_eq!(backend.read_slots.available_permits(), 2);
+        assert_eq!(
+            backend
+                .list_containers(ListContainersRequest {
+                    scope: scope.clone()
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::ResourceLimit
+        );
+        let began = std::time::Instant::now();
+        backend
+            .disconnect_inventory_host(InventoryDisconnectRequest {
+                mode: WorkspaceMode::Live,
+                host_id: id.clone(),
+                token: connected.token,
+            })
+            .await
+            .unwrap();
+        assert!(began.elapsed() < Duration::from_secs(5));
+    };
+    let (first, second, ()) = tokio::join!(first, second, control);
+    assert!(first.is_err() && second.is_err());
+    assert_eq!(backend.read_hosts.count(&id), 0);
+    assert_eq!(backend.read_slots.available_permits(), 4);
+    std::fs::remove_file(root.join("delay-list")).unwrap();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let next = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id,
+                selection_generation: 2,
+            },
+        })
+        .unwrap()
+        .scope;
+    assert_ne!(scope.session_id, next.session_id);
+    assert!(
+        backend
+            .list_containers(ListContainersRequest { scope })
+            .await
+            .is_err()
+    );
+    let snapshot = backend
+        .list_containers(ListContainersRequest { scope: next })
+        .await
+        .unwrap();
+    assert_eq!(snapshot.containers.len(), 3);
+    backend.shutdown().await;
+    println!(
+        "PASS native read scheduler admission: two slow SSH/Docker reads at most, third rejected, disconnect reaps both and releases all slots, old scope rejected, fresh session returns three owned containers."
+    );
+}

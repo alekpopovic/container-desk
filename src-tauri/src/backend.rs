@@ -22,6 +22,7 @@ pub struct Backend {
     diagnostic_slot: Arc<tokio::sync::Semaphore>,
     export_slot: tokio::sync::Semaphore,
     stats_slots: crate::docker::stats::Slots,
+    read_hosts: crate::ssh::read_limits::Slots,
     workspace: Mutex<WorkspaceTransport>,
     read_slots: Arc<tokio::sync::Semaphore>,
 }
@@ -44,6 +45,7 @@ impl Backend {
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             export_slot: tokio::sync::Semaphore::new(1),
             stats_slots: Default::default(),
+            read_hosts: crate::ssh::read_limits::Slots::new(2),
             workspace: Mutex::new(WorkspaceTransport::default()),
             read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
         }
@@ -511,6 +513,7 @@ impl Backend {
         &self,
         request: ListContainersRequest,
     ) -> Result<ListContainersResponse, AppError> {
+        let _host_reads = self.read_hosts.acquire(&request.scope.selection.host_id)?;
         let _permit = self
             .read_slots
             .try_acquire()
@@ -560,6 +563,7 @@ impl Backend {
         &self,
         request: InspectContainerRequest,
     ) -> Result<ContainerDetail, AppError> {
+        let _host_reads = self.read_hosts.acquire(&request.scope.selection.host_id)?;
         let _permit = self
             .read_slots
             .try_acquire()
@@ -589,6 +593,7 @@ impl Backend {
         &self,
         request: ContainerLogsRequest,
     ) -> Result<LogSnapshot, AppError> {
+        let _host_reads = self.read_hosts.acquire(&request.scope.selection.host_id)?;
         let _permit = self
             .read_slots
             .try_acquire()
@@ -633,6 +638,7 @@ impl Backend {
                 },
             )?;
         self.require_session(&request.scope)?;
+        let _host_reads = self.read_hosts.acquire(&request.scope.selection.host_id)?;
         let _host = self.stats_slots.acquire(&request.scope.selection.host_id)?;
         let _read = self
             .read_slots
@@ -866,6 +872,7 @@ impl Default for Backend {
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             export_slot: tokio::sync::Semaphore::new(1),
             stats_slots: Default::default(),
+            read_hosts: crate::ssh::read_limits::Slots::new(2),
             workspace: Mutex::new(WorkspaceTransport::default()),
             read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
         }
