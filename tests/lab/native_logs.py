@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False, recovery=False, keyboard=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False, recovery=False, keyboard=False, pressure=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -21,6 +21,10 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
     if export_id:
         (native_bin / 'bwrap').symlink_to('/usr/bin/bwrap')
     env.update(XDG_DATA_HOME=str(root / 'native-data'), GDK_BACKEND='x11', PATH=str(native_bin))
+    if pressure:
+        data=root/'native-data/dev.containerdesk.app'
+        data.mkdir(parents=True,exist_ok=True)
+        (data/'resource-limits.json').write_text(json.dumps({'logLines':8000,'logBytes':1024*1024,'statsHistory':60,'activeHosts':1,'concurrentJobs':4}))
     artifacts = artifacts or root / 'native-artifacts'
     artifacts.mkdir(parents=True, exist_ok=True)
     port, native_port = unused_port(), unused_port()
@@ -79,7 +83,7 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             result = request('POST', '/session', {'capabilities': {'alwaysMatch': {'browserName': 'wry', 'tauri:options': {'application': str(REPO / 'src-tauri/target/release/containerdesk')}}}})
             session = result['sessionId']
             command('POST', '/timeouts', {'implicit': 5000, 'script': 5000, 'pageLoad': 15000})
-            if (stats or terminal or keyboard) and xdotool:
+            if (stats or terminal or keyboard or pressure) and xdotool:
                 found = subprocess.run([str(xdotool), 'search', '--onlyvisible', '--name', '^ContainerDesk$'], env=env, capture_output=True, text=True, check=True, timeout=10).stdout.split()
                 owned_windows = []
                 for window in found:
@@ -95,6 +99,10 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             fill('Display name', 'Owned live log checkpoint')
             fill('Saved Docker executable', '/usr/bin/docker')
             button('Save host')
+            if pressure:
+                from native_pressure import verify as verify_pressure
+                verify_pressure(root,artifacts,script,command,click,button,fill,wait,live_id,owned_windows[0],xdotool,env)
+                return
             if keyboard:
                 from native_keyboard import verify as verify_keyboard
                 verify_keyboard(root,artifacts,script,command,wait,live_id,xdotool,env)
@@ -369,6 +377,8 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             assert b'024-synthetic-live-line' not in (root / 'native-driver.log').read_bytes()
             print('PASS native release Tauri channel: actual follow batches, event-loop stall/drop marker, bounded preview, stop, timestamp resume, route unmount; app storage/diagnostics clean.', flush=True)
         except Exception:
+            if pressure:
+                Path('/tmp/containerdesk-045-native-driver-failure.log').write_bytes((root/'native-driver.log').read_bytes()[-65536:])
             if recovery:
                 Path('/tmp/containerdesk-041-native-driver-failure.log').write_bytes((root/'native-driver.log').read_bytes()[-65536:])
                 print('Native recovery driver exit status:',driver.poll(),flush=True)

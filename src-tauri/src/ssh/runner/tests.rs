@@ -67,6 +67,7 @@ async fn noisy_stderr_does_not_block_partial_stdout_or_hide_nonzero_exit() {
 async fn cancellation_and_dropped_waiter_reap_before_releasing_capacity() {
     let lab = Lab::new("sleep");
     let runner = Runner {
+        capacity: 1,
         shutdown: tokio::sync::watch::channel(false).0,
         slots: Arc::new(Semaphore::new(1)),
     };
@@ -94,6 +95,9 @@ async fn cancellation_and_dropped_waiter_reap_before_releasing_capacity() {
         assert!(start.elapsed() < Duration::from_secs(2));
         tokio::time::sleep(Duration::from_millis(5)).await;
     }
+    tokio::time::timeout(Duration::from_secs(2), runner.wait_idle())
+        .await
+        .unwrap();
     reaped(pid);
 }
 #[tokio::test]

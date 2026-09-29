@@ -1,3 +1,4 @@
+import { resourceLimits } from "../../lib/resourceLimits.ts";
 import type { LogRecord } from "../../lib/ipc/generated.ts";
 export const MAX_LINES = 20_000;
 export const MAX_BYTES = 8 * 1024 * 1024;
@@ -77,6 +78,24 @@ export function visibleLog(
   return `${timestamps ? `${row.timestamp ?? "No timestamp"} ` : ""}${row.channel === "stderr_ambiguous" ? "[stderr / diagnostic] " : ""}${row.text}${row.truncated ? " [truncated]" : ""}${row.invalidUtf8 ? " [invalid UTF-8 replaced]" : ""}${row.controlsRemoved ? " [controls removed]" : ""}`;
 }
 export class LogBuffer {
+  readonly maxLines: number;
+  readonly maxBytes: number;
+  constructor(limits = resourceLimits()) {
+    this.maxLines = Math.max(
+      1000,
+      Math.min(
+        MAX_LINES,
+        Number.isInteger(limits.logLines) ? limits.logLines : MAX_LINES,
+      ),
+    );
+    this.maxBytes = Math.max(
+      256 * 1024,
+      Math.min(
+        MAX_BYTES,
+        Number.isInteger(limits.logBytes) ? limits.logBytes : MAX_BYTES,
+      ),
+    );
+  }
   private rows: Array<BufferedLog | undefined> = [];
   private head = 0;
   private next = 0;
@@ -96,8 +115,8 @@ export class LogBuffer {
       this.rows.push(row);
       this.bytes += row.bytes;
       while (
-        this.rows.length - this.head > MAX_LINES ||
-        this.bytes > MAX_BYTES
+        this.rows.length - this.head > this.maxLines ||
+        this.bytes > this.maxBytes
       ) {
         const old = this.rows[this.head];
         this.rows[this.head++] = undefined;

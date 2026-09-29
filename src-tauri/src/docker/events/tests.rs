@@ -48,3 +48,21 @@ fn duplicate_and_burst_retention_is_bounded_and_loss_remains_visible() {
     sink(Stream::Stdout, vec![], true);
     assert_eq!(queue.lock().unwrap().dropped, 2);
 }
+
+#[test]
+#[ignore = "reproducible synthetic pressure benchmark"]
+fn pressure_event_queue_benchmark() {
+    let started = std::time::Instant::now();
+    let mut queue = EventQueue::default();
+    let mut peak = 0;
+    for index in 0..200_000 {
+        queue.push(event(index));
+        peak = peak.max(queue.events.len());
+    }
+    let (batch, dropped) = queue.batch();
+    println!(
+        "PRESSURE_EVENT_QUEUE {}",
+        serde_json::json!({"submitted":200000,"peakEvents":peak,"dedupeEntries":queue.seen.len(),"batchEvents":batch.len(),"dropped":dropped,"elapsedMs":started.elapsed().as_secs_f64()*1000.0})
+    );
+    assert!(peak <= 512 && batch.len() <= 64 && dropped > 0 && queue.seen.len() <= 1024);
+}

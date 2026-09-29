@@ -1,3 +1,4 @@
+import { ResourceLimitsSummary } from "./components/ResourceLimitsSummary";
 import { SupportDiagnostics } from "./components/SupportDiagnostics";
 import { NetworkInventory } from "./features/networks/NetworkInventory";
 import { VolumeInventory } from "./features/volumes/VolumeInventory";
@@ -248,6 +249,7 @@ export default function App() {
             onSaved={setSnapshot}
             demo={workspace.mode.mode === "demo"}
           />
+          <ResourceLimitsSummary />
           <SupportDiagnostics
             key={workspace.mode.mode}
             demo={workspace.mode.mode === "demo"}

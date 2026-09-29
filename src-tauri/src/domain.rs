@@ -1822,3 +1822,21 @@ pub struct SaveSupportRequest {
 pub struct ClearSupportRequest {
     pub confirmed: bool,
 }
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
+pub struct ResourceLimits {
+    pub log_lines: u32,
+    pub log_bytes: u32,
+    pub stats_history: u32,
+    pub active_hosts: u32,
+    pub concurrent_jobs: u32,
+}
+#[derive(Clone, Debug, serde::Serialize)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceLimitsReport {
+    pub limits: ResourceLimits,
+    pub configuration_ignored: bool,
+}

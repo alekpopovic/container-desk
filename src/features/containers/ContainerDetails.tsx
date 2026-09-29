@@ -10,12 +10,17 @@ import { inspectContainer, IpcError } from "../../lib/ipc/client";
 export function ContainerDetails({
   scope,
   id,
+  snapshotVersion = null,
 }: {
   scope: SessionScope;
   id: ContainerId;
+  snapshotVersion?: number | null;
 }) {
   const [tab, setTab] = useState<DetailTab>("Overview");
   const panelId = useId();
+  const lastSnapshot = useRef(snapshotVersion);
+  const revealing = useRef(false);
+  const [outdated, setOutdated] = useState(false);
   const [detail, setDetail] = useState<ContainerDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -24,6 +29,8 @@ export function ContainerDetails({
   const load = useCallback(
     async (revealSensitive: boolean) => {
       const ticket = ++serial.current;
+      revealing.current = revealSensitive;
+      setOutdated(false);
       setDetail(null);
       setError(null);
       setBusy(true);
@@ -41,7 +48,10 @@ export function ContainerDetails({
               : "Container details are unavailable.",
           );
       } finally {
-        if (alive.current && ticket === serial.current) setBusy(false);
+        if (alive.current && ticket === serial.current) {
+          setBusy(false);
+          revealing.current = false;
+        }
       }
     },
     [scope, id],
@@ -53,29 +63,57 @@ export function ContainerDetails({
       alive.current = false;
       serial.current += 1;
     };
-    // Parent keys the component by the complete scope, full ID and snapshot timestamp.
+    // Parent keys by complete scope and full ID; snapshot refreshes mask values below.
   }, [load]);
-  function hide() {
+  const hide = useCallback(() => {
     serial.current += 1;
+    revealing.current = false;
     setBusy(false);
-    setDetail(
-      (current) =>
-        current && {
-          ...current,
-          environmentValuesMasked: true,
-          environment: current.environment.map((e) => ({
-            ...e,
-            value: null,
-            masked: true,
-          })),
-          labels: current.labels.map((e) => ({
-            ...e,
-            value: null,
-            masked: true,
-          })),
-        },
+    setDetail((current) =>
+      current && !current.environmentValuesMasked
+        ? {
+            ...current,
+            environmentValuesMasked: true,
+            environment: current.environment.map((e) => ({
+              ...e,
+              value: null,
+              masked: true,
+            })),
+            labels: current.labels.map((e) => ({
+              ...e,
+              value: null,
+              masked: true,
+            })),
+          }
+        : current,
     );
-  }
+  }, []);
+  useEffect(() => {
+    if (lastSnapshot.current === snapshotVersion) return;
+    lastSnapshot.current = snapshotVersion;
+    setOutdated(true);
+    // Never cancel an initial masked read merely because unrelated events refresh the table.
+    if (revealing.current) hide();
+    else
+      setDetail((current) =>
+        current && !current.environmentValuesMasked
+          ? {
+              ...current,
+              environmentValuesMasked: true,
+              environment: current.environment.map((value) => ({
+                ...value,
+                value: null,
+                masked: true,
+              })),
+              labels: current.labels.map((value) => ({
+                ...value,
+                value: null,
+                masked: true,
+              })),
+            }
+          : current,
+      );
+  }, [snapshotVersion, hide]);
   return (
     <section
       className="inspect-detail"
@@ -83,6 +121,12 @@ export function ContainerDetails({
       aria-busy={busy}
     >
       <h3>Inspect details</h3>
+      {outdated && (
+        <p role="status">
+          Inventory refreshed. These details are an earlier snapshot; use
+          Refresh details for a new read. Sensitive values are masked.
+        </p>
+      )}
       <div
         className="detail-tabs"
         role="tablist"

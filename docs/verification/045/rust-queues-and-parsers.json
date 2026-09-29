@@ -1,0 +1,28 @@
+{
+  "profile": "native Linux Rust test (unoptimized + debuginfo), synthetic inputs",
+  "measurements": {
+    "PRESSURE_LOG_QUEUE": {
+      "batchLines": 128,
+      "dropped": 183806,
+      "elapsedMs": 113.16101,
+      "peakBytes": 8388608,
+      "peakLines": 16247,
+      "submitted": 200000
+    },
+    "PRESSURE_EVENT_QUEUE": {
+      "batchEvents": 64,
+      "dedupeEntries": 1024,
+      "dropped": 199488,
+      "elapsedMs": 300.987805,
+      "peakEvents": 512,
+      "submitted": 200000
+    },
+    "PRESSURE_PARSE": {
+      "inspectBytes": 1019912,
+      "inspectTotalMs": 612.461664,
+      "iterations": 100,
+      "listingBytes": 141889,
+      "listingTotalMs": 610.8914490000001
+    }
+  }
+}

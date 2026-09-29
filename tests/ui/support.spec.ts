@@ -15,6 +15,17 @@ test("support export previews inert text and clearing requires an explicit confi
           command,
           args,
         ]);
+        if (command === "get_resource_limits")
+          return {
+            limits: {
+              logLines: 20000,
+              logBytes: 8388608,
+              statsHistory: 360,
+              activeHosts: 1,
+              concurrentJobs: 4,
+            },
+            configurationIgnored: false,
+          };
         if (command === "app_version") return { version: "fixture" };
         if (command === "get_preferences") return fixtures.preferences;
         if (command === "get_workspace_mode") return fixtures.liveWorkspace;

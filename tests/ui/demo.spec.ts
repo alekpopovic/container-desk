@@ -104,6 +104,17 @@ test("native bridge failure never activates browser demo as fallback", async ({
     Reflect.set(window, "isTauri", true);
     Reflect.set(window, "__TAURI_INTERNALS__", {
       async invoke(command: string) {
+        if (command === "get_resource_limits")
+          return {
+            limits: {
+              logLines: 20000,
+              logBytes: 8388608,
+              statsHistory: 360,
+              activeHosts: 1,
+              concurrentJobs: 4,
+            },
+            configurationIgnored: false,
+          };
         if (command === "app_version") return { version: "fixture-008" };
         if (command === "get_preferences") return fixtures.preferences;
         throw { code: "permission_denied" };

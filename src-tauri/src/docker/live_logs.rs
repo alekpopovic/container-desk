@@ -1,5 +1,5 @@
 //! Log-specific bounded retention; ACK credit and child ownership are shared with events.
-use super::logs::{MAX_RECORDS, MAX_RETAINED_BYTES, channel, size};
+use super::logs::{channel, size};
 pub(crate) use crate::ssh::subscriptions::Subscriptions;
 use crate::{
     domain::*,
@@ -25,7 +25,9 @@ impl LogQueue {
     fn push(&mut self, record: LogRecord) {
         self.bytes += size(&record);
         self.records.push_back(record);
-        while self.bytes > MAX_RETAINED_BYTES || self.records.len() > MAX_RECORDS {
+        while self.bytes > crate::resource_limits::current().log_bytes as usize
+            || self.records.len() > crate::resource_limits::current().log_lines as usize
+        {
             if let Some(row) = self.records.pop_front() {
                 self.bytes -= size(&row);
                 self.dropped = self.dropped.saturating_add(1);

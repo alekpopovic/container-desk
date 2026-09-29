@@ -1,4 +1,6 @@
 // Generated from src-tauri/src/domain.rs with ts-rs. Do not edit.
+export type ResourceLimits = { logLines: number, logBytes: number, statsHistory: number, activeHosts: number, concurrentJobs: number, };
+export type ResourceLimitsReport = { limits: ResourceLimits, configurationIgnored: boolean, };
 export type SupportPreview = { id: string, report: string, expiresInSeconds: number, };
 export type SaveSupportRequest = { previewId: string, };
 export type ClearSupportRequest = { confirmed: boolean, };

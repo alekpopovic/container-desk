@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--jump', action='store_true', help='Use a second owned loopback sshd as an actual ProxyJump')
     parser.add_argument('--mvp', action='store_true', help='Integrated 030 native journey; requires --stream --stats --jump')
     parser.add_argument('--stream', action='store_true')
+    parser.add_argument('--pressure', action='store_true', help='045 synthetic inventory/inspect/events plus actual log pressure')
     parser.add_argument('--keyboard', action='store_true', help='044 native keyboard and Orca journey; requires stream, jump and drivers')
     parser.add_argument('--recovery', action='store_true', help='041 native connection interruption and shutdown; requires terminal/native drivers')
     parser.add_argument('--terminal', action='store_true', help='039 non-root PTY and shell-less disposable container; requires --stream')
@@ -44,6 +45,8 @@ def main():
     args = parser.parse_args()
     if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
         parser.error('Native driver flags require --stream and both driver paths')
+    if args.pressure and not (args.stream and args.jump and args.native_driver and args.focus_xdotool): parser.error('--pressure requires --stream --jump, native drivers and --focus-xdotool')
+    if args.pressure and any([args.keyboard,args.terminal,args.management,args.stats,args.events,args.reads,args.mvp,args.networks,args.compose_actions]): parser.error('--pressure is a separate lab journey')
     if args.keyboard and not (args.stream and args.jump and args.native_driver and args.focus_xdotool): parser.error('--keyboard requires --stream --jump, native drivers and --focus-xdotool')
     if args.recovery and not (args.terminal and args.jump and args.native_driver): parser.error('--recovery requires --terminal --jump and native drivers')
     if args.terminal and (not args.stream or args.management or args.compose_actions or args.networks or args.stats or args.events or args.reads or args.mvp): parser.error('--terminal requires --stream and excludes other checkpoint modes')
@@ -130,7 +133,7 @@ def main():
             # This fixture-only gate prevents tests from reading unrelated host resources or changing state.
             gate = REPO / 'tests/lab/logs_gate.py'
             server_config = root / 'sshd_config'
-            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY {"yes" if args.terminal else "no"}\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} {('--terminal ' if args.terminal else '')}{('--mvp ' if args.mvp else '')}{('--management ' if args.management else '')}{('--batch ' if args.batch else '')}{('--networks ' if args.networks else '')}{('--compose-actions ' if args.compose_actions else '')}--owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
+            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY {"yes" if args.terminal else "no"}\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} {('--pressure ' if args.pressure else '')}{('--terminal ' if args.terminal else '')}{('--mvp ' if args.mvp else '')}{('--management ' if args.management else '')}{('--batch ' if args.batch else '')}{('--networks ' if args.networks else '')}{('--compose-actions ' if args.compose_actions else '')}--owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
             public = (root / 'host.pub').read_text().split()
             known = root / 'known_hosts'
             known.write_text(f'[127.0.0.1]:{port} {public[0]} {public[1]}\n')
@@ -213,7 +216,7 @@ def main():
                 if args.stream and args.native_driver:
                     from native_logs import verify
                     try:
-                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[2] if args.terminal else owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions, args.terminal, args.recovery, args.keyboard)
+                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[2] if args.terminal else owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions, args.terminal, args.recovery, args.keyboard, args.pressure)
                     except Exception:
                         # Only bounded state fields from owned fixtures; no logs, env or generic inspect dump.
                         if args.management:

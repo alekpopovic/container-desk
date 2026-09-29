@@ -1,4 +1,5 @@
 use super::*;
+use crate::docker::logs::{MAX_RECORDS, MAX_RETAINED_BYTES};
 use crate::ssh::runner::RunError;
 use crate::ssh::runner::Runner;
 use std::sync::atomic::AtomicUsize;
@@ -252,4 +253,29 @@ async fn abandoned_renderer_expires_and_reaps_without_any_ack() {
     runner.wait_idle().await;
     assert_eq!(slots.available_permits(), 4);
     assert_eq!(subscriptions.available_slots(), 2);
+}
+
+#[test]
+#[ignore = "reproducible synthetic pressure benchmark"]
+fn pressure_log_queue_benchmark() {
+    let started = std::time::Instant::now();
+    let mut queue = LogQueue::default();
+    let mut peak_lines = 0;
+    let mut peak_bytes = 0;
+    for index in 0..200_000 {
+        queue.push(row(format!("synthetic-{index}: {}", "x".repeat(500))));
+        peak_lines = peak_lines.max(queue.records.len());
+        peak_bytes = peak_bytes.max(queue.bytes);
+    }
+    let (batch, dropped) = queue.batch();
+    println!(
+        "PRESSURE_LOG_QUEUE {}",
+        serde_json::json!({"submitted":200000,"peakLines":peak_lines,"peakBytes":peak_bytes,"batchLines":batch.len(),"dropped":dropped,"elapsedMs":started.elapsed().as_secs_f64()*1000.0})
+    );
+    assert!(
+        peak_lines <= MAX_RECORDS
+            && peak_bytes <= MAX_RETAINED_BYTES
+            && dropped > 0
+            && batch.len() <= 128
+    );
 }

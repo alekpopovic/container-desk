@@ -689,3 +689,8 @@ pub fn clear_support_data(
 ) -> Result<(), AppError> {
     backend.clear_support_data(request)
 }
+
+#[tauri::command]
+pub fn get_resource_limits() -> ResourceLimitsReport {
+    crate::resource_limits::report().clone()
+}

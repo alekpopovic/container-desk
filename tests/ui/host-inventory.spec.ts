@@ -133,6 +133,17 @@ test("live inventory preserves saved config policy and keeps the host selected a
         command: string,
         args?: { request?: { draft?: typeof host; expectedRevision?: number } },
       ) {
+        if (command === "get_resource_limits")
+          return {
+            limits: {
+              logLines: 20000,
+              logBytes: 8388608,
+              statsHistory: 360,
+              activeHosts: 1,
+              concurrentJobs: 4,
+            },
+            configurationIgnored: false,
+          };
         if (command === "app_version") return { version: "fixture-017" };
         if (command === "get_workspace_mode")
           return { mode: "live", scenario: null, scope: null, host: null };

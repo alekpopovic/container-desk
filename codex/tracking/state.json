@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T08:17:35+00:00",
+  "updated_at": "2026-09-29T08:52:27+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1514,6 +1514,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T08:18:34+00:00",
+      "id": "045",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T08:52:27+00:00",
+      "id": "045",
+      "action": "done",
+      "note": "86 Node tests; 148 Rust tests + 3 synthetic pressure benchmarks; clippy; final 19 + 18 browser checks; actual 120s release pressure run with 1000 summaries, large inspect, bounded log/events, memory gate and all 33 SSH identities reaped: exit 0",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T08:18:34+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2073,12 +2107,14 @@
       "note": ""
     },
     "045": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T08:18:34+00:00",
+      "finished_at": "2026-09-29T08:52:27+00:00",
+      "evidence": "codex/tracking/evidence/045.md",
+      "evidence_sha256": "bb5ce24ab454b6f25e94273fdb228dd4eeb95b02309a381e88537d21727344ce",
+      "checks": [
+        "86 Node tests; 148 Rust tests + 3 synthetic pressure benchmarks; clippy; final 19 + 18 browser checks; actual 120s release pressure run with 1000 summaries, large inspect, bounded log/events, memory gate and all 33 SSH identities reaped: exit 0"
+      ],
       "commit": "",
       "note": ""
     },

@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--pressure', action='store_true')
 parser.add_argument('--mvp', action='store_true')
 parser.add_argument('--terminal', action='store_true')
 parser.add_argument('--compose-actions', action='store_true')
@@ -53,6 +54,9 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
     operation = words[1:]
     if operation[:2] == ['--host', 'unix:///var/run/docker.sock']:
         operation = operation[2:]
+    if args.pressure:
+        from pressure_source import handle
+        if handle(args,operation,env): sys.exit(0)
     if args.terminal and operation[:1]==['exec']:
         if len(operation)!=8 or operation[:6]!=['exec','--interactive','--tty','--user','1000:1000','--'] or operation[6] not in args.owned[2:] or operation[7] not in ('/bin/sh','/bin/bash') or not os.isatty(0):sys.exit(126)
         import json

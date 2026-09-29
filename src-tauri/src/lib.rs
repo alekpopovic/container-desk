@@ -3,6 +3,7 @@ mod diagnostics;
 pub mod docker;
 mod log_export;
 pub mod policy;
+mod resource_limits;
 pub mod ssh;
 mod storage;
 mod support;
@@ -18,6 +19,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            resource_limits::initialize(&app.path().app_data_dir()?);
             app.manage(backend::Backend::new(
                 &app.path().app_data_dir()?,
                 app.path().home_dir()?,
@@ -27,6 +29,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::app_version,
+            commands::get_resource_limits,
             commands::get_activity,
             commands::prepare_support_report,
             commands::save_support_report,

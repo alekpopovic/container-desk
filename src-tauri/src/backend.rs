@@ -60,7 +60,9 @@ impl Backend {
             stats_slots: Default::default(),
             read_hosts: crate::ssh::read_limits::Slots::new(2),
             workspace: Mutex::new(WorkspaceTransport::default()),
-            read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
+            read_slots: Arc::new(tokio::sync::Semaphore::new(
+                crate::resource_limits::current().concurrent_jobs as usize,
+            )),
         }
     }
     pub fn shutdown_complete(&self) -> bool {
@@ -186,6 +188,7 @@ impl Backend {
             .try_lock()
             .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
         self.require_live_mode()?;
+        crate::resource_limits::admit_host()?;
         crate::ssh::resolver::arguments(&request.selection)?;
         if request.selection.use_default_config
             && request.selection.config_path

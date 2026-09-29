@@ -76,13 +76,17 @@ impl fmt::Debug for Captured {
 }
 #[derive(Clone)]
 pub struct Runner {
+    capacity: u32,
     slots: Arc<Semaphore>,
     shutdown: tokio::sync::watch::Sender<bool>,
 }
 impl Default for Runner {
     fn default() -> Self {
         Self {
-            slots: Arc::new(Semaphore::new(4)),
+            capacity: crate::resource_limits::current().concurrent_jobs,
+            slots: Arc::new(Semaphore::new(
+                crate::resource_limits::current().concurrent_jobs as usize,
+            )),
             shutdown: tokio::sync::watch::channel(false).0,
         }
     }
@@ -113,7 +117,7 @@ impl Runner {
     }
     pub(crate) async fn wait_idle(&self) {
         // Snapshot owners retain slots until child/group cleanup and reaping finish.
-        let permit = self.slots.acquire_many(4).await;
+        let permit = self.slots.acquire_many(self.capacity).await;
         drop(permit);
     }
     /// Caller must supply arguments from a fixed validated operation builder, never renderer shell text.

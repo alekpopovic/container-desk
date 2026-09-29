@@ -9,6 +9,7 @@ import type {
 import fixtures from "../fixtures/ipc.json";
 export function InspectFixture() {
   const [id, setId] = useState("a".repeat(64));
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
   const [epoch, setEpoch] = useState(0);
   const [pending, setPending] = useState(false);
   const deferred = useRef<(() => void) | null>(null);
@@ -107,6 +108,9 @@ export function InspectFixture() {
   );
   return (
     <div className="container-split inspect-fixture-shell">
+      <button type="button" onClick={() => setSnapshotVersion((v) => v + 1)}>
+        Refresh fixture inventory
+      </button>
       <button
         type="button"
         onClick={() => {
@@ -131,7 +135,12 @@ export function InspectFixture() {
       </button>
       <p>{pending ? "Fixture reveal pending" : "Fixture ready"}</p>
       <div className="detail-panel inspect-fixture-panel">
-        <ContainerDetails key={`${id}-${epoch}`} scope={scope} id={id} />
+        <ContainerDetails
+          snapshotVersion={snapshotVersion}
+          key={`${id}-${epoch}`}
+          scope={scope}
+          id={id}
+        />
       </div>
     </div>
   );

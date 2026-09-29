@@ -69,7 +69,9 @@ pub(super) fn channel(bytes: &[u8], origin: LogChannel) -> (VecDeque<LogRecord>,
         };
         retained += size(&record);
         records.push_back(record);
-        while records.len() > MAX_RECORDS || retained > MAX_RETAINED_BYTES {
+        while records.len() > crate::resource_limits::current().log_lines as usize
+            || retained > crate::resource_limits::current().log_bytes as usize
+        {
             if let Some(old) = records.pop_front() {
                 retained -= size(&old);
                 dropped += 1;
@@ -123,7 +125,9 @@ pub(crate) fn decode(
     });
     let mut retained: usize = records.iter().map(size).sum();
     let mut remove = 0;
-    while records.len() - remove > MAX_RECORDS || retained > MAX_RETAINED_BYTES {
+    while records.len() - remove > crate::resource_limits::current().log_lines as usize
+        || retained > crate::resource_limits::current().log_bytes as usize
+    {
         retained -= size(&records[remove]);
         remove += 1;
     }

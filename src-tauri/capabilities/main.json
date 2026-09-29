@@ -5,6 +5,7 @@
   "windows": ["main"],
   "permissions": [
     "allow-app-version",
+    "allow-get-resource-limits",
     "allow-get-activity",
     "allow-prepare-support-report",
     "allow-save-support-report",

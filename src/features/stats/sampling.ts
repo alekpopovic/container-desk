@@ -1,6 +1,14 @@
+import { resourceLimits } from "../../lib/resourceLimits.ts";
 import type { SessionScope, StatsValues } from "../../lib/ipc/generated.ts";
 export type StatsPoint = { time: number; values: StatsValues | null };
 export class StatsHistory {
+  readonly capacity: number;
+  constructor(capacity = resourceLimits().statsHistory) {
+    this.capacity = Math.max(
+      60,
+      Math.min(360, Number.isInteger(capacity) ? capacity : 360),
+    );
+  }
   private entries = new Map<string, StatsPoint[]>();
   private key(scope: SessionScope, id: string) {
     return JSON.stringify([
@@ -17,7 +25,7 @@ export class StatsHistory {
   }
   append(scope: SessionScope, id: string, point: StatsPoint): StatsPoint[] {
     const key = this.key(scope, id);
-    const points = [...this.get(scope, id).slice(-359), point];
+    const points = [...this.get(scope, id).slice(-(this.capacity - 1)), point];
     this.entries.delete(key);
     this.entries.set(key, points);
     while (this.entries.size > 12) {

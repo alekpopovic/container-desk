@@ -304,9 +304,11 @@ export function LiveLogs({
             : ""}
       </p>
       <p>
-        Retained: {retained.lines} lines · {retained.bytes} bytes. Limit: 20,000
-        lines or 8 MiB; oldest lines are discarded. Pause holds this display;
-        Stop ends the remote stream. Stderr may include transport diagnostics.
+        Retained: {retained.lines} lines · {retained.bytes} bytes. Limit:{" "}
+        {buffer.current.maxLines.toLocaleString()} lines or{" "}
+        {(buffer.current.maxBytes / (1024 * 1024)).toFixed(2)} MiB; oldest lines
+        are discarded. Pause holds this display; Stop ends the remote stream.
+        Stderr may include transport diagnostics.
       </p>
       {(dropped > 0 || gap || retained.dropped > 0) && (
         <p role="status">

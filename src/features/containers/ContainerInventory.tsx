@@ -484,7 +484,8 @@ export function ContainerInventory({
             )}
             {inspectEnabled && (!view.stale || view.loading) && view.scope && (
               <ContainerDetails
-                key={JSON.stringify([view.scope, chosen.id, view.updatedAt])}
+                key={JSON.stringify([view.scope, chosen.id])}
+                snapshotVersion={view.updatedAt}
                 scope={view.scope}
                 id={chosen.id}
               />

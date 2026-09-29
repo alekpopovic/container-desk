@@ -178,6 +178,9 @@ impl Backend {
             .try_lock()
             .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
         self.inventory_mode(&request.mode)?;
+        if request.mode == WorkspaceMode::Live {
+            crate::resource_limits::admit_host()?;
+        }
         request.host_id.validate()?;
         let preferences = self.inventory_saved(&request.mode)?.preferences;
         let host = preferences

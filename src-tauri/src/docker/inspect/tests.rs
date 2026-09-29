@@ -205,3 +205,39 @@ fn health_configuration_oom_and_exposure_are_distinct_from_state_and_bindings() 
     value[0]["Config"] = serde_json::Value::Null;
     assert_eq!(parsed(value, false).unwrap().healthcheck_configured, None);
 }
+
+#[test]
+#[ignore = "reproducible synthetic pressure benchmark"]
+fn pressure_large_inspect_and_listing_benchmark() {
+    let scope = crate::contract_tests::scope();
+    let id = ContainerId("a".repeat(64));
+    let labels = std::collections::BTreeMap::<_, _>::from_iter(
+        (0..1024).map(|n| (format!("synthetic-{n}"), "x".repeat(480))),
+    );
+    let env: Vec<_> = (0..1024)
+        .map(|n| format!("SYNTHETIC_{n}={}", "y".repeat(480)))
+        .collect();
+    let bytes=serde_json::to_vec(&serde_json::json!([{"Id":id.0,"Name":"/synthetic","Config":{"Image":"synthetic/image","Env":env,"Labels":labels},"State":{"Status":"running"}}])).unwrap();
+    let start = std::time::Instant::now();
+    for _ in 0..100 {
+        let detail = parse(&scope, &id, false, &bytes).unwrap();
+        assert_eq!(detail.environment.len(), 1024);
+        assert!(detail.environment.iter().all(|v| v.value.is_none()));
+    }
+    let inspect_ms = start.elapsed().as_secs_f64() * 1000.0;
+    let listing=(0..1000).map(|n|serde_json::json!({"ID":format!("{n:064x}"),"Names":format!("synthetic-{n}"),"Image":"synthetic/image","State":"running"}).to_string()).collect::<Vec<_>>().join("\n");
+    let start = std::time::Instant::now();
+    for _ in 0..100 {
+        assert_eq!(
+            crate::docker::listing::parse(&scope, listing.as_bytes())
+                .unwrap()
+                .containers
+                .len(),
+            1000
+        );
+    }
+    println!(
+        "PRESSURE_PARSE {}",
+        serde_json::json!({"iterations":100,"inspectBytes":bytes.len(),"inspectTotalMs":inspect_ms,"listingBytes":listing.len(),"listingTotalMs":start.elapsed().as_secs_f64()*1000.0})
+    );
+}

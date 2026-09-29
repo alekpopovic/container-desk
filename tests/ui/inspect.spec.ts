@@ -124,3 +124,41 @@ test("detail tabs separate health and port exposure, wrap long paths and copy on
   await page.getByRole("tab", { name: "Labels", exact: true }).click();
   await expect(panel).toContainText("No labels reported.");
 });
+
+test("inventory bursts preserve the inspect tab, mark old details and fence a pending reveal", async ({
+  page,
+}) => {
+  await page.goto("/tests/ui/fixture.html?state=inspect");
+  const details = page.getByRole("region", {
+    name: "Inspected container details",
+  });
+  await expect(details).toContainText("Sensitive values masked");
+  await details.getByRole("tab", { name: "Environment", exact: true }).click();
+  for (let n = 0; n < 5; n++)
+    await page
+      .getByRole("button", { name: "Refresh fixture inventory" })
+      .click();
+  await expect(
+    details.getByRole("tab", { name: "Environment", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(details).toContainText("earlier snapshot");
+  await expect(details).toContainText("SYNTHETIC_TOKEN");
+  await details
+    .getByRole("button", { name: "Reveal sensitive values" })
+    .click();
+  await expect(
+    page.getByText("Fixture reveal pending", { exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Refresh fixture inventory" }).click();
+  await page.getByRole("button", { name: "Finish fixture reveal" }).click();
+  await expect(details).not.toContainText("synthetic-ui-secret");
+  await details.getByRole("button", { name: "Refresh details" }).click();
+  await expect(details).toContainText("Sensitive values masked");
+  await expect(details).not.toContainText("earlier snapshot");
+  await details
+    .getByRole("button", { name: "Reveal sensitive values" })
+    .click();
+  await expect(details).toContainText("synthetic-ui-secret");
+  await page.getByRole("button", { name: "Refresh fixture inventory" }).click();
+  await expect(details).not.toContainText("synthetic-ui-secret");
+});

@@ -205,8 +205,8 @@ export function ContainerStats({
       </p>
       <p className="muted">
         Only this selected container is sampled. Polling pauses when the window
-        is hidden or unfocused and ends on disconnect. Up to 360 points per
-        container are kept in memory; gaps mean no reading.
+        is hidden or unfocused and ends on disconnect. Up to {history.capacity}{" "}
+        points per container are kept in memory; gaps mean no reading.
       </p>
       <dl className="stats-values">
         <div>
