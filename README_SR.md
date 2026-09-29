@@ -1,107 +1,98 @@
-# ContainerDesk — Codex paket sa praćenjem
+# ContainerDesk
 
-**60 numerisanih promptova za Tauri desktop aplikaciju za Docker preko SSH.**
+Desktop aplikacija za rad sa Docker-om na Linux serverima preko tvog postojećeg OpenSSH pristupa. Klijenti su Linux i macOS; lokalni Docker/Docker Desktop, Node, Rust i Python nisu potrebni za korišćenje aplikacije. Potrebni su lokalni OpenSSH, sistemske biblioteke paketa i postojeći pristup udaljenom Docker Engine-u.
 
-Radni naziv: **ContainerDesk**. Naziv je interni predlog; dostupnost domena/žiga nije proveravana.
-Verzija paketa: 1.0.0 • Datum: 28.09.2026.
+Aplikacija prikazuje kontejnere, inspect detalje, logove, statistiku, Compose projekte, slike, volumene i mreže. Start/stop/restart, ograničeno uklanjanje zaustavljenih kontejnera i terminal traže posebno omogućavanje i potvrdu. Slike, volumeni i mreže su samo za pregled. Nema prune-a, Compose up/down, registry prijavljivanja, Kubernetes-a ili automatskog ažuriranja. Radni naziv je ContainerDesk; nije tvrdnja o registrovanom žigu.
 
-Ovo je paket za izradu aplikacije u lokalnom Codex projektu. Sadrži detaljne zadatke, arhitektonske odluke, kriterijume provere i funkcionalan tracker. Izvorni kod aplikacije i instalacioni paketi nastaju izvršavanjem promptova.
+**Status:** funkcije su implementirane; aktuelne provere i ograničenja su u [statusu projekta](docs/project-status.md). Ubuntu 24.04 x86_64 deb i macOS 15.7.9 app/DMG na Apple Silicon/Intel imaju stvarne native dokaze. AppImage pokretanje i konačna matrica platformi još se proveravaju. Nema odobrene javne objave; Mac Developer ID potpis/notarizacija nisu provereni bez vlasnikovih kredencijala. Workflow za javnu objavu je izostavljen po dogovoru.
 
-## Šta gradimo
+## 1. Instalacija
 
-- Jednu Tauri v2 desktop aplikaciju: React + TypeScript + Vite + Tailwind, Rust + Tokio.
-- Linux i macOS klijente sa ugrađenim interfejsom za Docker na udaljenim Linux instancama.
-- Povezivanje preko lokalnog OpenSSH klijenta i postojećeg `~/.ssh/config`, uključujući `ProxyJump`, `IdentityFile` i SSH agent.
-- Liste servera/kontejnera, detalje, health, portove, logove uživo, CPU/RAM/I/O i Docker događaje.
-- Start/stop/restart, ograničene grupne akcije, Compose projekte, pregled slika, mreža i volumena.
-- Terminal u kontejneru sa pravim PTY-jem, prekid veze i čišćenje procesa.
-- Linux pakete i macOS app/DMG, CI konfiguraciju i proveru stvarne kompatibilnosti.
+Preuzmi odgovarajući **razvojni** paket iz uspešnog [CI izvršavanja vlasničkog repozitorijuma](https://github.com/alekpopovic/container-desk/actions/workflows/ci.yml), za tačan pregledani commit i arhitekturu. Proveri metadata i SHA256SUMS prema [uputstvu za ažuriranje](docs/updates.md). CI artefakti traju 14 dana i ne predstavljaju odobren javni release.
 
-Na računaru koji koristi završenu aplikaciju **nisu potrebni Docker, Docker Desktop, jq, Python, Node ili Rust**. Potrebni su OpenSSH, ispravan pristup serveru i odgovarajuće sistemske biblioteke za Tauri paket. Python 3.10+ se koristi tokom razvoja samo za tracker. Za izradu aplikacije potrebni su Rust, Node i sistemski razvojni paketi.
+Na Ubuntu 24.04 x86_64, posle provere preuzetih fajlova:
 
-## Brzi početak
-
-1. Raspakuj ZIP u folder u kome želiš aplikaciju.
-2. Otvori taj folder u svom Codex okruženju.
-3. Pročitaj `CODEX_START.md` i pošalji početni tekst iz tog fajla.
-4. Izvršavaj po jedan prompt. Tracker određuje sledeći korak.
-
-Iz korena projekta:
-
-```bash
-python3 codex/scripts/track.py validate
-python3 codex/scripts/track.py next
-python3 codex/scripts/track.py show 001
+```sh
+sha256sum --check SHA256SUMS
+sudo apt install ./containerdesk-0.1.0-x86_64-unknown-linux-gnu.deb
 ```
 
-Prvi prompt pregleda repozitorijum i okruženje. Drugi kreira Tauri osnovu u istom korenu projekta.
+Pokreni **ContainerDesk** iz menija aplikacija. Detalji i ograničenja AppImage formata su u [Linux paketima](docs/linux-packages.md). Na Mac-u koristi paket za svoj procesor, proveri `shasum -a 256 --check SHA256SUMS`, otvori DMG i kopiraj aplikaciju u Applications. Trenutni nepotpisani/ad-hoc paketi su za lokalnu razvojnu proveru; internet Gatekeeper prihvat nije potvrđen. Ne uklanjaj karantin i ne isključuj zaštitu da bi test izgledao uspešan. Pogledaj [Mac pakete](docs/macos-packages.md) i [opciono potpisivanje](docs/signing.md).
 
-Ako već imaš repozitorijum, prvo kopiraj `codex/`, `CODEX_START.md` i ovaj README. Ako repozitorijum već ima `AGENTS.md`, **ručno spoji relevantna pravila**, bez prepisivanja postojećeg fajla. Ne prepisuj postojeći `codex/` ako već sadrži tvoj rad; prvo napravi lokalnu kopiju i prilagodi putanje.
+## 2. Pripremi pouzdan SSH pristup
 
-## Početna poruka za Codex
+Koristi sopstveni pregledani `~/.ssh/config`, postojeći ključ/agent i servere za koje imaš dozvolu. Sledeći nazivi i adrese su **primeri**, ne stvarni serveri za test. Prilagodi ih informacijama administratora; ne prepisuj postojeći config:
 
-```text
-Pročitaj AGENTS.md, CODEX_START.md i codex/docs/ARCHITECTURE.md.
-Pokreni python3 codex/scripts/track.py next.
-Pronađi i izvrši samo taj prompt, poštujući zavisnosti i postojeći kod.
-Pre rada postavi status start. Implementiraj konkretan rezultat i proveri ga.
-Upiši stvarne dokaze u codex/tracking/evidence/NNN.md.
-Označi done samo ako su kriterijumi završetka ispunjeni; inače block sa razlogom.
-Preporuči reasoning iz manifesta. Ako ne možeš da menjaš model/reasoning,
-nemoj tvrditi da si ga promenio. Na kraju prikaži rezultat i sledeći korak.
+```sshconfig
+Host cd-direct
+    HostName docker.example
+    User operator
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    StrictHostKeyChecking yes
+    ForwardAgent no
+
+Host cd-jump
+    HostName bastion.example
+    User jumpuser
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    StrictHostKeyChecking yes
+    ForwardAgent no
+
+Host cd-private
+    HostName docker.internal.example
+    User operator
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    ProxyJump cd-jump
+    StrictHostKeyChecking yes
+    ForwardAgent no
 ```
 
-Za nastavak u novoj sesiji pošalji isti tekst. `next` vraća aktivan/blokiran korak pre nego što ponudi novi.
+Za prvo uspostavljanje poverenja pribavi otiske host ključeva nezavisno od administratora. U svom terminalu poveži direktni server, a za privatni put prvo bastion pa odredište; prihvati ključ samo ako se otisak poklapa:
 
-## Faze
+```sh
+ssh -o StrictHostKeyChecking=ask cd-direct true
+ssh -o StrictHostKeyChecking=ask cd-jump true
+ssh -o StrictHostKeyChecking=ask cd-private true
+```
 
-| Promptovi | Rezultat |
-|---|---|
-| 001–008 | Osnova aplikacije, IPC, podešavanja, pravila i test podaci |
-| 009–018 | SSH config, jump hostovi, ključevi, sesije i stvarna provera veze |
-| 019–030 | MVP za pregled: kontejneri, logovi, statistika, Compose grupe |
-| 031–038 | Upravljanje kontejnerima i pregled ostalih Docker resursa |
-| 039–046 | Terminal, oporavak veze, dijagnostika i kompletan interfejs |
-| 047–060 | Provere, pakovanje, CI, Linux/macOS prihvat i predaja |
+Ako se već poznat ključ promenio, prvo razjasni uzrok sa administratorom. Aplikacija ne prihvata nepoznate ključeve, ne menja known_hosts i ne prikuplja lozinke. Config je pouzdana izvršiva konfiguracija: `Match exec`/`ProxyCommand` mogu izvršavati lokalne komande pri eksplicitnom resolve/connect koraku. Samo pretraživanje aliasa čita fajlove.
 
-Prvi upotrebljiv MVP za pregled je posle **030**. Upravljanje je završeno do **038**, sve funkcije do **046**, a poslednjih 14 koraka proverava i priprema isporuku.
+Proveri agent u sesiji iz koje će aplikacija biti pokrenuta. Ako je potrebno, učitaj **svoj postojeći** ključ u agent u terminalu; lozinku unosiš u `ssh-add`, nikada u aplikaciju:
 
-## Šta prati tracker
+```sh
+ssh-add -l
+ssh-add ~/.ssh/id_ed25519
+ssh -o BatchMode=yes cd-direct docker version
+ssh -o BatchMode=yes cd-private docker info
+```
 
-- `pending`, `in_progress`, `blocked`, `done` za svaki prompt.
-- Preporučeni reasoning: `medium` ili `high`, prema vrsti zadatka.
-- Zavisnosti: svaki korak traži završen prethodni korak.
-- Stvarne komande/provere, putanju do dokaza i njihov SHA-256.
-- Istoriju promena, vreme početka/završetka i opcioni Git commit.
-- Samo jedan aktivan prompt; promene se upisuju atomski uz lokalno zaključavanje.
+Uspešan pristup bastionu nije dokaz pristupa odredištu. GUI pokrenut iz menija/Finder-a može imati drugi PATH i agent od terminala. Koristi svoj desktop agent ili poznat `IdentityAgent` u SSH config-u; detalji su u [pokretanju sa desktopa](docs/desktop-launch.md). Agent forwarding nije potreban. Cilj je Linux Docker sa POSIX-kompatibilnim neinteraktivnim shell-om; aplikacija ne instalira ništa na server.
 
-Tracker automatski određuje sledeći korak i prikazuje preporuku za reasoning. **Ne pokreće Codex, ne poziva model API i ne može sam da promeni reasoning podešavanje u tvom editoru.**
+## 3. Dodaj server i poveži se
 
-## Važne granice
+1. Otvori **Settings → Run diagnostics**. Proveri dostupni OpenSSH i agent. „Reachable“ agent znači dostupan socket, ne potvrdu da je odgovarajući ključ učitan. Po potrebi zadaj pouzdan apsolutni **OpenSSH executable override**.
+2. Otvori **Hosts → New host** (ili **Add host** u bočnom panelu, pa **New host**). Ostavi **Host SSH config path** prazno za podrazumevani config ili unesi apsolutnu putanju pouzdanog fajla.
+3. Izaberi **Browse aliases → Use cd-direct** / **Use cd-private**, ili unesi konkretan **Host SSH alias** ručno. Dozvoljeni su ASCII slova/cifre, tačka, crtica i donja crta, uz prvo slovo/cifru; wildcard i opcije nisu aliasi.
+4. Unesi **Display name**. **Saved Docker executable** može ostati prazan za udaljeni neinteraktivni PATH; inače koristi npr. `/usr/bin/docker`. **Saved Docker context** ostaje prazan za efektivni kontekst udaljenog korisnika, ili unesi njegov postojeći naziv. **Use existing sudo -n Docker access** uključi samo za već podešenu neinteraktivnu sudo politiku.
+5. Klikni **Save host**, zatim **Connect saved host**. Čuvanje ne uspostavlja vezu. Proveri status **Ready · SSH session**, SSH cilj/jump put i stvarni Docker endpoint/daemon identitet. Rootless kontekst pripada udaljenom korisniku; sudo može odabrati drugi daemon.
+6. Otvori **Containers**, izaberi kontejner, pregledaj detalje; **Start logs** prati logove, **Stop logs** prekida praćenje. Statistika i ostali resursi koriste isti potvrđeni host/daemon. Prazan rezultat, zastareo prikaz i greška nisu isto stanje.
+7. Kada završiš, **Hosts → Disconnect saved host**. Nova ili obnovljena sesija počinje samo za čitanje.
 
-- Aplikacija koristi SSH identitete i pristup koje već imaš. Ne instalira servis na serveru.
-- Čita postojeći SSH config; ne menja ga automatski.
-- Ciljni server je Linux sa Docker Engine-om i podržanim POSIX shell-om.
-- Docker pristup se proverava za udaljenog korisnika, uključujući opcioni postojeći `sudo -n` režim.
-- Read-only režim je zaštita unutar aplikacije, ne zamena za dozvole na serveru.
-- Instalacija i javna distribucija na macOS-u imaju odvojene provere potpisa/notarizacije. Bez Apple pristupa paket ne tvrdi da je javno potpisivanje provereno.
-- Izvršavanje promptova 018/030 i drugih integracionih provera zahteva tvoje test okruženje. Linux i macOS runtime provere moraju zaista da se izvrše; izmišljeni prolaz nije prihvatljiv.
+## 4. Upravljanje, Compose i terminal
 
-## Sadržaj
+**Enable management** je privremena dozvola za izabrani host. Akcija zatim prikazuje identitet hosta/daemon-a, tačne kontejnere i operaciju; **Confirm action** izvršava, **Cancel action** odustaje pre slanja. Uklanjaju se samo eksplicitno izabrani zaustavljeni kontejneri, bez force-a i uklanjanja volumena. Read-only kontrola aplikacije ne smanjuje ovlašćenja SSH/Docker naloga na serveru.
 
-| Putanja | Namena |
-|---|---|
-| `CODEX_START.md` | Početni i nastavak prompt |
-| `AGENTS.md` | Pravila rada u repozitorijumu |
-| `codex/prompts/` | 60 zasebnih kompletnih promptova |
-| `codex/ALL_PROMPTS.md` | Svi promptovi u jednom fajlu |
-| `codex/manifest.json` | ID, redosled, zavisnosti, reasoning i hash promptova |
-| `codex/tracking/state.json` | Izvor istine za napredak |
-| `codex/tracking/TRACKER.md` | Čitljiv pregled i istorija |
-| `codex/scripts/track.py` | Funkcionalan lokalni tracker |
-| `codex/docs/` | Arhitektura, plan, komande, platforme i izvori |
-| `codex/examples/ssh-config.example` | Primer direktne i jump veze |
-| `codex/tests/test_tracker.py` | Provere tracker-a bez SSH/mreže |
-| `PACK_VERIFICATION.md` | Šta je provereno pri izradi ovog paketa |
+Compose grupisanje ne daje dozvolu za izvršavanje. Za start/stop/restart postojećih servisa moraš navesti i potvrditi udaljeni radni direktorijum, uređenu listu apsolutnih config putanja i tačno ime projekta, pa uraditi **Verify remote project**. Potrebni su čitljivi fajlovi, dostupne interpolacione vrednosti i konfiguracija koja odgovara već pokrenutom projektu. Nema kreiranja/ponovnog deployment-a nedostajućih servisa. [Detalji](docs/compose-actions.md).
 
-Detaljne komande: `codex/docs/TRACKING.md`.
+U kartici **Terminal** omogući management ako je potrebno, zatim **Enable terminal access → Open terminal** i pregledaj potvrdu korisnika/shell-a/cilja pre **Confirm terminal**. Terminal može menjati stanje; read-only pregled ga ne dozvoljava. Neuspešan ili izgubljen odgovor posle akcije znači mogući **unknown** ishod: osveži stanje i proveri na serveru pre nove odluke. Aplikacija ne ponavlja automatski mutacije niti terminalski unos.
+
+## Pomoć, podaci i razvoj
+
+Najčešći uzroci problema i koraci su u [English user guide](docs/user-guide.md#troubleshooting): nepoznat host ključ, jump autentikacija, GUI PATH/agent, Docker dozvole/kontekst, logging driver, Compose verifikacija i neizvestan ishod akcije.
+
+Podešavanja su u `~/.local/share/dev.containerdesk.app/preferences` na tipičnom Linux-u ili `~/Library/Application Support/dev.containerdesk.app/preferences` na Mac-u; Linux poštuje `XDG_DATA_HOME`. Čuvaju se reference i metapodaci, ne ključevi, lozinke, logovi ili terminalski transkripti. Log export može sadržati tajne iz samih logova: pregledaj sadržaj pre deljenja. **Settings → Prepare support preview → Save reviewed report…** čuva samo pregledani izveštaj u lokaciju koju izabereš, bez automatskog slanja. [Backup i rollback](docs/updates.md), [lokalni podaci](docs/settings.md).
+
+Za razvoj pročitaj [CONTRIBUTING](CONTRIBUTING.md), [development](docs/development.md) i [arhitekturu](codex/docs/ARCHITECTURE.md). Originalnih 60 promptova i dokazi ostaju u `codex/`; oni nisu korisnički installer. Nastavak razvoja prati `python3 codex/scripts/track.py next`. Sintetički **Open demo** ne pristupa SSH-u i nije dokaz native rada.

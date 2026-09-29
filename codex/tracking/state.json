@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T14:24:17+00:00",
+  "updated_at": "2026-09-29T14:36:18+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1956,6 +1956,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T14:24:43+00:00",
+      "id": "057",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T14:36:18+00:00",
+      "id": "057",
+      "action": "done",
+      "note": "Fresh native profile direct/ProxyJump walkthrough and real VM backend suite passed; public-only key proved agent auth; 54 doc links, actual controls, SSH config parse, formatting and tracker checks passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T14:24:43+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2659,12 +2693,14 @@
       "note": ""
     },
     "057": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T14:24:43+00:00",
+      "finished_at": "2026-09-29T14:36:18+00:00",
+      "evidence": "codex/tracking/evidence/057.md",
+      "evidence_sha256": "50ba225fbdd9f87bb779558fcaf01525ddd28b17cac028d3279ee9b8be0fb438",
+      "checks": [
+        "Fresh native profile direct/ProxyJump walkthrough and real VM backend suite passed; public-only key proved agent auth; 54 doc links, actual controls, SSH config parse, formatting and tracker checks passed"
+      ],
       "commit": "",
       "note": ""
     },

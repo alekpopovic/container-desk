@@ -1,0 +1,9 @@
+PASS: 54 local links from the edited primary documents resolve to existing files.
+PASS: actual HostInventory, SshDiscovery, DependencyDiagnostics, ComposeManagement, TerminalPanel and SupportDiagnostics controls cross-checked.
+Corrected before completion: Compose controls are Remote project directory, Ordered remote config files (one absolute path per line), and Verify remote project.
+PASS: native ssh -G parses the three README examples; StrictHostKeyChecking remains true, ForwardAgent no, private alias names cd-jump.
+PASS: python3 -m py_compile tests/lab/quick_start.py tests/lab/integration.py.
+PASS: npm run format:check (114 files), python3 scripts/version.py, tracker validation and git diff --check.
+PASS: fresh native profile walkthrough on direct-owned and private-owned with a public-only IdentityFile and owned loaded agent.
+PASS: independent guest inspect confirms the cancelled GUI action did not change container start times.
+PASS: dedicated-VM backend suite and independent Docker events/state checks, with all four workloads and owned VM resources removed.

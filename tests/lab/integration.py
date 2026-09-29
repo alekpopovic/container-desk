@@ -40,6 +40,7 @@ def main():
     parser.add_argument('--qemu-root', type=Path, required=True, help='Extracted distribution packages; usr/bin and usr/share')
     parser.add_argument('--image', type=Path, required=True, help='Official pinned Alpine 3.22.4 BIOS/cloud-init qcow2')
     parser.add_argument('--artifacts', type=Path, required=True)
+    parser.add_argument('--quick-start-tools', type=Path, help='Opt into the 057 native GUI quick-start before backend checks')
     args = parser.parse_args()
     args.artifacts.mkdir(parents=True, exist_ok=True)
     tools = args.qemu_root.resolve()
@@ -180,6 +181,13 @@ for entry in Path("/proc").iterdir():
                                            'liveId': oracle[0]['Id'], 'composeIds': [row['Id'] for row in oracle[2:]],
                                            'configuration': {'projectName': 'owned049', 'workingDirectory': "/opt/owned project's",
                                                              'configFiles': ["/opt/owned project's/compose.yml"]}}))
+            if args.quick_start_tools:
+                gui = run(['python3', str(REPO/'tests/lab/quick_start.py'), '--tools-dir', str(args.quick_start_tools.resolve()),
+                    '--manifest', str(manifest), '--artifacts', str(args.artifacts.resolve()/'quick-start')], env=env, timeout=260)
+                print(gui.stdout, flush=True)
+                unchanged = json.loads(remote('docker inspect owned-live untouched owned049-web-1 owned049-worker-1').stdout)
+                assert all(after['State']['StartedAt'] == before['State']['StartedAt'] for before, after in zip(oracle, unchanged))
+                result['quickStartNoMutation'] = True
             build = run(['cargo', 'test', '--manifest-path', str(REPO / 'src-tauri/Cargo.toml'), '--locked', '--lib', '--no-run', '--message-format=json'], env=env, timeout=180)
             records = [json.loads(line) for line in build.stdout.splitlines() if line.startswith('{')]
             executable = next(item['executable'] for item in records if item.get('reason') == 'compiler-artifact' and item.get('profile', {}).get('test') and item.get('executable'))

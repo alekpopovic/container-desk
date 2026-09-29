@@ -1,0 +1,27 @@
+{
+  "nativeParse": {
+    "cd-direct": {
+      "user": "operator",
+      "hostname": "docker.example",
+      "identitiesonly": "yes",
+      "stricthostkeychecking": "true",
+      "forwardagent": "no"
+    },
+    "cd-jump": {
+      "user": "jumpuser",
+      "hostname": "bastion.example",
+      "identitiesonly": "yes",
+      "stricthostkeychecking": "true",
+      "forwardagent": "no"
+    },
+    "cd-private": {
+      "user": "operator",
+      "hostname": "docker.internal.example",
+      "identitiesonly": "yes",
+      "stricthostkeychecking": "true",
+      "forwardagent": "no",
+      "proxyjump": "cd-jump"
+    }
+  },
+  "networkConnectionsMade": false
+}

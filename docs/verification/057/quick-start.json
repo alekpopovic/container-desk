@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "freshProfile": true,
+  "nativeAutomationSha256": "20507d37c9d249f5e00c8c86ce895b539872474963705551029e360e3e3cabd7",
+  "routes": [
+    "direct-owned",
+    "private-owned"
+  ],
+  "realAgentAuthentication": true,
+  "identityFilePublicOnly": true,
+  "nativeDiagnostics": true,
+  "browseSaveConnect": true,
+  "realDockerRows": 4,
+  "maskedInspect": true,
+  "realLogFollowAndStop": true,
+  "managementConfirmationCancelled": true,
+  "savedHosts": 2,
+  "trustAndConfigUnchanged": true,
+  "browserMocksUsed": false,
+  "scope": "Native opt-in test artifact, dedicated Linux VM, user controls; installer proof remains 053/054",
+  "ownedAgentAndProfileRemoved": true
+}

@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T14:24:17+00:00
+Updated: 2026-09-29T14:36:18+00:00
 
-blocked: **0** | done: **56** | in_progress: **0** | pending: **4**
+blocked: **0** | done: **57** | in_progress: **0** | pending: **3**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -66,7 +66,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 054 | 06 Quality and delivery | macOS application and DMG builds | high | done | codex/tracking/evidence/054.md |
 | 055 | 06 Quality and delivery | Signing and notarization integration | high | done | codex/tracking/evidence/055.md |
 | 056 | 06 Quality and delivery | Versioning updates and rollback guidance | medium | done | codex/tracking/evidence/056.md |
-| 057 | 06 Quality and delivery | User and contributor documentation | medium | pending | — |
+| 057 | 06 Quality and delivery | User and contributor documentation | medium | done | codex/tracking/evidence/057.md |
 | 058 | 06 Quality and delivery | Native platform acceptance matrix | high | pending | — |
 | 059 | 06 Quality and delivery | Release candidate review and defect closure | high | pending | — |
 | 060 | 06 Quality and delivery | Final handover and release gate | high | pending | — |
@@ -188,3 +188,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T14:14:05+00:00 — 055: done; Missing-secret preflight exit 2; 12 Python boundary tests passed; py_compile, formatting, actionlint and tracker validation passed; notarization unverified without credentials
 - 2026-09-29T14:14:34+00:00 — 056: start;
 - 2026-09-29T14:24:17+00:00 — 056: done; 17 Python tests and all 13 standard checks passed; real-file migration/rollback passed; ordinary Linux app idle trace showed zero internet connect/send attempts; no updater/telemetry source
+- 2026-09-29T14:24:43+00:00 — 057: start;
+- 2026-09-29T14:36:18+00:00 — 057: done; Fresh native profile direct/ProxyJump walkthrough and real VM backend suite passed; public-only key proved agent auth; 54 doc links, actual controls, SSH config parse, formatting and tracker checks passed

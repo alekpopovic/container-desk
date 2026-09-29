@@ -46,3 +46,7 @@ Guest setup has a 240-second bound; the selected native suite has a 180-second b
 Only a sanitized result JSON is retained: versions, named checks, action counts and cleanup booleans/counts. Raw inspect/log/terminal data and seed/serial/cloud-init logs are not copied into evidence. Credentials never enter Git. This is native **backend transport** evidence on Ubuntu, not a native GUI/macOS/package test.
 
 References: [QEMU user networking](https://www.qemu.org/docs/master/system/devices/net.html), [NoCloud local seed](https://docs.cloud-init.io/en/26.1/reference/datasources/nocloud.html). Actual versioned results are in [049-native/integration.json](verification/049-native/integration.json).
+
+## Fresh-profile quick-start check
+
+After `npm run desktop:build:automation`, optionally add `--quick-start-tools /path/to/native-test-tools`. The 057 extension opens a fresh native app on a private X11/DBus desktop, loads only the generated lab key into an owned agent and uses a public-only IdentityFile. It follows Settings diagnostics and Hosts browse/save/connect for direct/private routes, reads real containers/masked inspect/logs, opens then cancels a management confirmation, disconnects and checks persisted host references. It never substitutes IPC responses. Independent guest inspect must show unchanged start times before the existing backend mutation suite begins. The agent, app profile and display are removed after the walkthrough; existing VM/trust cleanup still applies. This uses the explicit automation test artifact, not a packaged production binary.
