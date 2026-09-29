@@ -28,6 +28,7 @@ def digest(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for key in ('qemu-root', 'image', 'packages', 'artifacts'): parser.add_argument('--'+key, type=Path, required=True)
+    parser.add_argument('--format', choices=['deb','appimage'], default='deb')
     args = parser.parse_args()
     assert digest(args.image) == IMAGE_SHA256, 'Unexpected Ubuntu image'
     args.artifacts.mkdir(parents=True, exist_ok=True)
@@ -35,7 +36,7 @@ def main():
     env = os.environ.copy()
     for name in ('SSH_AUTH_SOCK', 'SSH_AGENT_PID', 'LD_PRELOAD'): env.pop(name, None)
     qenv = {**env, 'LD_LIBRARY_PATH': str(tools/'usr/lib/x86_64-linux-gnu')}
-    result = {'baseImageSha256': IMAGE_SHA256, 'nativeArchitecture': 'x86_64', 'publicPublishing': False}
+    result = {'baseImageSha256': IMAGE_SHA256, 'nativeArchitecture': 'x86_64', 'publicPublishing': False, 'format': args.format}
     with tempfile.TemporaryDirectory(prefix='containerdesk-053-vm-') as area:
         root = Path(area)
         vm = None
@@ -47,7 +48,7 @@ def main():
 set -eu
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
-apt-get install -y --no-install-recommends openbox xfce4-panel xfdesktop4 xvfb xauth dbus-x11 xdotool imagemagick python3-pyatspi libfuse2t64 libgtk-3-bin desktop-file-utils fonts-dejavu-core
+apt-get install -y --no-install-recommends openbox xfce4-panel xfdesktop4 xvfb xauth dbus-x11 xdotool imagemagick python3-pyatspi libfuse2t64 libgtk-3-bin desktop-file-utils fonts-dejavu-core libwebkit2gtk-4.1-0 libgtk-3-0t64 libxdo3
 install -d -m 0755 /opt/containerdesk/packages /opt/containerdesk/results
 chown lab:lab /opt/containerdesk/results
 chmod 0755 /opt/containerdesk/smoke.py
@@ -94,13 +95,20 @@ touch /opt/containerdesk/ready
             for line in (args.packages/'SHA256SUMS').read_text().splitlines():
                 expected, name = line.split('  ',1)
                 assert Path(name).name == name and digest(args.packages/name)==expected
-            deb = next(args.packages.glob('*.deb'))
-            result['debSha256'] = digest(deb)
-            run(['scp','-F',str(root/'config'),str(deb),'package-vm:/tmp/owned-package.deb'],env=env,timeout=120)
-            installation = remote('sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/owned-package.deb',300)
-            (args.artifacts/'installation.txt').write_text(installation.stdout)
-            result['runtimeVersions'] = remote("dpkg-query -W -f='${Package} ${Version}\\n' container-desk libwebkit2gtk-4.1-0 libgtk-3-0t64 openssh-client openbox xvfb").stdout
+            if args.format == 'deb':
+                deb = next(args.packages.glob('*.deb'))
+                result['debSha256'] = digest(deb)
+                run(['scp','-F',str(root/'config'),str(deb),'package-vm:/tmp/owned-package.deb'],env=env,timeout=120)
+                installation = remote('sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/owned-package.deb',300)
+                (args.artifacts/'installation.txt').write_text(installation.stdout)
+            else:
+                appimage = next(args.packages.glob('*.AppImage'))
+                result['appImageSha256'] = digest(appimage)
+                run(['scp','-F',str(root/'config'),str(appimage),'package-vm:/tmp/owned-package.AppImage'],env=env,timeout=120)
+                remote('sudo install -m 0755 /tmp/owned-package.AppImage /opt/containerdesk/packages/ContainerDesk.AppImage && sudo modprobe fuse && test -c /dev/fuse')
+            result['runtimeVersions'] = remote("dpkg-query -W -f='${Package} ${Version}\\n' libwebkit2gtk-4.1-0 libgtk-3-0t64 libfuse2t64 openssh-client openbox xvfb").stdout
             session = 'env PATH=/usr/bin:/bin GDK_BACKEND=x11 LIBGL_ALWAYS_SOFTWARE=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 GTK_MODULES=gail:atk-bridge xvfb-run -a -s "-screen 0 1440x1100x24 -nolisten tcp" dbus-run-session -- python3 /opt/containerdesk/smoke.py'
+            if args.format == 'appimage': session += ' --appimage /opt/containerdesk/packages/ContainerDesk.AppImage'
             try:
                 completed = remote(session,180)
                 (args.artifacts/'desktop-output.txt').write_text(completed.stdout)

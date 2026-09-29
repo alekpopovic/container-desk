@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run only inside the owned disposable desktop VM; ordinary installed executable."""
+import argparse
 import hashlib
 import json
 import os
@@ -7,6 +8,7 @@ from pathlib import Path
 import signal
 import subprocess
 import time
+import tempfile
 import pyatspi
 
 OUT = Path('/opt/containerdesk/results')
@@ -48,9 +50,15 @@ def click(name):
 
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--appimage',type=Path)
+    args=parser.parse_args()
     assert os.geteuid()!=0 and Path.home()==Path('/home/lab'), 'Owned VM user only'
     result={'passed':False,'launch':'gtk-launch installed desktop entry','automationFeature':False}
+    if args.appimage: result['launch']='ordinary AppImage through native FUSE runtime'
     owned=[]
+    loaded_binary=Path('/usr/bin/containerdesk')
+    mount=None
     app_pid=None
     folder=Path.home()/'.ssh'; folder.mkdir(mode=0o700,exist_ok=True)
     config=folder/'config'
@@ -66,25 +74,47 @@ def main():
             log=(OUT/(argv[0]+'.log')).open('w')
             owned.append(subprocess.Popen(argv,stdout=log,stderr=log,start_new_session=True));log.close()
         time.sleep(2)
-        desktop=next(Path('/usr/share/applications').glob('*containerdesk*.desktop'),None)
-        if desktop is None: desktop=next(Path('/usr/share/applications').glob('*ContainerDesk*.desktop'))
-        run(['desktop-file-validate',str(desktop)])
-        result['desktopEntry']=desktop.read_text()
-        icon=Path('/usr/share/icons/hicolor/512x512/apps/containerdesk.png')
-        assert icon.is_file() and icon.read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
-        result['installedIconSha256']=hashlib.sha256(icon.read_bytes()).hexdigest()
-        result['installedBinarySha256']=hashlib.sha256(Path('/usr/bin/containerdesk').read_bytes()).hexdigest()
-        assert os.access('/usr/bin/containerdesk',os.X_OK)
         run(['gdbus','call','--session','--dest','org.a11y.Bus','--object-path','/org/a11y/bus','--method','org.freedesktop.DBus.Properties.Set','org.a11y.Status','ScreenReaderEnabled','<true>'])
-        with (OUT/'application.log').open('w') as app_log:
-            subprocess.run(['gtk-launch',desktop.stem],check=True,stdout=app_log,stderr=app_log,timeout=10)
+        if args.appimage:
+            result['appImageSha256']=hashlib.sha256(args.appimage.read_bytes()).hexdigest()
+            with tempfile.TemporaryDirectory(prefix='cd058-extract-') as folder:
+                run([str(args.appimage),'--appimage-extract'],cwd=folder,timeout=60)
+                appdir=Path(folder)/'squashfs-root'
+                embedded=appdir/'usr/bin/containerdesk'
+                expected_binary=hashlib.sha256(embedded.read_bytes()).hexdigest()
+                desktop=next(appdir.glob('*.desktop'))
+                run(['desktop-file-validate',str(desktop)])
+                result['desktopEntry']=desktop.read_text()
+                result['bundledExecutableSha256']=expected_binary
+                assert list(appdir.glob('*.png')), 'AppImage icon missing'
+            with (OUT/'application.log').open('w') as app_log:
+                owned.append(subprocess.Popen([str(args.appimage)],stdout=app_log,stderr=app_log,start_new_session=True))
+        else:
+            desktop=next(Path('/usr/share/applications').glob('*containerdesk*.desktop'),None)
+            if desktop is None: desktop=next(Path('/usr/share/applications').glob('*ContainerDesk*.desktop'))
+            run(['desktop-file-validate',str(desktop)])
+            result['desktopEntry']=desktop.read_text()
+            icon=Path('/usr/share/icons/hicolor/512x512/apps/containerdesk.png')
+            assert icon.is_file() and icon.read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
+            result['installedIconSha256']=hashlib.sha256(icon.read_bytes()).hexdigest()
+            result['installedBinarySha256']=hashlib.sha256(Path('/usr/bin/containerdesk').read_bytes()).hexdigest()
+            assert os.access('/usr/bin/containerdesk',os.X_OK)
+            with (OUT/'application.log').open('w') as app_log:
+                subprocess.run(['gtk-launch',desktop.stem],check=True,stdout=app_log,stderr=app_log,timeout=10)
         deadline=time.monotonic()+30
         while time.monotonic()<deadline:
             search=subprocess.run(['xdotool','search','--onlyvisible','--name','^ContainerDesk$'],capture_output=True,text=True,timeout=5)
             if search.returncode==0:
                 window=search.stdout.split()[0]; app_pid=int(run(['xdotool','getwindowpid',window]).stdout);break
             time.sleep(.2)
-        assert app_pid and Path(f'/proc/{app_pid}/exe').resolve()==Path('/usr/bin/containerdesk')
+        assert app_pid
+        loaded_binary=Path(f'/proc/{app_pid}/exe').resolve()
+        if args.appimage:
+            assert hashlib.sha256(Path(f'/proc/{app_pid}/exe').read_bytes()).hexdigest()==expected_binary
+            mount=next((p for p in loaded_binary.parents if p.name.startswith('.mount_')),None)
+            assert mount and mount.is_mount(), 'Normal AppImage FUSE mount was not observed'
+            result['nativeFuseMountObserved']=True
+        else: assert loaded_binary==Path('/usr/bin/containerdesk')
         result['realWindowOpened']=True
         click('Settings')
         click('Browse host candidates')
@@ -101,6 +131,11 @@ def main():
         deadline=time.monotonic()+15
         while Path(f'/proc/{app_pid}').exists() and time.monotonic()<deadline:time.sleep(.1)
         assert not Path(f'/proc/{app_pid}').exists(), 'Application did not close normally'
+        if mount:
+            deadline=time.monotonic()+10
+            while mount.exists() and time.monotonic()<deadline: time.sleep(.1)
+            assert not mount.exists(), 'Owned AppImage mount survived normal close'
+            result['fuseMountRemoved']=True
         result['normalWindowClose']=True
         result['passed']=True
     except Exception as error:
@@ -115,7 +150,7 @@ def main():
                 except Exception:pass
             (OUT/'failure-accessibility.json').write_text(json.dumps(labels,indent=2)+'\n')
             subprocess.run(['import','-window','root',str(OUT/'failure-screen.png')],timeout=10,capture_output=True)
-        if app_pid and Path(f'/proc/{app_pid}/exe').resolve()==Path('/usr/bin/containerdesk'):
+        if app_pid and Path(f'/proc/{app_pid}/exe').resolve()==loaded_binary:
             try: os.kill(app_pid,signal.SIGTERM)
             except ProcessLookupError:pass
         for child in reversed(owned):

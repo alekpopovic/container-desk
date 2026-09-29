@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "appVersion": "0.1.0",
-  "sourceCommit": "24544f499533553dc33777f4f3bbe6acb4b8a17d",
+  "sourceCommit": "eb257f1007cb745228fde52b0d7bd508a5ce510e",
   "guestAcceleration": "kvm",
   "baseImageSha512": "d0ddf1faae4d44aee3ad6621f166bd414c2f99b6974fb455408612d59cbb31a5390ca259800ac0c6b60505493880ed6de8beb986f6d0883b26c8e84ce75a266c",
   "clientOs": "Linux-7.0.0-34-generic-x86_64-with-glibc2.43",
@@ -30,11 +30,12 @@
     "compose": "2.36.2",
     "ssh": "OpenSSH_10.0p2, OpenSSL 3.5.6 7 Apr 2026"
   },
-  "nativeTestExecutableSha256": "ad05fbb17ba744794693a3d1f66fb07ab24f568db552399bc4eb07d034e99afc",
+  "nativeTestExecutableSha256": "207b010b1f87db21c5cdd5d51a5b37c990123dd47897d03d4d12d12d596e154d",
   "nativeExit": 0,
   "checks": [
     "PASS 049: direct-owned: handshake, exact inventory, masked inspect, logs, stats, cancelled follow, read-only denial, stop/start once, verified Compose restart once, PTY echo/resize/Ctrl-C/close, actual SSH session loss, reconnect/new read-only scope, no stale action/input or persisted payload",
     "PASS 049: private-owned: handshake, exact inventory, masked inspect, logs, stats, cancelled follow, read-only denial, stop/start once, verified Compose restart once, PTY echo/resize/Ctrl-C/close, actual SSH session loss, reconnect/new read-only scope, no stale action/input or persisted payload",
+    "PASS 058: actual stop with lost SSH response stayed unknown without replay; fresh read reconciled exited state before explicit start; native redacted support file excluded seeded payloads and identities",
     "PASS 049: direct-bad: native unknown/changed host key rejected before Docker readiness",
     "PASS 049: private-bad: native unknown/changed host key rejected before Docker readiness",
     "PASS 049: via-bad-jump: native unknown/changed host key rejected before Docker readiness",
@@ -43,8 +44,8 @@
   ],
   "independentDockerEventCounts": {
     "owned-live": {
-      "start": 2,
-      "die": 2
+      "start": 3,
+      "die": 3
     },
     "untouched": {
       "start": 0,
@@ -64,7 +65,7 @@
   "trustAndConfigUnchanged": true,
   "guestContainersRemoved": 4,
   "unrelatedSshMasterPreserved": true,
-  "observedSshIdentitiesReaped": 109,
+  "observedSshIdentitiesReaped": 137,
   "ownedAgentReaped": true,
   "vmReaped": true,
   "temporaryKeysSeedAndDiskRemoved": true

@@ -93,6 +93,11 @@ def main():
             result['finder']=json.loads((args.artifacts/'finder.json').read_text())
             result['diagnostics']=json.loads((args.artifacts/'diagnostics.json').read_text())
             assert result['finder']['passed'] and result['diagnostics']['passed']
+            run(['/usr/bin/open','-n','-a',str(installed)],timeout=30)
+            run([str(helper),str(installed),str(args.artifacts/'support.json'),'support'],timeout=120)
+            result['support']=json.loads((args.artifacts/'support.json').read_text())
+            assert result['support']['passed'] and result['support']['nativeSupportSaveDialog']
+            result['supportExportSha256']=digest(args.artifacts/'containerdesk-support.json')
             result['passed']=True
         except Exception as error:
             result['error']={'type':type(error).__name__,'message':str(error)}

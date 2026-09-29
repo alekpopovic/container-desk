@@ -427,6 +427,158 @@ async fn checkpoint049_disposable_integration() {
             "PASS 049: {alias}: handshake, exact inventory, masked inspect, logs, stats, cancelled follow, read-only denial, stop/start once, verified Compose restart once, PTY echo/resize/Ctrl-C/close, actual SSH session loss, reconnect/new read-only scope, no stale action/input or persisted payload"
         );
     }
+    // A real guest Docker stop completes; its wrapper then loses the SSH response.
+    // The daemon event oracle must still observe exactly one stop, never an automatic retry.
+    let backend = Backend::new(&root.join("uncertain"), "/unused-lab-home".into());
+    let mut host = draft("direct-owned", config);
+    host.docker.executable = Some("/opt/containerdesk/lost-response-docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let host_id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: host_id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, host_id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id,
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    let spec = MutationSpec {
+        operation: MutationOperation::Stop,
+        container_ids: vec![target.clone()],
+        timeout_seconds: 1,
+    };
+    let intent = backend
+        .prepare_confirmation(PrepareConfirmationRequest {
+            scope: scope.clone(),
+            operation: ConfirmationOperation::Mutation(spec.clone()),
+        })
+        .await
+        .unwrap();
+    let outcome = backend
+        .mutate_container(MutationRequest {
+            scope: scope.clone(),
+            intent_id: intent.id,
+            spec,
+        })
+        .await
+        .unwrap();
+    assert_eq!(outcome.outcome, MutationOutcome::Unknown);
+    let preview = backend.prepare_support_report().unwrap();
+    for secret in [
+        "SEEDED_049_ENV",
+        "CD049_LOG",
+        "CD049_PTY",
+        config,
+        &target.0,
+    ] {
+        assert!(!preview.report.contains(secret));
+    }
+    let export = root.join("support-redacted.json");
+    crate::log_export::write(&export, std::slice::from_ref(&preview.report)).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(export).unwrap().trim(),
+        preview.report
+    );
+    backend.shutdown().await;
+    // Restore only this owned fixture via a fresh explicit application action.
+    let recovery = Backend::new(&root.join("uncertain-recovery"), "/unused-lab-home".into());
+    let saved = recovery
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: draft("direct-owned", config),
+        })
+        .await
+        .unwrap();
+    let host_id = saved.saved.preferences.hosts[0].id.clone();
+    recovery
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: host_id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&recovery, WorkspaceMode::Live, host_id.clone()).await;
+    let scope = recovery
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id,
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    assert_eq!(
+        recovery
+            .inspect_container(InspectContainerRequest {
+                scope: scope.clone(),
+                container_id: target.clone(),
+                reveal_sensitive: false
+            })
+            .await
+            .unwrap()
+            .summary
+            .state,
+        "exited"
+    );
+    recovery
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    let spec = MutationSpec {
+        operation: MutationOperation::Start,
+        container_ids: vec![target],
+        timeout_seconds: 1,
+    };
+    let intent = recovery
+        .prepare_confirmation(PrepareConfirmationRequest {
+            scope: scope.clone(),
+            operation: ConfirmationOperation::Mutation(spec.clone()),
+        })
+        .await
+        .unwrap();
+    assert_eq!(
+        recovery
+            .mutate_container(MutationRequest {
+                scope,
+                intent_id: intent.id,
+                spec
+            })
+            .await
+            .unwrap()
+            .outcome,
+        MutationOutcome::Succeeded
+    );
+    recovery.shutdown().await;
+    println!(
+        "PASS 058: actual stop with lost SSH response stayed unknown without replay; fresh read reconciled exited state before explicit start; native redacted support file excluded seeded payloads and identities"
+    );
     for alias in [
         "direct-bad",
         "private-bad",

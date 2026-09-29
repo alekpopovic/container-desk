@@ -46,7 +46,7 @@ func press(_ root: AXUIElement, _ text: String) throws {
 }
 
 let args = CommandLine.arguments
-if args.count != 4 { fatalError("usage: package-ui app-path report-path finder|diagnostics") }
+if args.count != 4 { fatalError("usage: package-ui app-path report-path finder|diagnostics|support") }
 let appPath = URL(fileURLWithPath: args[1]).resolvingSymlinksInPath().path
 let reportPath = URL(fileURLWithPath: args[2])
 var report: [String: Any] = ["passed": false, "mode": args[3], "accessibilityTrusted": AXIsProcessTrusted()]
@@ -79,6 +79,46 @@ do {
     _ = try waitFor(root, "The inherited SSH agent socket is reachable. Loaded keys were not checked; a selected host may use a different IdentityAgent.")
     report["nativeOpenSshAvailable"] = true
     report["ownedAgentSocketReachable"] = true
+  }
+  if args[3] == "support" {
+    try press(root, "Settings")
+    try press(root, "Prepare support preview")
+    let destination = reportPath.deletingLastPathComponent().appendingPathComponent("containerdesk-support.json")
+    try require(!FileManager.default.fileExists(atPath: destination.path), "Support destination must be new")
+    try press(root, "Save reviewed report…")
+    _ = try waitFor(root, "Save")
+    try require(app.activate(options: [.activateIgnoringOtherApps]), "Cannot activate owned save dialog")
+    func key(_ code: CGKeyCode, _ flags: CGEventFlags = []) throws {
+      guard let down = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true),
+            let up = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: false) else {
+        throw CheckFailure(description: "Cannot create native keyboard event")
+      }
+      down.flags = flags; up.flags = flags
+      down.postToPid(app.processIdentifier); up.postToPid(app.processIdentifier)
+      RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+    }
+    // NSSavePanel's native Go to Folder sheet. Events target only the owned app PID.
+    try key(5, [.maskCommand, .maskShift])
+    RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+    guard let focused = attribute(root, kAXFocusedUIElementAttribute),
+          CFGetTypeID(focused) == AXUIElementGetTypeID() else {
+      throw CheckFailure(description: "Native save folder field missing")
+    }
+    try require(AXUIElementSetAttributeValue(focused as! AXUIElement, kAXValueAttribute as CFString,
+      reportPath.deletingLastPathComponent().path as CFString) == .success, "Cannot select owned export folder")
+    try key(36)
+    RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+    try press(root, "Save")
+    let saveDeadline = Date().addingTimeInterval(15)
+    while !FileManager.default.fileExists(atPath: destination.path) && Date() < saveDeadline {
+      RunLoop.current.run(until: Date().addingTimeInterval(0.1))
+    }
+    let exported = try Data(contentsOf: destination)
+    let payload = try JSONSerialization.jsonObject(with: exported) as? [String: Any]
+    try require(payload?["schemaVersion"] as? Int == 1, "Native saved report is invalid")
+    _ = try waitFor(root, "Reviewed support report saved.")
+    report["nativeSupportSaveDialog"] = true
+    report["savedSupportBytes"] = exported.count
   }
   let windowRows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
   if let row = windowRows.first(where: { ($0[kCGWindowOwnerPID as String] as? Int32) == app.processIdentifier && ($0[kCGWindowLayer as String] as? Int) == 0 }),

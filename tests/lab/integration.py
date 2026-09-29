@@ -83,7 +83,10 @@ def main():
         try:
             passphrase = secrets.token_urlsafe(24) if args.encrypted_agent else ''
             for name in ('client', 'direct', 'jump', 'private', 'wrong'):
-                run(['/usr/bin/ssh-keygen', '-q', '-t', 'ed25519', '-N', passphrase if name == 'client' else '', '-f', str(root / name)])
+                try:
+                    run(['/usr/bin/ssh-keygen', '-q', '-t', 'ed25519', '-N', passphrase if name == 'client' else '', '-f', str(root / name)])
+                except subprocess.SubprocessError:
+                    raise RuntimeError('Owned test key generation failed; credential-bearing argv withheld') from None
             if args.encrypted_agent:
                 agent = subprocess.Popen(['/usr/bin/ssh-agent', '-D', '-a', str(root/'agent')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 for _ in range(100):
@@ -126,6 +129,14 @@ for entry in Path("/proc").iterdir():
             os.kill(int(entry.name), signal.SIGKILL)
     except (ProcessLookupError, FileNotFoundError): pass
 ''', '0700')
+            guest_file('/opt/containerdesk/lost-response-docker', """#!/bin/sh
+/usr/bin/docker "$@"
+status=$?
+case " $* " in
+  *" stop "*) if [ "$status" -eq 0 ]; then kill -HUP "$PPID"; sleep 5; exit 99; fi ;;
+esac
+exit "$status"
+""", '0755')
             guest_file('/opt/containerdesk/setup.sh', (REPO / 'tests/lab/integration_guest.sh').read_text(), '0700')
             # Apostrophe and space exercise the application's central remote POSIX quoting.
             compose = {'services': {name: {'image': 'alpine@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce',
@@ -186,7 +197,7 @@ for entry in Path("/proc").iterdir():
             command = [str(qemu), *acceleration, *machine, '-smp', '2', '-m', '2048', *firmware,
                        '-display', 'none', '-vga', 'none', '-global', 'virtio-net-pci.romfile=', '-monitor', 'none', '-serial', 'file:' + str(root / 'serial.log'),
                        '-no-reboot', '-drive', f'file={root / "disk.qcow2"},format=qcow2,if=virtio',
-                       '-drive', f'file={root / "seed.iso"},format=raw,media=cdrom,readonly=on',
+                       '-drive', f'file={root / "seed.iso"},format=raw,readonly=on'+(',if=virtio' if arm else ',media=cdrom'),
                        '-nic', f'user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:{direct_port}-:22220,hostfwd=tcp:127.0.0.1:{jump_port}-:22221']
             with (root / 'qemu.log').open('w') as log:
                 vm = subprocess.Popen(command, env=qenv, stdout=log, stderr=log, start_new_session=True)
@@ -201,7 +212,7 @@ for entry in Path("/proc").iterdir():
                 while True:
                     failed = subprocess.run(['/usr/bin/ssh', '-F', str(config), '-T', '-n', '--', 'direct-owned', 'true'], env=env, capture_output=True, timeout=8)
                     if b'Permission denied' in failed.stderr: break
-                    assert vm.poll() is None, 'VM exited during encrypted-agent preflight'
+                    assert vm.poll() is None, 'VM exited during encrypted-agent preflight: '+(root/'qemu.log').read_text()[-2000:]
                     if time.monotonic()>auth_deadline: raise RuntimeError('VM SSH did not reach empty-agent authentication check')
                     time.sleep(1)
                 assert failed.returncode == 255 and not failed.stdout
@@ -289,17 +300,17 @@ for entry in Path("/proc").iterdir():
             # Test emits only explicit PASS summaries; retain these, never arbitrary remote diagnostics.
             log = (root / 'native.log').read_text()
             result['nativeExit'] = client.returncode
-            result['checks'] = [line for line in log.splitlines() if line.startswith('PASS 049:')]
+            result['checks'] = [line for line in log.splitlines() if line.startswith(('PASS 049:', 'PASS 058:'))]
             if client.returncode:
                 print(log[-8000:])  # Rust's redacted types; no raw shell/inspect transcript.
                 raise RuntimeError('Native integration assertions failed')
-            assert len(result['checks']) == 7, 'Missing native acceptance checks'
+            assert len(result['checks']) == 8, 'Missing native acceptance checks'
             until = int(remote('date +%s').stdout.strip()) + 1
             events = [json.loads(line) for line in remote(f"docker events --since {since} --until {until} --filter type=container --format '{{{{json .}}}}'").stdout.splitlines()]
             counts = {}
             for i, row in enumerate(oracle):
                 counts[row['Name'].lstrip('/')] = {action: sum(event['Actor']['ID'] == row['Id'] and event['Action'] == action for event in events) for action in ('start', 'die')}
-                assert all(value == (0 if i == 1 else 2) for value in counts[row['Name'].lstrip('/')].values()), 'Unexpected action count or replay'
+                assert all(value == (0 if i == 1 else 3 if i == 0 else 2) for value in counts[row['Name'].lstrip('/')].values()), 'Unexpected action count or replay'
             result['independentDockerEventCounts'] = counts
             after = json.loads(remote('docker inspect owned-live untouched owned049-web-1 owned049-worker-1').stdout)
             assert all(row['State']['Running'] for row in after)
