@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="ContainerDesk — Docker over your SSH">
+<rect width="1200" height="630" fill="#101a22"/><rect x="0" y="610" width="1200" height="20" fill="#0f766e"/>
+<g transform="translate(72 72) scale(.25)">
+  <rect width="512" height="512" rx="112" fill="#0f766e"/>
+  <g fill="none" stroke="#ffffff" stroke-width="20" stroke-linejoin="round">
+    <rect x="112" y="144" width="288" height="224" rx="20"/>
+    <path d="M184 184v144M256 184v144M328 184v144"/>
+  </g>
+</g>
+<text x="228" y="154" fill="#e7eef2" font-family="DejaVu Sans, sans-serif" font-size="59" font-weight="700">Container<tspan fill="#6cdec6">Desk</tspan></text>
+<text x="72" y="320" fill="#e7eef2" font-family="DejaVu Sans, sans-serif" font-size="64" font-weight="700">Your servers. Your SSH.</text>
+<text x="72" y="400" fill="#6cdec6" font-family="DejaVu Sans, sans-serif" font-size="64" font-weight="700">One workspace.</text>
+<text x="76" y="525" fill="#abbcc9" font-family="DejaVu Sans, sans-serif" font-size="28">Native Docker management for Linux + macOS</text>
+</svg>

@@ -1,4 +1,10 @@
-# Contributor verification
+---
+title: "Contributor verification"
+section: "Build & design"
+icon: "🛠️"
+---
+
+# 🛠️ Contributor verification
 
 Select the pinned Node/npm from `.nvmrc` and `package.json`, and Rust from `rust-toolchain.toml`. The runner refuses mismatched Node, npm, rustc or Cargo versions. Python 3.10+ is required for the tracker and standard verifier; use Python 3.12+ for the optional native CI/package/signing helpers. Python is not an application dependency. It runs every command directly with argument arrays and a bounded deadline, stops on the first failure, returns nonzero, and records later checks as `not_run`.
 

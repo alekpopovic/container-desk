@@ -1,4 +1,10 @@
-# Container inspect details
+---
+title: "Container inspect details"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Container inspect details
 
 After selecting a row in a fresh live inventory, ContainerDesk sends a typed full-ID inspect request through the existing read-only policy and native session. The registered `docker inspect --type container -- FULL_ID` command restricts the object type and returns a JSON array, as described in [Docker's inspect documentation](https://docs.docker.com/reference/cli/docker/inspect/). This increment uses the existing native OpenSSH transport and introduces no remote dependency.
 

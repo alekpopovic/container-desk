@@ -1,4 +1,10 @@
-# Log viewer and explicit export
+---
+title: "Log viewer and explicit export"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Log viewer and explicit export
 
 The selected live container has a full-width log panel. It retains at most 20,000 sanitized records or 8 MiB of formatted UTF-8 text, including timestamp/channel/truncation markers. This is independent of the 024 backend queue. Oldest evictions are counted; Clear view resets the local view and selection without stopping the remote stream. Monotonic record IDs prevent cleared selections from matching new data.
 

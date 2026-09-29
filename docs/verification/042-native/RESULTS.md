@@ -1,4 +1,11 @@
-# 042 native Linux desktop launch
+---
+title: "042 native Linux desktop launch"
+section: "Reviews & evidence"
+icon: "🧪"
+historical: true
+---
+
+# 🧪 042 native Linux desktop launch
 
 2026-09-29, Ubuntu 26.04.1 x86_64, UID 1000, WebKitGTK 2.52.6, Tauri 2.12.0. Release executable SHA-256: `81f419830d8569c40b56b8ee133e3fa705b92344768f762aaa8acd290797a463`.
 

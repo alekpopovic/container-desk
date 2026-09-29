@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="128" viewBox="0 0 680 128" role="img" aria-label="ContainerDesk — Docker over your SSH">
+<rect width="680" height="128" rx="20" fill="#101a22"/><g transform="translate(16 16) scale(.1875)">
+  <rect width="512" height="512" rx="112" fill="#0f766e"/>
+  <g fill="none" stroke="#ffffff" stroke-width="20" stroke-linejoin="round">
+    <rect x="112" y="144" width="288" height="224" rx="20"/>
+    <path d="M184 184v144M256 184v144M328 184v144"/>
+  </g>
+</g><text x="136" y="82" font-family="DejaVu Sans, sans-serif" font-size="47" font-weight="700" fill="#e7eef2">Container<tspan fill="#6cdec6">Desk</tspan></text>
+</svg>

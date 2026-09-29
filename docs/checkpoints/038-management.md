@@ -1,6 +1,13 @@
-# 038 — Management workflow checkpoint
+---
+title: "038 — Management workflow checkpoint"
+section: "Reviews & evidence"
+icon: "🧪"
+historical: true
+---
 
-The management workflow was exercised in the actual Linux Tauri/WebKit application and through the same Rust backend using disposable SSH/Docker labs. This checkpoint fixes a stale-read race found during the integrated native journey; dependencies are unchanged. [Execution evidence](../../codex/tracking/evidence/038.md) distinguishes native runs from browser fixtures.
+# 🧪 038 — Management workflow checkpoint
+
+The management workflow was exercised in the actual Linux Tauri/WebKit application and through the same Rust backend using disposable SSH/Docker labs. This checkpoint fixes a stale-read race found during the integrated native journey; dependencies are unchanged. [Execution evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/038.md) distinguishes native runs from browser fixtures.
 
 ## Permission and action boundaries
 

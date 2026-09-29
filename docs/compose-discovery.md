@@ -1,4 +1,10 @@
-# Compose discovery and read views
+---
+title: "Compose discovery and read views"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Compose discovery and read views
 
 Compose projects share the selected host's existing native SSH session and verified Docker binding. Opening the Compose route performs a scheduled read; it never opens a second connection. Selecting an instance returns to the existing Containers detail/log view, using its full ID in the current inventory scope. Unavailable/stale container rows require a refresh before navigation.
 

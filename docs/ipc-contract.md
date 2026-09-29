@@ -1,4 +1,10 @@
-# IPC contract
+---
+title: "IPC contract"
+section: "Build & design"
+icon: "🛠️"
+---
+
+# 🛠️ IPC contract
 
 Rust `src-tauri/src/domain.rs` owns wire DTOs. `ts-rs` 12.0.1 is a development-only derive dependency. `npm run ipc:generate` writes the committed TypeScript declarations and Rust-serialized JSON fixture. Ordinary `npm run rust:test` compares both files without rewriting them; `npm run check` type-checks the renderer and consumes that same JSON through the IPC adapter. Generated TypeScript is excluded from formatting so checks remain deterministic. Generator documentation: https://docs.rs/ts-rs/12.0.1/ts_rs/.
 

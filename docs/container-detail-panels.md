@@ -1,4 +1,10 @@
-# Container detail panels
+---
+title: "Container detail panels"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Container detail panels
 
 The inspected container has six tabs: Overview, Ports, Mounts, Networks, Labels and Environment. Arrow keys, Home and End move and select tabs; Tab enters the selected panel. All data is rendered as text, with wrapping for long paths and no automatic links or HTML interpretation.
 

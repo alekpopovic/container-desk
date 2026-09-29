@@ -1,4 +1,10 @@
-# Keyboard and accessible inspection
+---
+title: "Keyboard and accessible inspection"
+section: "Start here"
+icon: "🧭"
+---
+
+# 🧭 Keyboard and accessible inspection
 
 Use Ctrl on Linux or Cmd on macOS with these keys. macOS bindings are implemented but await native macOS verification.
 

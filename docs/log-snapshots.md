@@ -1,4 +1,10 @@
-# Bounded log snapshots
+---
+title: "Bounded log snapshots"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Bounded log snapshots
 
 The live `container_logs` command reads one full container ID in the current host/daemon/session scope. Rust authorizes it as read-only, requires a live session, and verifies the actual Docker binding before and after the operation. Four shared read permits bound concurrent work. A selection/session change fences late IPC replies; disconnect cancels owned SSH channels.
 

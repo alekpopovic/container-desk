@@ -1,0 +1,26 @@
+title: ContainerDesk
+description: A native desktop for Docker over your existing OpenSSH configuration.
+url: https://alekpopovic.github.io
+baseurl: /container-desk
+repository: alekpopovic/container-desk
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  hard_wrap: false
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: false
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - vendor
+  - .bundle
+  - verification/pages-branding

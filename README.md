@@ -1,14 +1,35 @@
-# ContainerDesk
+<p align="center">
+  <img src="docs/assets/brand/banner.svg" alt="ContainerDesk — Your servers. Your SSH. One workspace." width="1200">
+</p>
 
-A native desktop client for Docker on Linux servers through your existing OpenSSH configuration. Built with Tauri 2, React/TypeScript and Rust/Tokio. Linux and macOS clients use native SSH, strict host verification and your existing keys/agent; no Docker Desktop, remote agent or exposed Docker TCP listener is required.
+<h1 align="center">ContainerDesk</h1>
+<p align="center"><strong>A native desktop for Docker over SSH.</strong><br>Linux + macOS · Tauri 2 · React / TypeScript · Rust / Tokio</p>
+<p align="center">
+  <a href="https://alekpopovic.github.io/container-desk/">📚 Documentation</a> ·
+  <a href="https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0">⬇ Download v0.1.0</a> ·
+  <a href="README_SR.md">🇷🇸 Srpski</a> ·
+  <a href="CONTRIBUTING.md">🛠️ Contribute</a>
+</p>
 
-Start with the **[Serbian quick start](README_SR.md)** or **[English user guide](docs/user-guide.md)**. Contributors should read [CONTRIBUTING](CONTRIBUTING.md).
+---
 
-Read views include containers, inspect, logs, statistics, Compose groups, images, volumes and networks. Lifecycle/verified existing Compose actions and container terminals require explicit permissions and confirmation. Images/volumes/networks remain read-only. No prune, Compose deployment, Kubernetes, registry credentials, telemetry or automatic updater is included.
+Connect to Docker on Linux servers through your **existing OpenSSH configuration**. Keep your keys, agent, jump hosts and strict host verification. Browse workloads in one desktop workspace, with explicit permissions for management and terminals. No local Docker Desktop, remote agent or exposed Docker TCP listener is required.
 
-[Final handover and package hashes](docs/FINAL_HANDOVER.md) · [Release notes](docs/RELEASE_NOTES.md). All 60 prompts are complete under the documented scope.
+## ✨ Your remote Docker workspace
 
-[Download ContainerDesk v0.1.0 — unsigned preview](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0). The owner explicitly authorized this public pre-release after the final handover. Ubuntu 24.04 x86_64 deb/AppImage and macOS 15.7.9 Apple Silicon/Intel app/DMG paths have real execution evidence. The [native platform matrix](docs/platform-matrix.md) also passes actual SSH/Docker/PTY on all three client targets; credentials have not been supplied for Apple signing/notarization. The public-publishing workflow is intentionally omitted. GitHub Actions remain disabled by the owner.
+| | What you can do |
+|---|---|
+| ▦ **Inspect** | Browse containers, inspect details, logs, statistics, Compose groups, images, volumes and networks. |
+| ⚡ **Manage** | Start, stop or restart selected containers; remove explicitly selected stopped containers without force or volume removal. |
+| 🧩 **Compose** | Start, stop or restart services in verified existing projects. |
+| ⌨️ **Terminal** | Open a container terminal after granting access and confirming the target. |
+| 🔐 **Stay in control** | New and recovered sessions start read-only. The backend enforces management and terminal permissions. |
+
+Images, volumes and networks are read-only in v1. Prune, Compose deployment/up/down, registry credentials, Kubernetes, telemetry and automatic updates are outside the current scope.
+
+## 📦 Download and install
+
+**v0.1.0 is a public unsigned preview.** Linux x86_64 and macOS Apple Silicon/Intel packages have real native execution evidence. Review the [platform matrix](docs/platform-matrix.md) for tested OS versions and limitations.
 
 | Install on | Download |
 |---|---|
@@ -18,15 +39,28 @@ Read views include containers, inspect, logs, statistics, Compose groups, images
 
 [SHA256SUMS](https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/SHA256SUMS) · [All assets and install instructions](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0). Mac app archives are also included. Mac packages are not Developer ID signed/notarized; Gatekeeper may block downloaded apps. See [publication receipt](docs/releases/v0.1.0.md) for exact source, hashes and download verification.
 
-| Need | Documentation |
-|---|---|
-| Actual platform/feature state | [Project status](docs/project-status.md) |
-| Linux / Mac packages | [Linux](docs/linux-packages.md), [macOS](docs/macos-packages.md) |
-| SSH, rootless/context/sudo, troubleshooting | [User guide](docs/user-guide.md) |
-| Manual updates and data backup | [Versions and rollback](docs/updates.md) |
-| Optional signing readiness | [Signing](docs/signing.md) |
-| Reproducible development checks | [Verification command](docs/verification-command.md) |
-| Disposable native SSH/Docker lab | [Integration lab](docs/integration-lab.md) |
-| Architecture / security boundaries | [Architecture](codex/docs/ARCHITECTURE.md), [security review](docs/security-review.md) |
+## 🚀 Get connected
 
-`codex/` retains the original prompt pack and immutable task hashes. Application version is defined in `package.json`; current distribution/release readiness comes from executed evidence, not the original task descriptions. ContainerDesk is a working name, not a trademark/domain-ownership claim.
+1. Install the package for your operating system and verify its SHA-256 checksum.
+2. Confirm that your existing SSH alias can reach the Linux Docker host with strict host-key verification and your own keys/agent.
+3. Add the host in ContainerDesk, connect, and inspect containers. Enable management only when you intend to invoke an action.
+
+Follow the [English user guide](docs/user-guide.md) or [Serbian quick start](README_SR.md) for the complete setup and troubleshooting steps.
+
+## 📚 Explore the documentation
+
+| Start here | Go deeper |
+|---|---|
+| [🧭 Documentation home](docs/README.md) | [🏗️ Architecture](codex/docs/ARCHITECTURE.md) |
+| [📋 Project status](docs/project-status.md) | [🔐 Security review](docs/security-review.md) |
+| [🐧 Linux packages](docs/linux-packages.md) · [🍎 macOS packages](docs/macos-packages.md) | [🧪 Verification](docs/verification-command.md) · [Integration lab](docs/integration-lab.md) |
+| [🔄 Updates and rollback](docs/updates.md) | [🛠️ Development](docs/development.md) |
+| [📦 Release notes](docs/RELEASE_NOTES.md) | [🎨 Brand kit](docs/branding.md) · [Website](docs/github-pages.md) |
+
+## 🛠️ Project and contributions
+
+Read [CONTRIBUTING](CONTRIBUTING.md) before working on the app. All 60 original implementation prompts are complete under the documented scope; [final handover](docs/FINAL_HANDOVER.md) preserves their evidence. `codex/` retains the original prompt pack and immutable task hashes. Current platform and distribution claims come from executed evidence, not task descriptions.
+
+Native application checks are defined in `.github/workflows/ci.yml`. GitHub Pages publishes documentation from `main/docs`; it does not publish application releases. Application version is defined in `package.json`.
+
+ContainerDesk is a working product name, not a trademark or domain-ownership claim.

@@ -1,4 +1,10 @@
-# Explicit offline demo
+---
+title: "Explicit offline demo"
+section: "Start here"
+icon: "🧭"
+---
+
+# 🧭 Explicit offline demo
 
 Choose **Open demo** in the sidebar. A fixed DEMO badge remains visible across all six routes and scrolling. Exit demo explicitly to return to the live workspace; live failures never substitute fixtures. Each transition replaces the session generation and clears policy grants. Demo mode is in memory and is not restored as a live connection on restart.
 
@@ -10,4 +16,4 @@ Native demo goes through the registered Rust handlers and capability grants. Bro
 
 When real SSH sessions/streams are implemented, mode switching must cancel and reap owned live resources before resetting policy. The current live provider reports feature_unavailable. The fixture parser must not be reused as an assertion that Docker CLI parsing or actual SSH operation works.
 
-Verification: [008 evidence](../codex/tracking/evidence/008.md). Linux native build/startup passed; full demo interaction in the native window was not confirmed by the local input driver. The same serialized DTOs and permission paths are exercised in Tauri's Rust mock runtime, separately from browser component tests.
+Verification: [008 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/008.md). Linux native build/startup passed; full demo interaction in the native window was not confirmed by the local input driver. The same serialized DTOs and permission paths are exercised in Tauri's Rust mock runtime, separately from browser component tests.

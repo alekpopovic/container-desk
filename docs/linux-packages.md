@@ -1,4 +1,10 @@
-# Linux packages
+---
+title: "Linux packages"
+section: "Releases & platforms"
+icon: "📦"
+---
+
+# 📦 Linux packages
 
 The initial package target is Ubuntu 24.04 LTS x86_64. CI builds natively on `ubuntu-24.04`; the package command rejects other Linux build baselines. No aarch64 or other distribution compatibility is claimed. [Tauri's baseline guidance](https://v2.tauri.app/distribute/debian/) explains why building on a newer glibc can break older systems.
 

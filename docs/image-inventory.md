@@ -1,4 +1,12 @@
-# Read-only image inventory
+---
+title: "Read-only image inventory"
+section: "Containers & resources"
+icon: "▦"
+---
+
+<!-- {% raw %} -->
+
+# ▦ Read-only image inventory
 
 Images are read from the selected native host/daemon/session. Listing uses a fixed `docker image ls --all --no-trunc --digests --format '{{json .}}'` command. Full `sha256:` IDs are the identity; repeated rows are merged while all distinct tags and repository digests remain available. Missing tags are explicitly shown as “No tags”. List size and creation fields are CLI-reported display strings; inspect separately exposes exact safe-integer bytes and the reported creation timestamp.
 
@@ -12,4 +20,6 @@ Each read has a 30-second total deadline, a fresh daemon-binding probe, existing
 
 Bounds: 16 MiB per list and aggregated detail/reference batches; a separate candidate-ID response is capped at 325,000 bytes; 20,000 raw listing rows; 5,000 deduplicated images; 128 tags/digests per image; 4,096-byte text fields; 32-KiB listing/reference records. Detail JSON is at most 2 MiB with 256 labels, 64-KiB input label values, and 5,000 candidate container references. Label values are discarded, not copied to the wire projection. UI image and reference pages render at most 50 entries each. Capacity exhaustion is an error, not silent truncation.
 
-Native acceptance uses the existing isolated Engine inside the disposable SSH target, without exposing Docker TCP or mounting the host Docker socket. The lab loads two zero-layer fixture images, gives one two tags and two metadata-only containers, and leaves the other genuinely untagged. Native direct/ProxyJump reads are compared with independent CLI inspect/filter results. Parser/browser cases additionally cover identical tags with different identities/scopes and late host-switch responses. See [034 evidence](../codex/tracking/evidence/034.md).
+Native acceptance uses the existing isolated Engine inside the disposable SSH target, without exposing Docker TCP or mounting the host Docker socket. The lab loads two zero-layer fixture images, gives one two tags and two metadata-only containers, and leaves the other genuinely untagged. Native direct/ProxyJump reads are compared with independent CLI inspect/filter results. Parser/browser cases additionally cover identical tags with different identities/scopes and late host-switch responses. See [034 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/034.md).
+
+<!-- {% endraw %} -->

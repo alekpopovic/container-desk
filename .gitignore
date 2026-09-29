@@ -9,3 +9,9 @@ test-results/
 playwright-report/
 
 dist-artifacts/
+
+# Local documentation builds and Ruby dependencies
+docs/_site/
+docs/.jekyll-cache/
+docs/.bundle/
+docs/vendor/

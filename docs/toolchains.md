@@ -1,4 +1,10 @@
-# Pinned development toolchains
+---
+title: "Pinned development toolchains"
+section: "Build & design"
+icon: "🛠️"
+---
+
+# 🛠️ Pinned development toolchains
 
 Selected on 2026-09-28 from official stable-release metadata. Exact direct versions live in `package.json` and `src-tauri/Cargo.toml`; transitive resolutions live in `package-lock.json` and `src-tauri/Cargo.lock`. Use npm as the sole JavaScript package manager; keep both lockfiles in Git. Do not run floating scaffolding generators over this repository.
 

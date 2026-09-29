@@ -1,0 +1,57 @@
+{
+  "date": "2026-09-29",
+  "baseCommit": "5636d3432d18a7a91d948ee28b93a186b593b03d",
+  "scope": "User-requested README/docs modernization, shared branding and GitHub Pages from main/docs; follow-up after all 60 prompts.",
+  "checks": {
+    "jekyll": "3.10.0 build passed with kramdown 2.4.0 and jekyll-relative-links 0.6.1; no Liquid warnings after protecting examples",
+    "links": {
+      "htmlPages": 76,
+      "localReferences": 6631,
+      "errors": 0
+    },
+    "browser": {
+      "base": "http://127.0.0.1:4178/container-desk/",
+      "results": [
+        {
+          "width": 1440,
+          "themePersistence": true,
+          "search": true,
+          "noOverflow": true,
+          "literalTemplates": true
+        },
+        {
+          "width": 768,
+          "themePersistence": true,
+          "search": true,
+          "noOverflow": true,
+          "literalTemplates": true
+        },
+        {
+          "width": 390,
+          "themePersistence": true,
+          "search": true,
+          "noOverflow": true,
+          "literalTemplates": true
+        }
+      ],
+      "noJavaScript": true,
+      "errors": []
+    },
+    "appBuild": "npm run build passed (TypeScript and Vite)",
+    "appLint": "npm run lint passed with 44 existing warnings and 11 informational diagnostics",
+    "appFormat": "npm run format:check passed",
+    "appUI": {
+      "workspaceAccessibility": 30,
+      "demo": 18,
+      "failed": 0
+    },
+    "tracker": "track.py validate: all 60 prompts/statuses/hashes/evidence valid",
+    "brandArchiveSha256": "9fc494e1b837d5e645e20cdfa45dc04417af117f977f7bd3f9e3853ee1237428"
+  },
+  "limitations": [
+    "Browser checks are not native execution evidence; no new native installers or signing claims.",
+    "Existing published v0.1.0 installers and native icon files remain unchanged.",
+    "Owner commit 5636d34 restored native CI before this work; its workflow is preserved."
+  ],
+  "deployment": "Pending publication; a separate deployment receipt will record real public results."
+}

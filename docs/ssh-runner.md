@@ -1,4 +1,10 @@
-# Bounded SSH process runner
+---
+title: "Bounded SSH process runner"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 Bounded SSH process runner
 
 The Rust SSH module provides a shared Runner, used by the effective-config resolver. It starts a validated absolute executable with argv, null stdin, separate piped stdout/stderr and a dedicated process group. There is no generic execute-command IPC or renderer shell-text parameter. Future remote dispatchers must obtain authorized, scoped operations and use the centralized remote quoting builder before passing argv to this low-level Rust API.
 
@@ -14,4 +20,4 @@ The centralized remote quoting/command builder must append exactly one encoded r
 
 The effective resolver's backend owner deliberately retains its diagnostic/mode-transition permit through bounded completion even if its IPC caller disappears. The reusable Job cancellation API is available for upcoming session owners; this increment adds no UI cancel button.
 
-Verification: [011 evidence](../codex/tracking/evidence/011.md). Synthetic child tests execute a fixed repository fixture through the trusted system /bin/sh interpreter, using script-file arguments, never sh -c. That test-only interpreter is not used by production SSH dispatch. Tests check null stdin/no TTY, large stderr, partial output, nonzero exit, timeout, explicit/drop cancellation, pre-dispatch cancellation, bounds and reaped PIDs. See [Tokio process ownership](https://docs.rs/tokio/latest/tokio/process/struct.Child.html#caveats) and [process groups](https://docs.rs/tokio/latest/tokio/process/struct.Command.html#method.process_group).
+Verification: [011 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/011.md). Synthetic child tests execute a fixed repository fixture through the trusted system /bin/sh interpreter, using script-file arguments, never sh -c. That test-only interpreter is not used by production SSH dispatch. Tests check null stdin/no TTY, large stderr, partial output, nonzero exit, timeout, explicit/drop cancellation, pre-dispatch cancellation, bounds and reaped PIDs. See [Tokio process ownership](https://docs.rs/tokio/latest/tokio/process/struct.Child.html#caveats) and [process groups](https://docs.rs/tokio/latest/tokio/process/struct.Command.html#method.process_group).

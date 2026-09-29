@@ -1,4 +1,11 @@
-# Native Linux security verification — 047
+---
+title: "Native Linux security verification — 047"
+section: "Reviews & evidence"
+icon: "🧪"
+historical: true
+---
+
+# 🧪 Native Linux security verification — 047
 
 2026-09-29, Ubuntu 26.04.1 x86_64, WebKitGTK 2.52.6, private Xvfb/D-Bus profile. No SSH/Docker server was selected or changed by this harness.
 

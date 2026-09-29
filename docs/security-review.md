@@ -1,4 +1,10 @@
-# Focused security review — 047
+---
+title: "Focused security review — 047"
+section: "Reviews & evidence"
+icon: "🧪"
+---
+
+# 🧪 Focused security review — 047
 
 This review covers the concrete ContainerDesk implementation at prompt 047. It is a bounded code/native regression review, not a penetration-test certification or a claim that the remote Docker account is sandboxed. App read-only mode controls app workflows; it does not reduce privileges already held by the user's SSH/Docker account. A local attacker able to replace the app, trusted SSH configuration or its process environment is outside this boundary.
 
@@ -41,6 +47,6 @@ The repository's existing Dependabot alert could not be read with the supplied t
 
 ## Verification and downstream gates
 
-[047 evidence](../codex/tracking/evidence/047.md) records exact commands, counts, final native result and binary digest. The [native results](verification/047-native/RESULTS.md) distinguish the vulnerable baseline from the fixed run. Default support preview/export contents omit seeded identity/config/error/environment/terminal secrets; intentionally user-selected raw-log exports remain explicit sensitive user actions rather than default diagnostics.
+[047 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/047.md) records exact commands, counts, final native result and binary digest. The [native results](verification/047-native/RESULTS.md) distinguish the vulnerable baseline from the fixed run. Default support preview/export contents omit seeded identity/config/error/environment/terminal secrets; intentionally user-selected raw-log exports remain explicit sensitive user actions rather than default diagnostics.
 
 This historical security increment did not verify macOS or installed packages. Current native package/platform claims and remaining limits belong to the [platform matrix](platform-matrix.md); native network interruption is the selected recovery gate, while physical sleep/wake and Wayland are not claimed. The navigation hook is cross-platform code, but Linux execution alone is not macOS proof. WebKitGTK/OS security updates are runtime platform responsibilities. Review dependency warnings again at release freeze and after any native-framework upgrade. No production host or irreversible server action was used in this review.

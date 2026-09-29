@@ -1,4 +1,10 @@
-# SSH configuration discovery
+---
+title: "SSH configuration discovery"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 SSH configuration discovery
 
 In Settings, **SSH host candidates** shows the absolute default user config path (`~/.ssh/config`, expanded using Tauri's home directory). A saved trusted config reference takes precedence when present. Enter a different absolute path to browse a custom trusted user configuration. Only **Browse host candidates** reads files; startup does not scan them, resolve aliases or connect. Paths remain user references, including symlinks; candidate source paths are canonicalized to detect cycles.
 
@@ -12,4 +18,4 @@ Bounds: 1 MiB per file, 4 MiB total, 128 file attempts, 16 nesting levels, 4,096
 
 Demo mode rejects discovery and alias selection in Rust. Mode switching is excluded during discovery using the same bounded native-operation slot as dependency diagnostics. Frontend paths/aliases are rendered as text, and response shapes are validated. Browser tests use an explicit IPC fixture and are not native file-access evidence.
 
-See [009 evidence](../codex/tracking/evidence/009.md), including native filesystem tests and execve tracing that observed no subprocess launches.
+See [009 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/009.md), including native filesystem tests and execve tracing that observed no subprocess launches.

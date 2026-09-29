@@ -1,4 +1,10 @@
-# Executable acceptance checkpoints
+---
+title: "Executable acceptance checkpoints"
+section: "Reviews & evidence"
+icon: "🧪"
+---
+
+# 🧪 Executable acceptance checkpoints
 
 Defined in prompt 001. These are acceptance procedures, not execution evidence by themselves. Checkpoints [018](checkpoints/018-ssh.md), [030](checkpoints/030-read-only.md), [038](checkpoints/038-management.md) and [046](checkpoints/046-feature-complete.md) have separate native Linux results. Final release checkpoint 060 is complete; [handover](FINAL_HANDOVER.md) and [058 matrix](platform-matrix.md) link actual artifacts and distinguish native backend, package GUI, emulated guests and remaining limits. Procedures below alone are not execution evidence. The immutable prompt remains authoritative. Each run records exact app commit, OS/architecture, OpenSSH/Docker/Compose versions, steps, observed outcomes and sanitized evidence in the stated file plus `codex/tracking/evidence/NNN.md`.
 

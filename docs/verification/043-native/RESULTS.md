@@ -1,4 +1,11 @@
-# 043 native support export and clearing
+---
+title: "043 native support export and clearing"
+section: "Reviews & evidence"
+icon: "🧪"
+historical: true
+---
+
+# 🧪 043 native support export and clearing
 
 2026-09-29, Ubuntu 26.04.1 x86_64, UID 1000, WebKitGTK 2.52.6, Tauri 2.12.0, owned Xvfb/X11 display. Final production binary SHA-256: `3ae8f2e37a3be3c85a25a0af5a1c2a38d51108be9e91a5a86d0f1242a0ac19b3`.
 

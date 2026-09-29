@@ -1,4 +1,10 @@
-# Owned live log subscriptions
+---
+title: "Owned live log subscriptions"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Owned live log subscriptions
 
 `follow_container_logs` authorizes an ordinary read for the full host/daemon/selection/session/container scope. It reserves one of four read slots and one of two log-stream slots without queuing. Native Docker identity/binding is checked before starting the fixed `docker logs --follow --timestamps --tail N [--since S] -- ID` command. Tail and Unix timestamp validation reuse the snapshot registry. Startup is bounded to 30 seconds. The command uses the pinned Docker endpoint, native SSH arguments, central POSIX quoting, separate stdout/stderr pipes and no PTY.
 

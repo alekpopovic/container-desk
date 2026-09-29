@@ -1,4 +1,10 @@
-# Native desktop testing
+---
+title: "Native desktop testing"
+section: "Build & design"
+icon: "🛠️"
+---
+
+# 🛠️ Native desktop testing
 
 The Linux suite uses a custom Python W3C WebDriver client with official `tauri-driver` and WebKitWebDriver. This is a [documented Tauri integration path](https://v2.tauri.app/develop/tests/webdriver/) for existing non-Node harnesses. It drives real WebKitGTK windows and the real IPC/backend; it does not install a command-mocking plugin or intercept `invoke`. Existing native SSH/log/terminal journeys are reused rather than rewritten into another test framework.
 
@@ -34,7 +40,7 @@ The desktop connection-error lab uses the older dedicated empty Engine in an own
 
 ## macOS native execution
 
-The installed macOS application is exercised through an external Swift accessibility client under the runner's existing OS grant. No embedded WebDriver/plugin or application test-control endpoint is installed. The helper is compiled separately and never enters the ordinary app bundle. Native Finder/DMG launch, app-data permissions, minimal-environment OpenSSH diagnostics and owned-agent reachability passed on actual macOS 15.7.9 ARM and Intel runners in [054](../codex/tracking/evidence/054.md). The native support Save dialog also passed on both architectures in [058](platform-matrix.md), with actual file readback and 0600 permissions.
+The installed macOS application is exercised through an external Swift accessibility client under the runner's existing OS grant. No embedded WebDriver/plugin or application test-control endpoint is installed. The helper is compiled separately and never enters the ordinary app bundle. Native Finder/DMG launch, app-data permissions, minimal-environment OpenSSH diagnostics and owned-agent reachability passed on actual macOS 15.7.9 ARM and Intel runners in [054](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/054.md). The native support Save dialog also passed on both architectures in [058](platform-matrix.md), with actual file readback and 0600 permissions.
 
 The [058 matrix](platform-matrix.md) links separate actual native Rust/OpenSSH/PTY execution against a dedicated Linux Docker VM for each client architecture. Guest CPU emulation does not emulate the Mac client or establish another client platform. Browser fixture checks, native backend checks and ordinary-package GUI checks remain distinct evidence. Missing OS accessibility or screen-capture permission is a failed/pending gate; the harness never changes those controls.
 

@@ -1,4 +1,10 @@
-# Verified remote Compose actions
+---
+title: "Verified remote Compose actions"
+section: "Management & terminal"
+icon: "⚡"
+---
+
+# ⚡ Verified remote Compose actions
 
 Compose grouping remains read-only discovery. To enable actions, the user enters and acknowledges a remote working directory, an ordered list of absolute config-file paths and an explicit project name. Discovered label paths are never promoted automatically. The form belongs to the full host/daemon/session scope; changing host/project or editing the configuration discards verification. Remote Compose must be available. Only start, stop and restart of existing verified services are registered; no up/build/pull/down/remove/deployment path is exposed.
 

@@ -1,0 +1,13 @@
+ContainerDesk — Brand kit
+
+Your servers. Your SSH. One workspace.
+A native desktop for Docker over SSH.
+
+Use mark.svg for the shared app/web icon, the matching light/dark wordmark for the background, banner.svg for the README and social-card.png for link previews. PNG exports are provided at their original dimensions.
+
+Preserve proportions and colors. Keep clear space of at least one quarter of the mark width. Normal navigation minimum: 24 px. Do not rotate, stretch or imply affiliation with Docker, Apple, GitHub or OpenSSH.
+
+Colors and typography: tokens.json. Full usage guide:
+https://alekpopovic.github.io/container-desk/branding.html
+
+ContainerDesk is a working product name, not a trademark-registration claim.

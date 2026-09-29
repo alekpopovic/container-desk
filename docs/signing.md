@@ -1,4 +1,12 @@
-# Optional package signing and notarization
+---
+title: "Optional package signing and notarization"
+section: "Releases & platforms"
+icon: "📦"
+---
+
+<!-- {% raw %} -->
+
+# 📦 Optional package signing and notarization
 
 Current evidence is **configuration-ready without credentials**. No Developer ID certificate or Apple account credentials have been supplied; notarization, signed-app runtime and internet-download Gatekeeper acceptance are **unverified**. Local package/runtime evidence in 053–054 remains separate. The user excluded a public-publishing workflow; none is installed. The optional script creates local output and submits only to Apple's notary service when explicitly invoked with owner-provided credentials. It never creates a GitHub release, tag or signing key.
 
@@ -59,3 +67,5 @@ The user must authenticate the public-key fingerprint independently, then verify
 Reviewed 2026-09-29: [Tauri macOS signing](https://v2.tauri.app/distribute/sign/macos/), [Tauri 2.12.0 signing implementation](https://github.com/tauri-apps/tauri/blob/tauri-v2.12.0/crates/tauri-bundler/src/bundle/macos/sign.rs), [Apple notarization requirements](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution), [Apple notarization troubleshooting](https://developer.apple.com/documentation/security/resolving-common-notarization-issues), [Apple custom notarization flow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow), and [Tauri Linux signing](https://v2.tauri.app/distribute/sign/linux/). The project-specific post-packaging flow preserves the checked unsigned artifacts and independently checks Apple results; it does not inherit a bundler's success message as public-release evidence.
 
 The Linux-executed failure tests check missing/malformed credentials, signature-result rejection and cleanup control flow with fake native commands. They are **not** execution of `security`, `codesign`, `notarytool`, `stapler` or signed application code. The full credentialed path needs actual owner credentials and native Mac verification before use for distribution.
+
+<!-- {% endraw %} -->

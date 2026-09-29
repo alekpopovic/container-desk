@@ -1,4 +1,10 @@
-# Owned SSH connection reuse
+---
+title: "Owned SSH connection reuse"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 Owned SSH connection reuse
 
 Each explicit selected alias/config attempt owns a separate native OpenSSH master. It never borrows a ControlPath from the user's configuration. A private runtime root `/tmp/containerdesk-<uid>` and random 128-bit child directory have mode 0700; a 0600 flock lease identifies this app instance and records the socket's device/inode. Socket paths are at most 80 bytes, leaving room for OpenSSH's temporary suffix even under macOS's smaller Unix socket limit. Home/config path length does not extend the socket path.
 

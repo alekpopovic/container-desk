@@ -1,4 +1,10 @@
-# Backend operation policy
+---
+title: "Backend operation policy"
+section: "Management & terminal"
+icon: "⚡"
+---
+
+# ⚡ Backend operation policy
 
 Current through prompt 046. Rust owns the operation registry and per-session policy. New backend-owned sessions always register read-only, independently of saved preferences. Session registration binds host ID, selection generation, session ID/generation and daemon identity. Re-registering a host resets grants/intents. Removing a session validates the full scope so cleanup for an old generation cannot remove its replacement. The policy registry has an internal three-entry ceiling; the implemented workspace admits **one active host**, as documented in [resource limits](resource-limits.md).
 
@@ -17,6 +23,6 @@ Read operations remain available in read-only mode. Mutations require `Manage` o
 
 Confirmation intents use 128 bits of OS randomness, a 30-second monotonic expiry and at most 32 pending intents per session. Each binds the complete scope, operation variant, ordered targets and parameters. Consumption removes the intent before returning authorization, including on mismatched parameters; expiry, replay and cross-host use fail. Intents are never persisted. The owned activity record consumes mutations, and the native dispatch callback rechecks scope/access after admission. A lost dispatched response is an unknown outcome, followed only by a read; no mutation or terminal input is replayed.
 
-The local `main` Tauri capability now grants the narrow implemented handlers registered in `lib.rs` and `build.rs`, including mutation and terminal commands. It grants no generic shell/filesystem/process plugin API. IPC grants do not replace Rust authorization. Contract/policy tests check malformed enums, unknown fields, hostile IDs, limits, stale generations, revocation, expiry, wrong-host and repeated intent use. Real disposable native journeys exercise the outer capability gate; mocked Rust/browser tests alone do not prove it. See [046 checkpoint](checkpoints/046-feature-complete.md) for current native evidence and [007 evidence](../codex/tracking/evidence/007.md) for the original policy increment.
+The local `main` Tauri capability now grants the narrow implemented handlers registered in `lib.rs` and `build.rs`, including mutation and terminal commands. It grants no generic shell/filesystem/process plugin API. IPC grants do not replace Rust authorization. Contract/policy tests check malformed enums, unknown fields, hostile IDs, limits, stale generations, revocation, expiry, wrong-host and repeated intent use. Real disposable native journeys exercise the outer capability gate; mocked Rust/browser tests alone do not prove it. See [046 checkpoint](checkpoints/046-feature-complete.md) for current native evidence and [007 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/007.md) for the original policy increment.
 
 This protects application workflows; it does not reduce the underlying remote account's SSH/Docker privileges. Local activity history is bounded operational history, not a tamper-proof security audit.

@@ -1,4 +1,10 @@
-# Remote Docker capabilities and target identity
+---
+title: "Remote Docker capabilities and target identity"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 Remote Docker capabilities and target identity
 
 Settings → selected SSH alias → Connect now performs real bounded remote Docker checks after strict SSH authentication and owned master setup. Blank Docker path uses the remote noninteractive `docker` PATH; an optional absolute executable path handles installations outside it. Blank context uses the effective remote user's current Docker selection, including Docker's environment/config resolution. An explicit named context is passed as a global option. No context is created, switched or modified by the application.
 

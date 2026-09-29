@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-label="ContainerDesk — Docker over your SSH">
+<defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#203e3c" stroke-width="1"/></pattern></defs>
+<rect width="1200" height="360" rx="24" fill="#101a22"/><rect x="780" width="420" height="360" fill="url(#grid)"/>
+<g transform="translate(62 56) scale(.16)">
+  <rect width="512" height="512" rx="112" fill="#0f766e"/>
+  <g fill="none" stroke="#ffffff" stroke-width="20" stroke-linejoin="round">
+    <rect x="112" y="144" width="288" height="224" rx="20"/>
+    <path d="M184 184v144M256 184v144M328 184v144"/>
+  </g>
+</g>
+<text x="165" y="109" fill="#e7eef2" font-family="DejaVu Sans, sans-serif" font-size="43" font-weight="700">Container<tspan fill="#6cdec6">Desk</tspan></text>
+<text x="64" y="196" fill="#e7eef2" font-family="DejaVu Sans, sans-serif" font-size="42" font-weight="700">Your servers. Your SSH. One workspace.</text>
+<text x="66" y="244" fill="#abbcc9" font-family="DejaVu Sans, sans-serif" font-size="22">A native desktop for Docker on Linux servers.</text>
+<text x="66" y="307" fill="#6cdec6" font-family="DejaVu Sans, sans-serif" font-size="17" letter-spacing="2">LINUX + macOS     /     OPENSSH     /     LOCAL FIRST</text>
+</svg>

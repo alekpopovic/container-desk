@@ -1,4 +1,10 @@
-# ContainerDesk 0.1.0 — unsigned preview release
+---
+title: "ContainerDesk 0.1.0 — unsigned preview release"
+section: "Releases & platforms"
+icon: "📦"
+---
+
+# 📦 ContainerDesk 0.1.0 — unsigned preview release
 
 2026-09-29. **[Public pre-release v0.1.0](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0)**, manually published at the owner's explicit request after local acceptance. All six verified installers, SHA256SUMS and provenance/build metadata are attached. No publisher workflow or auto-updater was added. Artifact source: `ce33d6cd9bba5823642749a26d3e6d367a9bab73`; [successful native run](https://github.com/alekpopovic/container-desk/actions/runs/36594720178). Later review/documentation commits do not rebuild or relabel these packages.
 
@@ -16,7 +22,7 @@ Saved SSH aliases/groups and explicit native configuration resolution; direct an
 
 Packaging floors are Ubuntu 24.04/glibc 2.39 and macOS 15.0; other OS versions are not execution claims. Linux requires the documented GTK/WebKit/OpenSSH libraries, plus FUSE 2 compatibility for ordinary AppImage mounting. Mac uses system OpenSSH and WKWebView. No local Docker, Docker Desktop, Node, Rust, Python or jq is required by the installed app. The remote server needs Linux Docker Engine/CLI, a supported POSIX shell and the user's existing access; Compose CLI is required only for Compose actions. Actual matrix used Docker 28.3.3, Compose 2.36.2 and encrypted native-agent keys. Strict trust must already be established independently, including the bastion.
 
-Install/build instructions: [Serbian quick start](../README_SR.md), [Linux packages](linux-packages.md), [Mac packages](macos-packages.md), [development](development.md). Back up settings before a manual update; [rollback guidance](updates.md) distinguishes an independent backup from the rolling previous file.
+Install/build instructions: [Serbian quick start](https://github.com/alekpopovic/container-desk/blob/main/README_SR.md), [Linux packages](linux-packages.md), [Mac packages](macos-packages.md), [development](development.md). Back up settings before a manual update; [rollback guidance](updates.md) distinguishes an independent backup from the rolling previous file.
 
 ## Evidence and limitations
 

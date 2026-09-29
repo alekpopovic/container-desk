@@ -1,4 +1,10 @@
-# Volume metadata and mount relationships
+---
+title: "Volume metadata and mount relationships"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Volume metadata and mount relationships
 
 The selected live daemon has a read-only Volumes route with searchable, paged list/detail views. A volume is identified by its validated name within the complete host/daemon/session scope. Hexadecimal names are displayed as reported; the application does not infer whether a volume was created anonymously from its name alone. Missing driver, scope, creation time and mountpoint remain unknown/not reported, including external-driver responses.
 

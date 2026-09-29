@@ -1,4 +1,11 @@
-# 046 — Feature-complete desktop checkpoint
+---
+title: "046 — Feature-complete desktop checkpoint"
+section: "Reviews & evidence"
+icon: "🧪"
+historical: true
+---
+
+# 🧪 046 — Feature-complete desktop checkpoint
 
 This checkpoint covers the implemented product on native Linux, before release engineering. It does not certify installers, an older Ubuntu baseline, macOS execution or public signing. The evidence below distinguishes the integrated 046 journey from earlier isolated feature checks.
 
@@ -45,4 +52,4 @@ Lifecycle inspection covered native session generation checks, log/event ACK bou
 
 047–050: security/regression/lab/integration review. 051–054: reproducible native build and package creation/installation on the documented Linux and both macOS architectures. 055: distinguish local unsigned package evidence from available signing/notarization credentials. 058: execute the full target-platform acceptance matrix, including physical sleep/wake, GUI launch/agent and native dialogs. 059–060: actual release candidate artifacts, checksums, clean source contents and final handover.
 
-Missing macOS hardware/runners, baseline runtime or signing credentials cannot be replaced by cross-compilation, browser mocks, a CI YAML file or an unsigned Linux binary. No public artifacts have been published. Final observed command results and binary digest are in [046 evidence](../../codex/tracking/evidence/046.md) and [native results](../verification/046-native/RESULTS.md).
+Missing macOS hardware/runners, baseline runtime or signing credentials cannot be replaced by cross-compilation, browser mocks, a CI YAML file or an unsigned Linux binary. No public artifacts have been published. Final observed command results and binary digest are in [046 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/046.md) and [native results](../verification/046-native/RESULTS.md).

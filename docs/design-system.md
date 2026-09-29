@@ -1,4 +1,11 @@
-# Workspace layout and design tokens
+---
+title: "Workspace layout and design tokens"
+section: "Build & design"
+icon: "🛠️"
+historical: true
+---
+
+# 🛠️ Workspace layout and design tokens
 
 Implemented in prompt 003. `WorkspaceShell` provides host groups, a persistent host heading, resource navigation and a table/detail area. Routes use local URL hashes: `#/containers`, `#/compose`, `#/images`, `#/volumes`, `#/networks`, `#/settings`. Unknown hashes fall back to Containers. Links use `aria-current="page"`; normal browser Back navigation works without a routing dependency.
 
@@ -24,4 +31,4 @@ Playwright checks actual CSS token contrast: normal/muted text against canvas/su
 
 `tests/ui/fixture.html` is an isolated development-only entry for synthetic loading/offline/error states and long/untrusted host text. Production imports neither the fixture nor its host values; the distribution was inspected to confirm their absence. It does not implement the separate offline development feature from prompt 008.
 
-`npm run test:ui` runs 18 checks over light/dark at 1280×800, 800×700 and 640×480. It starts its own loopback Vite server at port 1431 with no reuse of another server. Install the pinned Playwright browser if needed with `npm exec playwright -- install chromium`. Browser screenshots and fixture checks are distinct from the real Linux native captures in [003 evidence](../codex/tracking/evidence/003.md).
+`npm run test:ui` runs 18 checks over light/dark at 1280×800, 800×700 and 640×480. It starts its own loopback Vite server at port 1431 with no reuse of another server. Install the pinned Playwright browser if needed with `npm exec playwright -- install chromium`. Browser screenshots and fixture checks are distinct from the real Linux native captures in [003 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/003.md).

@@ -1,4 +1,10 @@
-# Network inventory and attachments
+---
+title: "Network inventory and attachments"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Network inventory and attachments
 
 The live Networks route lists full network identities and reported names, drivers and scopes. Details show internal/IPv6 flags, creation metadata, IPAM driver, subnet/range/gateway/auxiliary addresses, masked labels/options, and reported container endpoints. Missing optional fields are unknown/not reported. Malformed optional metadata becomes unknown with a visible incomplete-metadata notice; invalid required identity, duplicates and bounds violations fail the read.
 

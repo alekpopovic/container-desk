@@ -1,4 +1,10 @@
-# Read scheduling and stale data
+---
+title: "Read scheduling and stale data"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Read scheduling and stale data
 
 The IPC client schedules only the finite read commands `list_containers`, `list_compose`, `inspect_container`, `container_logs` and `container_stats`. Mutations, confirmation intents, terminal input, native exports and stream startup/ACKs use their existing separate paths. The scheduler has no generic mutation retry entry point.
 

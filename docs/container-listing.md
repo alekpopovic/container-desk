@@ -1,4 +1,12 @@
-# Docker container listing adapter
+---
+title: "Docker container listing adapter"
+section: "Containers & resources"
+icon: "▦"
+---
+
+<!-- {% raw %} -->
+
+# ▦ Docker container listing adapter
 
 Implemented in 019, based on the [Docker container ls command and formatting contract](https://docs.docker.com/reference/cli/docker/container/ls/). `docker/listing.rs` builds the registered read-only `docker ps --all --no-trunc --format '{{json .}}'` operation with the verified Docker endpoint/context and central POSIX quoting. The native adapter refreshes capability/daemon identity before dispatch and again before publishing. The complete read, including probes, has a 30-second deadline; stdout is bounded to 16 MiB and stderr to 16 KiB. Connection shutdown cancels owned jobs. The caller must additionally fence the host/session generation.
 
@@ -25,3 +33,5 @@ Run `python3 tests/lab/ssh_auth.py --engine --listing` with the pinned developme
 Even a zero-layer `docker load` uses a mount namespace. The initial ordinary-container attempt failed with `unshare: operation not permitted`; adding SYS_ADMIN alone reached an AppArmor mount denial. **Only `--listing` and only the disposable target** therefore receive SYS_ADMIN and `apparmor=unconfined`. Default seccomp, read-only root, internal network and no host Docker socket remain. The bastion and the 018-only lab do not receive these permissions; no host profile or global security setting is changed. This is development provisioning, never an application action or supported requirement on a user's server. The nested Engine still has private tmpfs data and no bridge/NAT. All owned containers, image data, network, agent and temporary keys are removed after the check; the outer SSH lab image cache remains.
 
 Verified 2026-09-29 on native Ubuntu 26.04.1 x86_64 with Docker Engine/CLI 28.3.3 inside Alpine 3.22.5. Tests cover running/exited/unhealthy and Unicode through deterministic CLI-format fixtures; the real daemon comparison covers `created` containers and an empty inventory. Running nested workloads, native macOS and the live resource UI are not claimed here.
+
+<!-- {% endraw %} -->

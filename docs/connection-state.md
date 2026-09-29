@@ -1,4 +1,10 @@
-# Connection attempt state and cancellation
+---
+title: "Connection attempt state and cancellation"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 Connection attempt state and cancellation
 
 Rust owns the transient state shown by Settings → select an alias → **Connect selected host**. Selecting/browsing an alias and starting the app do not connect. Saved host metadata remains in the existing preferences store; connection state, diagnostics, tokens and durations are never persisted.
 

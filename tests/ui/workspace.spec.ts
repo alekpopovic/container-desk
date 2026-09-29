@@ -220,7 +220,7 @@ test("loading offline and error fixtures keep host context and untrusted text re
       ).toBeVisible();
     if (state === "error") {
       await expect(page.getByRole("alert")).toContainText('<img src="x"');
-      await expect(page.locator("img")).toHaveCount(0);
+      await expect(page.getByRole("alert").locator("img")).toHaveCount(0);
     }
     await page.screenshot({
       path: info.outputPath(`${state}.png`),

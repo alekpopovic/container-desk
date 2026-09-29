@@ -32,7 +32,7 @@ test("explicit demo displays states, IPv6 and Compose with a persistent label", 
   await expect(
     page.getByText("demo-stack / web", { exact: true }),
   ).toBeVisible();
-  await expect(page.locator("img")).toHaveCount(0);
+  await expect(page.getByRole("main").locator("img")).toHaveCount(0);
   for (const route of [
     "Compose",
     "Images",

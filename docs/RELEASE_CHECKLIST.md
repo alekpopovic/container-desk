@@ -1,4 +1,10 @@
-# Local release candidate checklist
+---
+title: "Local release candidate checklist"
+section: "Releases & platforms"
+icon: "📦"
+---
+
+# 📦 Local release candidate checklist
 
 Candidate: 0.1.0, source `ce33d6cd9bba5823642749a26d3e6d367a9bab73`, [native CI 36594720178](https://github.com/alekpopovic/container-desk/actions/runs/36594720178). Local directory: `dist-artifacts/release-candidate-0.1.0-ce33d6c/`. This checklist does not authorize publication.
 

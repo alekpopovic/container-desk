@@ -1,4 +1,11 @@
-# 041 native recovery and shutdown
+---
+title: "041 native recovery and shutdown"
+section: "Reviews & evidence"
+icon: "🧪"
+historical: true
+---
+
+# 🧪 041 native recovery and shutdown
 
 Date: 2026-09-29. Ubuntu 26.04.1 x86_64, WebKitGTK 2.52.6, owned Xvfb/X11 software rendering, release Tauri 2.12.0 executable. Binary SHA-256: `0af8364433add839638d6f8a8913462562a1226e58d9d5c4e472c3c436b2cbe1`.
 

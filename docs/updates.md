@@ -1,4 +1,10 @@
-# Versions, manual updates and rollback
+---
+title: "Versions, manual updates and rollback"
+section: "Start here"
+icon: "🧭"
+---
+
+# 🧭 Versions, manual updates and rollback
 
 ContainerDesk 0.1.0 uses **manual installer updates**. It does not check for updates, download installers in the background or install them automatically. There is no updater plugin, placeholder service endpoint, telemetry client or hosted runtime asset. The production webview's network policy permits only Tauri IPC. A user-selected SSH connection still makes its expected SSH traffic; system WebKit/desktop services are outside the app's telemetry claim.
 

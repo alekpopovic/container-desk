@@ -1,4 +1,10 @@
-# Using ContainerDesk
+---
+title: "Using ContainerDesk"
+section: "Start here"
+icon: "🧭"
+---
+
+# 🧭 Using ContainerDesk
 
 Install the package for your actual OS/CPU from the owner-authorized [v0.1.0 unsigned preview](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0), following [Linux](linux-packages.md) or [macOS](macos-packages.md) instructions. Compare the selected file's SHA-256 with its matching row in the attached SHA256SUMS. All release downloads were independently verified; [publication receipt](releases/v0.1.0.md). Native platform acceptance is complete for the [recorded targets](platform-matrix.md), while Mac Developer ID signing/notarization and downloaded Gatekeeper acceptance remain unverified. No publishing workflow or automatic updater is installed. Follow [manual updates](updates.md) for settings backup and rollback; preserve host and OS trust checks.
 
@@ -6,7 +12,7 @@ The application needs native OpenSSH and normal OS libraries. Node, Rust, Python
 
 ## Trusted SSH and first connection
 
-Set up your own reviewed SSH config and existing key access outside the app. The [Serbian quick start](../README_SR.md#2-pripremi-pouzdan-ssh-pristup) includes direct/bastion/private alias examples. Use concrete short aliases, not wildcard expressions or options. Alias discovery reads bounded config/Include files without evaluating executable directives. **Connect saved host** or **Resolve selected alias** invokes OpenSSH and may evaluate trusted `Match exec`/`ProxyCommand` directives. Do not select an untrusted downloaded config.
+Set up your own reviewed SSH config and existing key access outside the app. The [Serbian quick start](https://github.com/alekpopovic/container-desk/blob/main/README_SR.md#2-pripremi-pouzdan-ssh-pristup) includes direct/bastion/private alias examples. Use concrete short aliases, not wildcard expressions or options. Alias discovery reads bounded config/Include files without evaluating executable directives. **Connect saved host** or **Resolve selected alias** invokes OpenSSH and may evaluate trusted `Match exec`/`ProxyCommand` directives. Do not select an untrusted downloaded config.
 
 Obtain host-key fingerprints independently, then verify/accept the direct host, bastion and final destination explicitly in your terminal. Keep normal known_hosts files and strict verification. Destination SSH options do not necessarily configure the bastion; check that alias independently. A working direct login does not prove that a bastion can forward to the private target. `ProxyJump` uses the local client to authenticate both hops; agent forwarding is unnecessary.
 

@@ -1,4 +1,10 @@
-# Desktop launch and SSH setup
+---
+title: "Desktop launch and SSH setup"
+section: "Start here"
+icon: "🧭"
+---
+
+# 🧭 Desktop launch and SSH setup
 
 ContainerDesk runs the configured absolute OpenSSH executable (default `/usr/bin/ssh`) directly. It does not source `.profile`, `.bashrc`, `.zprofile` or `.zshrc`, or search for Docker, jq, Python, Node or Rust on the client. Installed packages still require the platform desktop libraries. Trusted SSH configuration may independently run its own `Match exec` or `ProxyCommand`; those helpers remain the user's responsibility and may have their own dependencies.
 

@@ -1,4 +1,12 @@
-# Docker event hints
+---
+title: "Docker event hints"
+section: "Containers & resources"
+icon: "▦"
+---
+
+<!-- {% raw %} -->
+
+# ▦ Docker event hints
 
 The selected connected daemon gets one event subscription. Saved hosts are not subscribed in the background. The native backend permits one event stream application-wide and shares the four read permits with other reads. The typed command uses the existing strict OpenSSH session, selected Docker binding, central argument validation and POSIX quoting. Starting a stream rechecks daemon identity. No management permission or remote mutation is involved.
 
@@ -13,3 +21,5 @@ Each new or restarted stream reports a gap and requests a current snapshot. With
 [Docker's events reference](https://docs.docker.com/reference/cli/docker/system/events/) documents limited retained history (the last 256 events). Therefore timestamp replay cannot prove completeness after a gap; the UI explicitly describes event history as best-effort. No durable audit trail or atomic event/snapshot transaction is claimed.
 
 Verification in `codex/tracking/evidence/027.md` separates deterministic burst tests, browser hook/cache tests, real SSH/Docker checks and actual Linux Tauri/WebKit execution. Native labs append filters for only their owned disposable container IDs and use generated keys and strict fixture trust; they never discover a production alias or subscribe to unrelated host events.
+
+<!-- {% endraw %} -->

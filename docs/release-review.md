@@ -1,4 +1,11 @@
-# Release candidate review — 059
+---
+title: "Release candidate review — 059"
+section: "Releases & platforms"
+icon: "📦"
+historical: true
+---
+
+# 📦 Release candidate review — 059
 
 The integrated review found no unresolved release-blocking application defect within the verified v1 scope. Native platform acceptance is complete; public signed distribution is not approved. This is a bounded source/evidence review, not a security certification.
 
@@ -17,7 +24,7 @@ All completed prompt evidence 001–058 was checked against current behavior, hi
 | 051–054 | Reproducible verifier/native builds, read-only CI permission, actual deb and both Mac package launches; 052 publisher omitted by explicit user scope decision |
 | 055–058 | No-credentials signing-readiness branch accurately completed; manual updates/rollback/no unsolicited update connection; fresh quick start; final three-platform native matrix and exact final package proofs |
 
-[Tracker/evidence index](../codex/tracking/TRACKER.md), [security boundary review](security-review.md), [platform matrix](platform-matrix.md), [resource bounds](resource-limits.md), [release notes](RELEASE_NOTES.md). Former implementation defects and failed harness attempts are retained in their original evidence; none is silently counted as a pass. Final 058 corrections changed tests/provisioning and evidence, not production application behavior. No new code fix was necessary during 059, so no mirrored or snapshot-only regression test was added.
+[Tracker/evidence index](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/TRACKER.md), [security boundary review](security-review.md), [platform matrix](platform-matrix.md), [resource bounds](resource-limits.md), [release notes](RELEASE_NOTES.md). Former implementation defects and failed harness attempts are retained in their original evidence; none is silently counted as a pass. Final 058 corrections changed tests/provisioning and evidence, not production application behavior. No new code fix was necessary during 059, so no mirrored or snapshot-only regression test was added.
 
 ## Dependency reassessment
 

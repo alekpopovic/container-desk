@@ -1,0 +1,119 @@
+[
+  {
+    "title": "Start here",
+    "icon": "🧭",
+    "pages": [
+      "README.md",
+      "user-guide.md",
+      "desktop-launch.md",
+      "project-status.md",
+      "updates.md",
+      "accessibility.md",
+      "settings.md",
+      "support-reports.md",
+      "demo-mode.md"
+    ]
+  },
+  {
+    "title": "Releases & platforms",
+    "icon": "📦",
+    "pages": [
+      "RELEASE_NOTES.md",
+      "releases/v0.1.0.md",
+      "linux-packages.md",
+      "macos-packages.md",
+      "platform-matrix.md",
+      "signing.md",
+      "RELEASE_CHECKLIST.md",
+      "release-review.md",
+      "FINAL_HANDOVER.md"
+    ]
+  },
+  {
+    "title": "Hosts & SSH",
+    "icon": "🔐",
+    "pages": [
+      "host-inventory.md",
+      "ssh-discovery.md",
+      "ssh-resolution.md",
+      "ssh-authentication.md",
+      "ssh-runner.md",
+      "ssh-multiplexing.md",
+      "connection-state.md",
+      "connection-recovery.md",
+      "native-dependencies.md",
+      "docker-capabilities.md",
+      "remote-commands.md"
+    ]
+  },
+  {
+    "title": "Containers & resources",
+    "icon": "▦",
+    "pages": [
+      "container-inventory.md",
+      "container-listing.md",
+      "container-inspect.md",
+      "container-detail-panels.md",
+      "container-statistics.md",
+      "log-viewer.md",
+      "log-snapshots.md",
+      "live-log-streams.md",
+      "docker-events.md",
+      "compose-discovery.md",
+      "image-inventory.md",
+      "volume-inventory.md",
+      "network-inventory.md",
+      "read-scheduling.md"
+    ]
+  },
+  {
+    "title": "Management & terminal",
+    "icon": "⚡",
+    "pages": [
+      "operation-policy.md",
+      "container-management.md",
+      "batch-actions.md",
+      "mutation-activity.md",
+      "compose-actions.md",
+      "terminal-transport.md"
+    ]
+  },
+  {
+    "title": "Build & design",
+    "icon": "🛠️",
+    "pages": [
+      "development.md",
+      "toolchains.md",
+      "verification-command.md",
+      "native-testing.md",
+      "integration-lab.md",
+      "ci.md",
+      "ipc-contract.md",
+      "design-system.md",
+      "branding.md",
+      "github-pages.md",
+      "decisions/0001-architecture.md"
+    ]
+  },
+  {
+    "title": "Reviews & evidence",
+    "icon": "🧪",
+    "pages": [
+      "security-review.md",
+      "regression-tests.md",
+      "resource-limits.md",
+      "checkpoints.md",
+      "execution.md",
+      "checkpoints/018-ssh.md",
+      "checkpoints/030-read-only.md",
+      "checkpoints/038-management.md",
+      "checkpoints/046-feature-complete.md",
+      "verification/040-native/RESULTS.md",
+      "verification/041-native/RESULTS.md",
+      "verification/042-native/RESULTS.md",
+      "verification/043-native/RESULTS.md",
+      "verification/046-native/RESULTS.md",
+      "verification/047-native/RESULTS.md"
+    ]
+  }
+]

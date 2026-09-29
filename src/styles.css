@@ -174,15 +174,12 @@ h3 {
   letter-spacing: -0.04em;
 }
 .brand-mark {
-  display: grid;
-  place-items: center;
+  display: block;
   flex: 0 0 30px;
-  height: 34px;
-  border-radius: 7px;
-  background: var(--accent);
-  color: var(--surface);
-  font-size: 1.571429rem;
+  width: 30px;
+  height: 30px;
 }
+
 .brand-suffix {
   color: var(--accent);
 }
@@ -559,7 +556,8 @@ legend {
   }
   .brand-mark {
     flex-basis: 24px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
   .host-header {
     padding: 20px;

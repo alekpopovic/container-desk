@@ -1,4 +1,10 @@
-# Disposable SSH/Docker integration lab
+---
+title: "Disposable SSH/Docker integration lab"
+section: "Build & design"
+icon: "🛠️"
+---
+
+# 🛠️ Disposable SSH/Docker integration lab
 
 `tests/lab/integration.py` is an explicit opt-in native Linux/macOS lab. The remote Linux VM uses KVM when available or QEMU TCG; the application backend, OpenSSH and PTY run natively on the client. It runs the application's actual Rust backend and installed native OpenSSH against a new Alpine VM with its own Docker Engine. It never invokes the host Docker client, mounts the host socket, changes host routes/firewall rules, or reads user SSH keys/configuration. The Rust executable runs with `PATH=/nonexistent`; developer tools are needed only by the harness.
 

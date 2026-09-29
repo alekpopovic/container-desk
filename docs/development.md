@@ -1,4 +1,10 @@
-# Development and build commands
+---
+title: "Development and build commands"
+section: "Build & design"
+icon: "🛠️"
+---
+
+# 🛠️ Development and build commands
 
 Run from the repository root. Use the pinned Node 24.21.0/npm 11.19.0 (`.nvmrc`) and Rust/Cargo 1.98.1 (`rust-toolchain.toml`). Make sure rustup's bin directory is on PATH. See [toolchains](toolchains.md) for native platform prerequisites. Install dependencies with `npm ci`; only npm is used. Keep both `package-lock.json` and `src-tauri/Cargo.lock` committed.
 
@@ -40,7 +46,7 @@ Biome 2.5.14 supplies recommended lint rules and formatting without adding a sec
 - [Tauri capabilities](https://v2.tauri.app/security/capabilities/)
 - [Biome setup](https://biomejs.dev/guides/getting-started/)
 
-Original scaffold verification is recorded in [prompt 002 evidence](../codex/tracking/evidence/002.md); current native automation is tracked separately in [prompt 050 evidence](../codex/tracking/evidence/050.md).
+Original scaffold verification is recorded in [prompt 002 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/002.md); current native automation is tracked separately in [prompt 050 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/050.md).
 
 ## Launching from a Snap-hosted terminal
 

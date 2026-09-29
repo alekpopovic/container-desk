@@ -1,4 +1,10 @@
-# Support reports and local troubleshooting data
+---
+title: "Support reports and local troubleshooting data"
+section: "Start here"
+icon: "🧭"
+---
+
+# 🧭 Support reports and local troubleshooting data
 
 Settings → Support report and local history prepares an app-controlled JSON preview. It does not run a new SSH command. The backend reads the current connection snapshot and bounded local activity, then builds a new object from an explicit field allowlist. It never serializes those source objects wholesale or tries to remove secrets from raw text afterward.
 

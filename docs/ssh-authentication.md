@@ -1,4 +1,10 @@
-# SSH authentication and trust
+---
+title: "SSH authentication and trust"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 SSH authentication and trust
 
 Settings → select a trusted alias → **Check SSH access** explicitly opens a connection and runs one fixed, POSIX-quoted `printf` command. A successful marker means SSH authentication and remote command execution worked. It does not create a persistent host session or prove Docker readiness. The check has a 15-second overall deadline, 1 KiB stdout and 64 KiB stderr limits, shares the single native diagnostic gate, and is disabled by Rust in demo mode. It never retries automatically.
 

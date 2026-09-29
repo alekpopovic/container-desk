@@ -1,4 +1,10 @@
-# Effective SSH configuration
+---
+title: "Effective SSH configuration"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 Effective SSH configuration
 
 After selecting a candidate or manual alias in Settings, choose **Resolve selected alias**. Only this explicit action invokes the selected OpenSSH executable. The explanation above the button notes that native `ssh -G` evaluates Match exec and can run local code. Trust the config and its includes; ProxyCommand is also trusted executable configuration. Resolution does not open an SSH session, but it is not side-effect free. [OpenSSH reference](https://man.openbsd.org/ssh#G).
 
@@ -12,4 +18,4 @@ Each invocation owns a process group. Timeout/error cleanup signals that group o
 
 Demo mode denies resolution in Rust; mode changes and other native probes/discovery are excluded during resolution. UI edits/new selections clear effective values and late replies after route/mode changes are ignored. No connection, authentication, known_hosts update, key copying or mutation retry is added here.
 
-Verification: [010 evidence](../codex/tracking/evidence/010.md). Native Linux tests compare fixture values to actual `/usr/bin/ssh -G`, including precedence, Include, jumps and a deliberately controlled Match exec marker. Browser fixtures test presentation separately. macOS and actual SSH sessions are still unverified.
+Verification: [010 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/010.md). Native Linux tests compare fixture values to actual `/usr/bin/ssh -G`, including precedence, Include, jumps and a deliberately controlled Match exec marker. Browser fixtures test presentation separately. macOS and actual SSH sessions are still unverified.

@@ -1,4 +1,10 @@
-# Saved host inventory
+---
+title: "Saved host inventory"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 Saved host inventory
 
 Hosts connects alias discovery, local metadata and explicit native connection state. Browse aliases reads only trusted SSH config candidates; selecting, saving, filtering or launching does not resolve/connect. A manually entered alias follows the same validation. Connect saved host resolves the saved original alias/config policy, opens its owned SSH transport and probes Docker. Disconnect and Retry are explicit. The error remains attached to the chosen host with actionable static diagnostics.
 

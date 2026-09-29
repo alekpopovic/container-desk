@@ -1,4 +1,10 @@
-# Resource limits and pressure checks
+---
+title: "Resource limits and pressure checks"
+section: "Reviews & evidence"
+icon: "🧪"
+---
+
+# 🧪 Resource limits and pressure checks
 
 The app reads an optional `resource-limits.json` from its application data directory at startup. On Linux this is normally `$XDG_DATA_HOME/dev.containerdesk.app` or `~/.local/share/dev.containerdesk.app`; on macOS it is `~/Library/Application Support/dev.containerdesk.app`. The file contains only numeric resource limits. Restart to apply changes. Settings shows the effective values and warns if an invalid/unreadable configuration was ignored. No file is created or rewritten automatically.
 

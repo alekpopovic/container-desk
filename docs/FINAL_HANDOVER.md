@@ -1,4 +1,11 @@
-# ContainerDesk 0.1.0 — final handover
+---
+title: "ContainerDesk 0.1.0 — final handover"
+section: "Releases & platforms"
+icon: "📦"
+historical: true
+---
+
+# 📦 ContainerDesk 0.1.0 — final handover
 
 **Post-handover update:** the owner committed the previously uncommitted CI relocation as `c2464b8` and then explicitly requested publication. [v0.1.0](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0) now contains the original verified installers as an unsigned public preview; [publication receipt](releases/v0.1.0.md). No workflow was enabled or added. The 060 handover below and the local candidate document their earlier pre-publication state; original package bytes/hashes remain unchanged.
 
@@ -46,7 +53,7 @@ Open the installed deb's **ContainerDesk** entry from the desktop menu. The base
 
 On macOS, select `aarch64-apple-darwin` for Apple Silicon or `x86_64-apple-darwin` for Intel, verify the manifest, open the corresponding DMG and copy ContainerDesk.app to Applications. Packaging minimum is 15.0; actual execution is 15.7.9. There is no universal/Rosetta claim. ARM is linker ad-hoc, Intel unsigned; Developer ID/notarization and normal internet-download Gatekeeper approval are unverified. Do not disable OS protection to turn this into a signed-distribution claim. [Mac details](macos-packages.md).
 
-Runtime needs native OpenSSH and the user's existing trusted SSH configuration/agent plus remote Linux Docker Engine/CLI access. The installed app requires no local Docker/Docker Desktop, Node, Rust, Python or jq. Remote Compose CLI is needed only for Compose actions. Follow the [Serbian quick start](../README_SR.md) or [user guide](user-guide.md): discover aliases without execution, explicitly select/resolve/save a host, connect, then inspect read-only. Enable management/terminal separately and confirm exact targets when needed. Establish host trust and load encrypted keys independently in the user's own environment. No production server was used during development verification.
+Runtime needs native OpenSSH and the user's existing trusted SSH configuration/agent plus remote Linux Docker Engine/CLI access. The installed app requires no local Docker/Docker Desktop, Node, Rust, Python or jq. Remote Compose CLI is needed only for Compose actions. Follow the [Serbian quick start](https://github.com/alekpopovic/container-desk/blob/main/README_SR.md) or [user guide](user-guide.md): discover aliases without execution, explicitly select/resolve/save a host, connect, then inspect read-only. Enable management/terminal separately and confirm exact targets when needed. Establish host trust and load encrypted keys independently in the user's own environment. No production server was used during development verification.
 
 ## Build and maintain
 

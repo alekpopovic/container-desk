@@ -1,6 +1,12 @@
-# ADR 0001 — One native desktop application over OpenSSH
+---
+title: "ADR 0001 — One native desktop application over OpenSSH"
+section: "Build & design"
+icon: "🛠️"
+---
 
-Status: accepted implementation contract for prompt 001, 2026-09-28. This decision specifies the application to build; it does not claim that its runtime exists. Source contract: [original architecture](../../codex/docs/ARCHITECTURE.md).
+# 🛠️ ADR 0001 — One native desktop application over OpenSSH
+
+Status: accepted implementation contract for prompt 001, 2026-09-28. This decision specifies the application to build; it does not claim that its runtime exists. Source contract: [original architecture](https://github.com/alekpopovic/container-desk/blob/main/codex/docs/ARCHITECTURE.md).
 
 ## Repository and scope
 

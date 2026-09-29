@@ -1,4 +1,10 @@
-# Local settings
+---
+title: "Local settings"
+section: "Start here"
+icon: "🧭"
+---
+
+# 🧭 Local settings
 
 The native app resolves Tauri's platform application-data directory and owns its `preferences/` child. Linux normally uses `$XDG_DATA_HOME/dev.containerdesk.app/preferences` (or `~/.local/share/...`); macOS uses its native application-data path. Paths come from Tauri, not renderer input. Tests inject a separate adapter or temporary directory.
 
@@ -12,4 +18,4 @@ Corrupt primary JSON is copied to an exclusive settings.corrupt-N.json archive b
 
 `get_preferences` and `set_theme` serve preferences; mode-scoped inventory/save/remove/connect/disconnect commands serve the [host editor](host-inventory.md). Connection snapshots are transient. In native mode the existing theme controls load and save preferences; browser preview remains in-memory. Recovery/migration notices are visible on all routes for the current run. No host is connected by startup or preference loading.
 
-Verification: original [005 evidence](../codex/tracking/evidence/005.md), later [native Mac tests and package paths in 054](../codex/tracking/evidence/054.md), and [real-file schema migration/rollback in 056](../codex/tracking/evidence/056.md). Native file tests pass on Linux and both Mac architectures; real Finder startup creates the private Mac preference directory. Unit fault injection models an interrupted commit, not physical power-loss certification. Keep a separate pre-upgrade copy as described in [manual updates](updates.md); the rolling previous file is not a permanent downgrade backup.
+Verification: original [005 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/005.md), later [native Mac tests and package paths in 054](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/054.md), and [real-file schema migration/rollback in 056](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/056.md). Native file tests pass on Linux and both Mac architectures; real Finder startup creates the private Mac preference directory. Unit fault injection models an interrupted commit, not physical power-loss certification. Keep a separate pre-upgrade copy as described in [manual updates](updates.md); the rolling previous file is not a permanent downgrade backup.

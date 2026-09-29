@@ -1,4 +1,11 @@
-# Native Linux 046 results
+---
+title: "Native Linux 046 results"
+section: "Reviews & evidence"
+icon: "🧪"
+historical: true
+---
+
+# 🧪 Native Linux 046 results
 
 2026-09-29, Ubuntu 26.04.1 x86_64 / WebKitGTK 2.52.6, release binary SHA-256 `5765040b70cfdc153f799b8ae763b867e09194ffa6eeda4a3c101223e6065031`.
 

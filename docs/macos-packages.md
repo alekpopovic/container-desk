@@ -1,6 +1,12 @@
-# macOS app and DMG packages
+---
+title: "macOS app and DMG packages"
+section: "Releases & platforms"
+icon: "📦"
+---
 
-ContainerDesk targets macOS 15.0 or later on two explicit native architectures: Apple Silicon `aarch64-apple-darwin` and Intel `x86_64-apple-darwin`. There is no universal or Rosetta compatibility claim. Native GitHub jobs assert the machine and compiler architecture and use the committed Node/npm/Rust/Tauri versions. Runtime claims require the corresponding executed package test, recorded in [054 evidence](../codex/tracking/evidence/054.md) and the final [058 matrix](platform-matrix.md).
+# 📦 macOS app and DMG packages
+
+ContainerDesk targets macOS 15.0 or later on two explicit native architectures: Apple Silicon `aarch64-apple-darwin` and Intel `x86_64-apple-darwin`. There is no universal or Rosetta compatibility claim. Native GitHub jobs assert the machine and compiler architecture and use the committed Node/npm/Rust/Tauri versions. Runtime claims require the corresponding executed package test, recorded in [054 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/054.md) and the final [058 matrix](platform-matrix.md).
 
 After the standard verification gate, `scripts/package_ci.py` creates a versioned `.app.tar.gz` and `.dmg` for the current native architecture. Metadata schema 2 lists both hashes/lengths and the source revision; SHA256SUMS also covers metadata. It is emitted before runtime checks, so its `runtimeAcceptance: not_run` is the packaging-stage snapshot. The separate native acceptance report binds its results to the exact DMG and installed-executable hashes; it is retained with the CI reports. Neither report grants public release approval. Bundle identity is `dev.containerdesk.app`, minimum system version is `15.0`, and Tauri converts the committed ContainerDesk icon to ICNS. The app uses ordinary user SSH files and the system `/usr/bin/ssh`; no shell-profile startup, embedded SSH key or remote agent is required.
 

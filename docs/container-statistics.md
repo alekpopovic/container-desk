@@ -1,4 +1,12 @@
-# Selected-container resource statistics
+---
+title: "Selected-container resource statistics"
+section: "Containers & resources"
+icon: "▦"
+---
+
+<!-- {% raw %} -->
+
+# ▦ Selected-container resource statistics
 
 A live selected container has CPU, memory, network I/O, block I/O and PID measurements. No stats command runs against a guessed alias, an unselected saved host or the demo provider. The existing native OpenSSH session and pinned Docker identity/configuration are reused.
 
@@ -23,3 +31,5 @@ Decimal units (kB/MB/GB...) use powers of 1000; binary units (KiB/MiB/GiB...) us
 Parser/IPC tests cover unit conversion, CPU above 100, unknown values, hostile inputs, bounded identity history and overlapping/late polling. A browser fixture with a controlled clock/focus exercises actual panel effects for inactivity, resume, interval change, stopped/disappeared gaps and disconnect. This is explicitly simulated lifecycle evidence, not native window evidence.
 
 The owned loopback SSH/Docker lab additionally checks real running/stopped output, concurrent request rejection, container disappearance between state/stats reads and cancellation on disconnect. The actual release Tauri/WebKit app renders those values and charts and pauses/resumes sampling on an owned Xvfb X11 display. Native macOS/Wayland and packaged execution remain separate platform gates. Evidence is in `codex/tracking/evidence/026.md`.
+
+<!-- {% endraw %} -->

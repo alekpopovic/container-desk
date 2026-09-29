@@ -1,4 +1,10 @@
-# Container inventory
+---
+title: "Container inventory"
+section: "Containers & resources"
+icon: "▦"
+---
+
+# ▦ Container inventory
 
 The live table is bound only after an explicitly connected saved host reaches Ready. Rust checks the current host, daemon, session ID and generation before and after each read, in addition to the policy registration. The listing adapter checks the actual Docker binding around the command. A changed binding revokes the native session. Management and terminal permissions remain disabled.
 

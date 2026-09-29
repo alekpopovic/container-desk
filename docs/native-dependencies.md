@@ -1,4 +1,10 @@
-# Native dependency diagnostics
+---
+title: "Native dependency diagnostics"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 Native dependency diagnostics
 
 Settings → Native dependencies runs a fixed local OpenSSH version probe and a Unix agent-socket reachability check. The renderer receives app version, OS/architecture, selected executable path, bounded OpenSSH version and safe status messages. Local Docker, jq, Python, Rust and Node are not runtime dependencies; Python is only used by the development tracker.
 
@@ -12,4 +18,4 @@ The process is spawned directly with the one-element `-V` argument array, null s
 
 Adding the first child-process probe exposed a storage-lock lifetime race in parallel tests: a just-forked child can briefly inherit a flock descriptor before exec closes it. FileStorage now explicitly unlocks on owner drop. A deterministic duplicated-descriptor regression test covers this window, while normal concurrent-store rejection remains tested.
 
-[006 evidence](../codex/tracking/evidence/006.md) records native Linux execution with PATH=/nonexistent and SSH_AUTH_SOCK unset. No production host, SSH configuration or private keys were accessed. macOS and baseline Ubuntu 24.04 remain separate native gates.
+[006 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/006.md) records native Linux execution with PATH=/nonexistent and SSH_AUTH_SOCK unset. No production host, SSH configuration or private keys were accessed. macOS and baseline Ubuntu 24.04 remain separate native gates.

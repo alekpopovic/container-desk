@@ -1,4 +1,11 @@
-# Read-only MVP checkpoint
+---
+title: "Read-only MVP checkpoint"
+section: "Reviews & evidence"
+icon: "🧪"
+historical: true
+---
+
+# 🧪 Read-only MVP checkpoint
 
 The current native application connects a saved SSH alias to a remote Linux Docker daemon and provides container inventory, inspect, health, ports, finite/followed logs, selected-container statistics, event-driven refresh and Compose grouping. This checkpoint verifies the existing integrated application; it introduces no new remote write operation.
 
@@ -38,8 +45,8 @@ Logs retain at most 20,000 lines/8 MiB, truncate individual records at 256 KiB a
 
 ## Real native evidence and platform boundary
 
-[030 evidence](../../codex/tracking/evidence/030.md) records the actual checks and commands. A real release Tauri/WebKitGTK application on Ubuntu 26.04.1 x86_64, X11/Xvfb/software rendering traversed two owned OpenSSH daemons using ProxyJump. It listed and inspected real disposable Docker containers, observed health/exposure, followed/stopped/resumed logs, received statistics, navigated Compose groups and refreshed a deletion from events. Its PATH contained no Docker or jq. The external lab harness used local Docker to provision/reap only explicitly owned fixtures.
+[030 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/030.md) records the actual checks and commands. A real release Tauri/WebKitGTK application on Ubuntu 26.04.1 x86_64, X11/Xvfb/software rendering traversed two owned OpenSSH daemons using ProxyJump. It listed and inspected real disposable Docker containers, observed health/exposure, followed/stopped/resumed logs, received statistics, navigated Compose groups and refreshed a deletion from events. Its PATH contained no Docker or jq. The external lab harness used local Docker to provision/reap only explicitly owned fixtures.
 
-The running-workload lab's fixed remote command gate restricted all container operations to those owned IDs. It intentionally denied Compose plugin listing so native UI verified the documented exact-label fallback. Actual plugin listing and plugin-absent grouping against a private Docker Engine were independently verified in [029 evidence](../../codex/tracking/evidence/029.md). A second private empty Engine verified direct and ProxyJump successful empty snapshots plus SSH trust/authentication-denied UX. Authentication-denied evidence is not a claim of native Docker socket-permission-denial coverage.
+The running-workload lab's fixed remote command gate restricted all container operations to those owned IDs. It intentionally denied Compose plugin listing so native UI verified the documented exact-label fallback. Actual plugin listing and plugin-absent grouping against a private Docker Engine were independently verified in [029 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/029.md). A second private empty Engine verified direct and ProxyJump successful empty snapshots plus SSH trust/authentication-denied UX. Authentication-denied evidence is not a claim of native Docker socket-permission-denial coverage.
 
 This proves Linux native execution on the stated host, not package installation, Ubuntu 24.04 compatibility, native Wayland, macOS Intel/Apple Silicon, signing or notarization. Those remain separate native platform gates. No production host or guessed SSH alias was used.

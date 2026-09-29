@@ -1,4 +1,10 @@
-# Container lifecycle controls
+---
+title: "Container lifecycle controls"
+section: "Management & terminal"
+icon: "⚡"
+---
+
+# ⚡ Container lifecycle controls
 
 Select a connected host and an existing container, then explicitly enable management for that session. New/reconnected sessions start read-only. The permission is held by Rust, is never restored from preferences and does not include terminal access. The control reads the backend permission when returning to a container. Saved hosts are labelled read-only by default; connection status describes the SSH session without making a stale permission claim.
 
@@ -14,4 +20,4 @@ After a completed/failed command the UI requests fresh inventory and inspect. It
 
 The lifecycle IPC methods bypass the finite-read retry scheduler. Late results cannot populate a different scope/container view. Both backend one-use intent/host locking and immediate UI admission prevent repeated clicks from dispatching another mutation. Turning management off clears pending intents. Any future terminal access still needs its own opt-in and capability.
 
-[032 evidence](../codex/tracking/evidence/032.md) separates browser fixtures from actual native OpenSSH/Docker state changes and release WebView checks. Only explicitly owned disposable lab containers are changed during development.
+[032 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/032.md) separates browser fixtures from actual native OpenSSH/Docker state changes and release WebView checks. Only explicitly owned disposable lab containers are changed during development.

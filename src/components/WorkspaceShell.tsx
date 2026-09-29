@@ -1,3 +1,4 @@
+import brandMark from "../../docs/assets/brand/mark.svg";
 import { useEffect, useState, type ReactNode } from "react";
 import type {
   ContainerSummary,
@@ -201,9 +202,12 @@ export function WorkspaceShell({
           href="#/containers"
           aria-label="ContainerDesk home"
         >
-          <span className="brand-mark" aria-hidden="true">
-            ▥
-          </span>
+          <img
+            className="brand-mark"
+            src={brandMark}
+            alt=""
+            aria-hidden="true"
+          />
           <span>
             Container<span className="brand-suffix">Desk</span>
           </span>

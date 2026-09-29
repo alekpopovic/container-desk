@@ -1,4 +1,10 @@
-# Mutation confirmation and local activity
+---
+title: "Mutation confirmation and local activity"
+section: "Management & terminal"
+icon: "⚡"
+---
+
+# ⚡ Mutation confirmation and local activity
 
 The backend issues random, one-use confirmation intents valid for 30 seconds of monotonic time. Each belongs to the exact registered host, daemon identity, session/selection generations, operation, ordered full container IDs and timeout. At most 32 intents exist per session and three sessions are admitted. New session registration defaults to read-only; revocation/reconnection clears grants and pending confirmations. Persisted preferences never grant write access. The policy tests also cover altered IDs/actions/timeouts, expiry, reuse and cross-host/session attempts.
 

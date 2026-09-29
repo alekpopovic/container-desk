@@ -1,4 +1,11 @@
-# 040 native terminal UI — Linux
+---
+title: "040 native terminal UI — Linux"
+section: "Reviews & evidence"
+icon: "🧪"
+historical: true
+---
+
+# 🧪 040 native terminal UI — Linux
 
 2026-09-29; Ubuntu 26.04.1 x86_64, WebKitGTK 2.52.6, Tauri 2.12.0, OpenSSH 10.2p1, host Docker 29.8.1. Release binary SHA-256 `1a76b6c757462ebc835d7782ce87606a173acbe238b1cbaafe4e11077c4e9086`. Built with actual Node 24.21.0/npm 11.19.0 and Rust 1.98.1.
 
@@ -22,4 +29,4 @@ python3 tests/lab/logs.py \
 - Screenshots: `native-terminal-connected.png` and `native-terminal-revoked.png` show only owned synthetic resources/output.
 - Cleanup removed/reaped only lab-owned containers, servers, keys, app data and X server.
 
-Earlier failed attempts and fixes are recorded in [040 evidence](../../../codex/tracking/evidence/040.md). This is not macOS, Wayland, Ubuntu 24.04 baseline, installed package or signing/notarization evidence. Two saved host sessions are sequential, both reaching the same isolated server through different explicit aliases; concurrent two-owner fencing is also covered by synthetic ownership tests.
+Earlier failed attempts and fixes are recorded in [040 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/040.md). This is not macOS, Wayland, Ubuntu 24.04 baseline, installed package or signing/notarization evidence. Two saved host sessions are sequential, both reaching the same isolated server through different explicit aliases; concurrent two-owner fencing is also covered by synthetic ownership tests.

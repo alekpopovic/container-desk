@@ -1,4 +1,10 @@
-# Connection recovery and exit
+---
+title: "Connection recovery and exit"
+section: "Hosts & SSH"
+icon: "🔐"
+---
+
+# 🔐 Connection recovery and exit
 
 The application keeps its existing native OpenSSH transport. Its private multiplexed master is checked every 500 ms, with a three-second control-command deadline; OpenSSH keepalives use 15 seconds and two unanswered messages. Direct fallback has no master, so it verifies the fixed access marker every five seconds with a five-second process deadline. Local admission pressure defers that probe. Health checks do not extend the application's idle lease. Strict host verification and the selected trusted SSH configuration apply to every connection; no password prompt, key copying or agent forwarding is introduced.
 

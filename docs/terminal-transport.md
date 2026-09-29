@@ -1,4 +1,10 @@
-# Container terminal transport
+---
+title: "Container terminal transport"
+section: "Management & terminal"
+icon: "⚡"
+---
+
+# ⚡ Container terminal transport
 
 Prompt 039 adds a separate Rust PTY transport. Prompt 040 connects it to an explicitly opened terminal tab. The app launches the validated native OpenSSH executable directly in a local PTY provided by pinned `portable-pty 0.9.0`. It reuses only its own SSH connection identity/socket, requests the remote PTY with `-tt`, enables stdin explicitly and disables OpenSSH escape commands with `EscapeChar=none`. Structured JSON commands retain `-T`/`-n`, pipe capture and their existing bounds.
 
@@ -43,9 +49,9 @@ References: [xterm security guidance](https://xtermjs.org/docs/guides/security/)
 
 ## Evidence and platform scope
 
-[039 evidence](../codex/tracking/evidence/039.md) records actual Linux PTY tests over both direct OpenSSH and ProxyJump. They verify output distinct from echoed input, UID 1000, Ctrl-C cancelling sleep, resize observed through remote stty, exit 7, an actually shell-less running container, rejection after permission revocation, disconnect/reaping and a concurrent JSON inventory request without a PTY. The lab keeps both primary container processes running; only test-created resources are removed.
+[039 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/039.md) records actual Linux PTY tests over both direct OpenSSH and ProxyJump. They verify output distinct from echoed input, UID 1000, Ctrl-C cancelling sleep, resize observed through remote stty, exit 7, an actually shell-less running container, rejection after permission revocation, disconnect/reaping and a concurrent JSON inventory request without a PTY. The lab keeps both primary container processes running; only test-created resources are removed.
 
-[040 evidence](../codex/tracking/evidence/040.md) adds actual release-webview input, resize, native clipboard confirmation, tab closure during output, two saved host sessions, revocation and transcript-free storage/diagnostics.
+[040 evidence](https://github.com/alekpopovic/container-desk/blob/main/codex/tracking/evidence/040.md) adds actual release-webview input, resize, native clipboard confirmation, tab closure during output, two saved host sessions, revocation and transcript-free storage/diagnostics.
 
 The native implementation is tested on Ubuntu 26.04.1 x86_64. The crate supports Unix PTYs, including macOS, but this is not macOS runtime, package-install, Wayland or signing evidence. Production compilation and native backend execution are recorded separately. The selected UID can be unsuitable for an image, and other operators can stop/replace the container after preflight; failures remain visible and are never replayed.
 
