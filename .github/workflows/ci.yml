@@ -94,3 +94,29 @@ jobs:
             playwright-report/
           if-no-files-found: warn
           retention-days: 14
+
+  macos-desktop-probe:
+    name: Desktop access probe (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Inspect existing native desktop access
+        run: |
+          mkdir -p test-results
+          swiftc tests/lab/macos_desktop_probe.swift -o "$RUNNER_TEMP/desktop-probe"
+          "$RUNNER_TEMP/desktop-probe" > test-results/desktop-probe.json
+          cat test-results/desktop-probe.json
+      - name: Retain desktop probe
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: desktop-probe-${{ matrix.runner }}-${{ github.run_id }}
+          path: test-results/
+          retention-days: 14

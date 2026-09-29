@@ -49,8 +49,8 @@ def main():
         raise ValueError('Version is not safe for artifact names')
     system, arch = platform.system(), platform.machine()
     targets = {('Linux', 'x86_64'): ('x86_64-unknown-linux-gnu', 'deb,appimage'),
-               ('Darwin', 'arm64'): ('aarch64-apple-darwin', 'app'),
-               ('Darwin', 'x86_64'): ('x86_64-apple-darwin', 'app')}
+               ('Darwin', 'arm64'): ('aarch64-apple-darwin', 'app,dmg'),
+               ('Darwin', 'x86_64'): ('x86_64-apple-darwin', 'app,dmg')}
     target, bundles = targets[(system, arch)]
     if system == 'Linux':
         release = platform.freedesktop_os_release()
@@ -75,7 +75,7 @@ def main():
     code = execute('unsigned native bundle', ['npm', 'exec', 'tauri', '--', 'bundle', '--ci', '--no-sign',
                    '--bundles', bundles, '--config', '{"bundle":{"active":true}}'], 600)
     if code: return code
-    formats = [('deb/*.deb', '.deb'), ('appimage/*.AppImage', '.AppImage')] if system == 'Linux' else [('macos/*.app', '.app.tar.gz')]
+    formats = [('deb/*.deb', '.deb'), ('appimage/*.AppImage', '.AppImage')] if system == 'Linux' else [('macos/*.app', '.app.tar.gz'), ('dmg/*.dmg', '.dmg')]
     selected = []
     for pattern, suffix in formats:
         found = sorted(bundle_root.glob(pattern))
