@@ -45,7 +45,7 @@ export type SessionScope = { selection: HostSelection, sessionId: SessionId,
  * Backend-issued epoch; changes after reconnect or daemon/context changes.
  */
 sessionGeneration: number, daemonId: string, };
-export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "container_not_found" | "container_not_stopped" | "image_not_found" | "volume_not_found" | "network_not_found" | "compose_configuration_unavailable" | "compose_project_mismatch" | "compose_verification_expired" | "log_driver_unsupported" | "export_failed" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
+export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "container_not_found" | "container_not_stopped" | "container_not_running" | "terminal_closed" | "terminal_shell_unavailable" | "image_not_found" | "volume_not_found" | "network_not_found" | "compose_configuration_unavailable" | "compose_project_mismatch" | "compose_verification_expired" | "log_driver_unsupported" | "export_failed" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
 export type AppError = { code: ErrorCode, message: string, scope: SessionScope | null, };
 export type ConnectionState = "disconnected" | "resolving" | "connecting" | "probing" | "ready" | "degraded" | "error";
 export type HostCapabilities = { docker: boolean, compose: boolean, management: boolean, terminal: boolean, };
@@ -130,6 +130,11 @@ export type CancelMutationResponse = { pendingCancellationRequested: boolean, };
 export type MutationResponse = { scope: SessionScope, spec: MutationSpec, outcome: MutationOutcome, results: Array<MutationTargetResult>, };
 export type TerminalRequest = { scope: SessionScope, intentId: IntentId, spec: TerminalSpec, };
 export type TerminalResponse = { scope: SessionScope, terminalId: SubscriptionId, };
+export type TerminalHandleRequest = { scope: SessionScope, terminalId: SubscriptionId, };
+export type TerminalInputRequest = { scope: SessionScope, terminalId: SubscriptionId, sequence: number, bytes: Array<number>, };
+export type TerminalResizeRequest = { scope: SessionScope, terminalId: SubscriptionId, columns: number, rows: number, };
+export type TerminalState = "starting" | "running" | "exited";
+export type TerminalOutput = { scope: SessionScope, terminalId: SubscriptionId, sequence: number, bytes: Array<number>, state: TerminalState, exitCode: number | null, error: ErrorCode | null, };
 export type InspectContainerRequest = { scope: SessionScope, containerId: ContainerId,
 /**
  * Explicit one-request reveal, bound to the current session; never persisted.

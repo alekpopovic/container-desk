@@ -43,6 +43,10 @@ const messages: Record<ErrorCode, string> = {
   volume_not_found:
     "The volume no longer exists. Refresh the volume inventory.",
   image_not_found: "The image no longer exists. Refresh the image inventory.",
+  container_not_running: "Open a terminal only in a running container.",
+  terminal_closed: "The terminal is closed. Open a new session explicitly.",
+  terminal_shell_unavailable:
+    "The selected shell could not be started. Choose an installed shell explicitly.",
   container_not_stopped: "Only stopped containers can be removed.",
   host_not_found: "Saved host does not exist.",
   session_not_found: "Connection session does not exist.",

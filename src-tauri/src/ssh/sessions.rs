@@ -151,6 +151,12 @@ pub(crate) trait StageDriver: Send + Sync {
     ) -> StageFuture<'a, Result<MutationResponse, AppError>> {
         Box::pin(async { Err(AppError::new(ErrorCode::FeatureUnavailable)) })
     }
+    fn terminal_launch<'a>(
+        &'a self,
+        _request: &'a TerminalRequest,
+    ) -> StageFuture<'a, Result<super::terminal::Launch, AppError>> {
+        Box::pin(async { Err(AppError::new(ErrorCode::FeatureUnavailable)) })
+    }
     fn quiesce(&self) -> StageFuture<'_, ()>;
 }
 pub(crate) struct NativeDriver {
@@ -162,6 +168,52 @@ pub(crate) struct NativeDriver {
     pub docker_binding: AsyncMutex<Option<crate::docker::probe::VerifiedDocker>>,
 }
 impl StageDriver for NativeDriver {
+    fn terminal_launch<'a>(
+        &'a self,
+        request: &'a TerminalRequest,
+    ) -> StageFuture<'a, Result<super::terminal::Launch, AppError>> {
+        Box::pin(async move {
+            tokio::time::timeout(std::time::Duration::from_secs(30), async {
+                let client = self
+                    .connection
+                    .lock()
+                    .await
+                    .as_ref()
+                    .map(|c| c.client())
+                    .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+                let binding = self
+                    .docker_binding
+                    .lock()
+                    .await
+                    .clone()
+                    .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+                let detail = crate::docker::inspect::read(
+                    &client,
+                    &self.docker_options,
+                    &binding,
+                    &InspectContainerRequest {
+                        scope: request.scope.clone(),
+                        container_id: request.spec.container_id.clone(),
+                        reveal_sensitive: false,
+                    },
+                )
+                .await?;
+                if detail.summary.state != "running" {
+                    return Err(AppError::new(ErrorCode::ContainerNotRunning));
+                }
+                let (fresh, _) = crate::docker::probe::run(&client, &self.docker_options).await;
+                if fresh.daemon_id.as_deref() != Some(request.scope.daemon_id.as_str()) {
+                    return Err(AppError::new(ErrorCode::StaleSession));
+                }
+                let plan = crate::policy::registry::confirmation(
+                    &ConfirmationOperation::Terminal(request.spec.clone()),
+                )?;
+                client.terminal_launch(binding.prepare(plan, &fresh)?)
+            })
+            .await
+            .map_err(|_| AppError::new(ErrorCode::OperationTimedOut))?
+        })
+    }
     fn run<'a>(
         &'a self,
         stage: ConnectionStage,
@@ -710,6 +762,34 @@ pub struct Sessions {
     control: AsyncMutex<Option<Worker>>,
 }
 impl Sessions {
+    pub(crate) async fn terminal_launch(
+        &self,
+        request: &TerminalRequest,
+    ) -> Result<super::terminal::Launch, AppError> {
+        self.require_scope(&request.scope)?;
+        let driver = self
+            .control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+            .as_ref()
+            .and_then(|w| w.driver.upgrade())
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+        let result = driver.terminal_launch(request).await;
+        self.require_scope(&request.scope)?;
+        if result
+            .as_ref()
+            .is_err_and(|e| e.code == ErrorCode::StaleSession)
+        {
+            drop(driver);
+            let _ = self
+                .disconnect(&ConnectionToken {
+                    session_id: request.scope.session_id.clone(),
+                    session_generation: request.scope.session_generation,
+                })
+                .await;
+        }
+        result
+    }
     pub(crate) async fn begin(
         &self,
         selection: SshSelection,

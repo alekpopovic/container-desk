@@ -222,6 +222,25 @@ pub(crate) struct Client {
     persistence_seconds: u32,
 }
 impl Client {
+    pub(crate) fn terminal_launch(
+        &self,
+        command: crate::docker::PreparedCommand,
+    ) -> Result<super::terminal::Launch, AppError> {
+        if *command.category() != crate::policy::registry::OperationCategory::Terminal {
+            return Err(AppError::new(ErrorCode::PermissionDenied));
+        }
+        let executable = crate::diagnostics::validate_executable(&self.executable)
+            .map_err(|_| AppError::new(ErrorCode::TransportUnavailable))?;
+        Ok(super::terminal::Launch {
+            executable,
+            arguments: self.channel_arguments(command.encoded().into(), true)?,
+            lease: Box::new(ChannelLease::new(
+                self.policy.clone(),
+                self.activity.clone(),
+            )),
+            shutdown: self.shutdown.subscribe(),
+        })
+    }
     pub fn start_fixed(&self, encoded: String, limits: Limits) -> Result<Job, AppError> {
         self.start_channel(encoded, limits, false)
     }
@@ -316,7 +335,13 @@ impl Client {
         let mut base = super::runner::structured_arguments(&self.policy.selection)?;
         if terminal {
             base.retain(|arg| arg != "-T" && arg != "-n");
-            args.push("-tt".into());
+            args.extend([
+                "-tt".into(),
+                "-o".into(),
+                "EscapeChar=none".into(),
+                "-o".into(),
+                "StdinNull=no".into(),
+            ]);
         }
         args.extend(base);
         args.push(encoded.into());

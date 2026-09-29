@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T05:47:33+00:00
+Updated: 2026-09-29T06:13:35+00:00
 
-blocked: **0** | done: **38** | in_progress: **0** | pending: **22**
+blocked: **0** | done: **39** | in_progress: **0** | pending: **21**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -48,7 +48,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 036 | 04 Management | Network inventory and container attachments | medium | done | codex/tracking/evidence/036.md |
 | 037 | 04 Management | Verified remote Compose project actions | high | done | codex/tracking/evidence/037.md |
 | 038 | 04 Management | Management MVP checkpoint | high | done | codex/tracking/evidence/038.md |
-| 039 | 05 Terminal and resilience | PTY terminal transport | high | pending | — |
+| 039 | 05 Terminal and resilience | PTY terminal transport | high | done | codex/tracking/evidence/039.md |
 | 040 | 05 Terminal and resilience | Terminal UI with bounded lifecycle | high | pending | — |
 | 041 | 05 Terminal and resilience | Sleep wake network loss and graceful shutdown | high | pending | — |
 | 042 | 05 Terminal and resilience | Cross-platform GUI launch and SSH agent behavior | high | pending | — |
@@ -150,3 +150,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T05:25:39+00:00 — 037: done; 134 Rust, 72 Node and 60 final browser cases passed; actual native Compose UI and strict ProxyJump start/stop/restart passed; exact four commands, no replay, unchanged unrelated project; missing env/wrong name/ordered-file and post-confirmation drift checks passed.
 - 2026-09-29T05:26:18+00:00 — 038: start;
 - 2026-09-29T05:47:33+00:00 — 038: done; PASS: 134 Rust tests and clippy; 74 IPC tests; 72 browser cases; rebuilt production native lifecycle, batch and Compose journeys plus direct/ProxyJump resource and dual-stack network checks. Reproduced and fixed pre-action read coalescing; endpoint read-only/revocation gates passed.
+- 2026-09-29T05:48:35+00:00 — 039: start;
+- 2026-09-29T06:13:35+00:00 — 039: done; PASS: 137 Rust tests, clippy, 74 IPC tests, production Linux build; real direct and ProxyJump PTY echo, UID 1000, Ctrl-C, resize, exit 7, shell-less failure, permission/sequence/scope denial, child reaping and independent no-fallback/liveness oracle.

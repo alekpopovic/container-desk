@@ -351,11 +351,11 @@ pub async fn mutate_container(
     backend.mutate_container(request).await
 }
 #[tauri::command]
-pub fn open_container_terminal(
+pub async fn open_container_terminal(
     backend: tauri::State<'_, Backend>,
     request: TerminalRequest,
 ) -> Result<TerminalResponse, AppError> {
-    backend.open_container_terminal(request)
+    backend.open_container_terminal(request).await
 }
 
 #[tauri::command]
@@ -623,4 +623,47 @@ pub async fn mutate_compose_project(
     request: ComposeMutationRequest,
 ) -> Result<ComposeMutationResponse, AppError> {
     backend.mutate_compose_project(request).await
+}
+
+#[tauri::command]
+pub fn get_terminal_permission(
+    backend: tauri::State<'_, Backend>,
+    scope: SessionScope,
+) -> Result<ManagementState, AppError> {
+    backend.terminal_permission(scope)
+}
+#[tauri::command]
+pub fn set_terminal_permission(
+    backend: tauri::State<'_, Backend>,
+    request: SetManagementRequest,
+) -> Result<ManagementState, AppError> {
+    backend.set_terminal_permission(request)
+}
+#[tauri::command]
+pub fn read_terminal(
+    backend: tauri::State<'_, Backend>,
+    request: TerminalHandleRequest,
+) -> Result<TerminalOutput, AppError> {
+    backend.terminal_output(request)
+}
+#[tauri::command]
+pub fn write_terminal(
+    backend: tauri::State<'_, Backend>,
+    request: TerminalInputRequest,
+) -> Result<(), AppError> {
+    backend.terminal_input(request)
+}
+#[tauri::command]
+pub fn resize_terminal(
+    backend: tauri::State<'_, Backend>,
+    request: TerminalResizeRequest,
+) -> Result<(), AppError> {
+    backend.resize_terminal(request)
+}
+#[tauri::command]
+pub async fn close_terminal(
+    backend: tauri::State<'_, Backend>,
+    request: TerminalHandleRequest,
+) -> Result<(), AppError> {
+    backend.close_terminal(request).await
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T05:47:33+00:00",
+  "updated_at": "2026-09-29T06:13:35+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1310,6 +1310,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T05:48:35+00:00",
+      "id": "039",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T06:13:35+00:00",
+      "id": "039",
+      "action": "done",
+      "note": "PASS: 137 Rust tests, clippy, 74 IPC tests, production Linux build; real direct and ProxyJump PTY echo, UID 1000, Ctrl-C, resize, exit 7, shell-less failure, permission/sequence/scope denial, child reaping and independent no-fallback/liveness oracle.",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T05:48:35+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1797,12 +1831,14 @@
       "note": ""
     },
     "039": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T05:48:35+00:00",
+      "finished_at": "2026-09-29T06:13:35+00:00",
+      "evidence": "codex/tracking/evidence/039.md",
+      "evidence_sha256": "2d3a139d87d784c18ca950b3d316a82e0e5e303bb7548da3e21bfaa241ecb6c2",
+      "checks": [
+        "PASS: 137 Rust tests, clippy, 74 IPC tests, production Linux build; real direct and ProxyJump PTY echo, UID 1000, Ctrl-C, resize, exit 7, shell-less failure, permission/sequence/scope denial, child reaping and independent no-fallback/liveness oracle."
+      ],
       "commit": "",
       "note": ""
     },

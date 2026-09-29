@@ -37,7 +37,7 @@ The official crates.io HTTP API was unavailable during the audit; version metada
 
 React/React DOM and their types share 19.3.0. Vite 8.3.1 and React plugin 6.1.1 satisfy the plugin's Vite 8 peer range. The Tailwind Vite plugin 4.3.3 accepts Vite 8. Node 24.21.0 satisfies the selected Vite/plugin Node requirement (`^20.19.0 || >=22.12.0`). Tauri Rust/API/CLI use v2; tauri-build has its own release version (2.7.0). Rust 1.98.1 exceeds the direct dependencies' declared compiler minimums. Dependency resolution must still be followed by frontend compilation, native compilation and runtime checks in subsequent prompts.
 
-Terminal PTY/xterm dependencies are selected and locked when their prompts introduce them. Prompt 002 adds Biome 2.5.14 and @types/node 24.19.0, and uses the built-in Node test runner. Avoid unused plugins and capabilities. Prompt 001 initially used a documentation-only Rust target for dependency resolution. Prompt 002 extends it into the native shell; see [development commands](development.md) and its evidence for actual compilation and launch results.
+Prompt 039 selects and locks `portable-pty 0.9.0` for Linux/macOS local PTY ownership; xterm dependencies follow in 040. The crate is used directly behind existing backend permissions, with no generic terminal plugin or shell launcher capability. Prompt 002 adds Biome 2.5.14 and @types/node 24.19.0, and uses the built-in Node test runner. Avoid unused plugins and capabilities. Prompt 001 initially used a documentation-only Rust target for dependency resolution. Prompt 002 extends it into the native shell; see [development commands](development.md) and its evidence for actual compilation and launch results.
 
 ## Reproduce the dependency baseline
 

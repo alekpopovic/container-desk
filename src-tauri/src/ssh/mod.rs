@@ -26,3 +26,5 @@ pub fn validate_alias(alias: &str) -> Result<(), AppError> {
 pub(crate) mod subscriptions;
 
 pub(crate) mod read_limits;
+
+pub(crate) mod terminal;

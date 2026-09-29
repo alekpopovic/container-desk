@@ -786,6 +786,8 @@ pub fn confirmation(operation: &ConfirmationOperation) -> Result<CommandPlan, Ap
                     "exec",
                     "--interactive",
                     "--tty",
+                    "--user",
+                    "1000:1000",
                     "--",
                     &spec.container_id.0,
                     shell,

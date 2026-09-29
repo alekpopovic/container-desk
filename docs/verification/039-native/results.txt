@@ -1,0 +1,19 @@
+039 PTY transport; Ubuntu 26.04.1 x86_64 native backend execution. No terminal UI claimed.
+
+Native direct:
+PASS native PTY: separate terminal permission and exact one-use intent; real non-root UID 1000, interactive echo, Ctrl-C, 111x37 resize, exit 7, shell-less running container typed failure, duplicate input rejected, JSON inventory stays non-PTY, revoke/disconnect reaps owned local SSH, no replay or transcript in activity/storage; PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 160 filtered out; finished in 13.61s
+PASS: real non-root PTY, echo, Ctrl-C, resize, exit, missing shell, scope and revocation; structured commands retain no PTY.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
+
+Native final:
+PASS native PTY: separate terminal permission and exact one-use intent; real non-root UID 1000, interactive echo, Ctrl-C, 111x37 resize, exit 7, shell-less running container typed failure, duplicate input rejected, JSON inventory stays non-PTY, revoke/disconnect reaps owned local SSH, no replay or transcript in activity/storage; PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 160 filtered out; finished in 13.64s
+PASS independent PTY gate: 2 explicit non-root shell command(s), exactly one missing-shell attempt, no fallback, both container primary processes remain running.
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: real non-root PTY, echo, Ctrl-C, resize, exit, missing shell, scope and revocation; structured commands retain no PTY.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
+
+Local PTY ownership tests: three passed. Output stays within 256 KiB; full-output timeout reaps child; revoked owner PID is no longer present; exact input sequence, 16-message queue, host/global admission and scope limits hold.
+Rust suite: 137 passed, 24 explicitly ignored native cases; selected native terminal case executed separately above.
+Initial native attempt failed because the disposable key used restrict without the explicit pty override. Corrected only its generated test key options to restrict,pty; no user configuration or trust changed.

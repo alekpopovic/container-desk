@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-read-terminal"
+description = "Enables the read_terminal command without any pre-configured scope."
+commands.allow = ["read_terminal"]
+
+[[permission]]
+identifier = "deny-read-terminal"
+description = "Denies the read_terminal command without any pre-configured scope."
+commands.deny = ["read_terminal"]

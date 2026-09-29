@@ -166,6 +166,9 @@ pub enum ErrorCode {
     HostNotFound,
     ContainerNotFound,
     ContainerNotStopped,
+    ContainerNotRunning,
+    TerminalClosed,
+    TerminalShellUnavailable,
     ImageNotFound,
     VolumeNotFound,
     NetworkNotFound,
@@ -234,6 +237,11 @@ impl AppError {
                 "The volume no longer exists. Refresh the volume inventory."
             }
             ErrorCode::ImageNotFound => "The image no longer exists. Refresh the image inventory.",
+            ErrorCode::ContainerNotRunning => "Open a terminal only in a running container.",
+            ErrorCode::TerminalClosed => "The terminal is closed. Open a new session explicitly.",
+            ErrorCode::TerminalShellUnavailable => {
+                "The selected shell could not be started. Choose an installed shell explicitly."
+            }
             ErrorCode::ContainerNotStopped => "Only stopped containers can be removed.",
             ErrorCode::ContainerNotFound => {
                 "The container no longer exists. Refresh the inventory."
@@ -1727,5 +1735,69 @@ impl ComposeActionOperation {
             Self::Stop => MutationOperation::Stop,
             Self::Restart => MutationOperation::Restart,
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TerminalHandleRequest {
+    pub scope: SessionScope,
+    pub terminal_id: SubscriptionId,
+}
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TerminalInputRequest {
+    pub scope: SessionScope,
+    pub terminal_id: SubscriptionId,
+    pub sequence: u32,
+    pub bytes: Vec<u8>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TerminalResizeRequest {
+    pub scope: SessionScope,
+    pub terminal_id: SubscriptionId,
+    pub columns: u16,
+    pub rows: u16,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum TerminalState {
+    Starting,
+    Running,
+    Exited,
+}
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct TerminalOutput {
+    pub scope: SessionScope,
+    pub terminal_id: SubscriptionId,
+    pub sequence: u32,
+    pub bytes: Vec<u8>,
+    pub state: TerminalState,
+    pub exit_code: Option<u32>,
+    pub error: Option<ErrorCode>,
+}
+
+impl std::fmt::Debug for TerminalInputRequest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TerminalInputRequest")
+            .field("terminal_id", &self.terminal_id)
+            .field("bytes", &self.bytes.len())
+            .finish_non_exhaustive()
+    }
+}
+
+impl std::fmt::Debug for TerminalOutput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TerminalOutput")
+            .field("terminal_id", &self.terminal_id)
+            .field("bytes", &self.bytes.len())
+            .finish_non_exhaustive()
     }
 }

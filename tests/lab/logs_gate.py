@@ -11,6 +11,7 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mvp', action='store_true')
+parser.add_argument('--terminal', action='store_true')
 parser.add_argument('--compose-actions', action='store_true')
 parser.add_argument('--networks', action='store_true')
 parser.add_argument('--batch', action='store_true')
@@ -52,6 +53,13 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
     operation = words[1:]
     if operation[:2] == ['--host', 'unix:///var/run/docker.sock']:
         operation = operation[2:]
+    if args.terminal and operation[:1]==['exec']:
+        if len(operation)!=8 or operation[:6]!=['exec','--interactive','--tty','--user','1000:1000','--'] or operation[6] not in args.owned[2:] or operation[7] not in ('/bin/sh','/bin/bash') or not os.isatty(0):sys.exit(126)
+        import json
+        with (args.control/'pty-execs.jsonl').open('a') as trace: trace.write(json.dumps({'id':operation[6],'shell':operation[7],'tty':True,'user':'1000:1000'})+'\n')
+        env['TERM']='xterm-256color'
+        os.execve('/usr/bin/docker',['docker','--config',args.config,'--host','unix:///var/run/docker.sock']+operation,env)
+    if args.terminal and os.isatty(0):sys.exit(126)
     allowed = (len(operation) == 3 and operation[0] in ('version', 'info') and operation[1] == '--format') or (len(operation) == 4 and operation[:3] == ['context', 'inspect', '--format']) or operation in (['compose', 'version'], ['compose', 'version', '--format', 'json'])
     if compose_metadata:
         if operation==['compose','ls','--all','--format','json']:

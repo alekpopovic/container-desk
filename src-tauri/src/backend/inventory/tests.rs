@@ -1624,6 +1624,7 @@ async fn checkpoint032_owned_mutations_and_disconnect_never_replay() {
                     rows: 24
                 },
             })
+            .await
             .unwrap_err()
             .code,
         ErrorCode::PermissionDenied
@@ -2856,5 +2857,326 @@ async fn checkpoint037_owned_compose_restart_verification_and_configuration_drif
     backend.shutdown().await;
     println!(
         "PASS native verified Compose over strict ProxyJump: spaces/apostrophes and ordered files, absent required env file and wrong project rejected, reversed file order rejected, readonly/confirmation enforced, two existing services restarted once, stopped, then started with each actual state observed, consumed intent not replayed, actual config drift after confirmation failed before dispatch, no resolved secret in returned activity."
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires explicitly owned PTY SSH/Docker lab"]
+async fn checkpoint039_owned_terminal_echo_interrupt_resize_exit_and_permissions() {
+    use std::time::{Duration, Instant};
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest)
+        .parent()
+        .unwrap()
+        .join("terminal-app-data");
+    let backend = Backend::new(&root, "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    let connected = ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id,
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    let spec = TerminalSpec {
+        container_id: ContainerId(lab["liveId"].as_str().unwrap().into()),
+        shell: TerminalShell::Sh,
+        columns: 80,
+        rows: 24,
+    };
+    let prepare = PrepareConfirmationRequest {
+        scope: scope.clone(),
+        operation: ConfirmationOperation::Terminal(spec.clone()),
+    };
+    assert_eq!(
+        backend
+            .prepare_confirmation(prepare.clone())
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    assert_eq!(
+        backend
+            .set_terminal_permission(SetManagementRequest {
+                scope: scope.clone(),
+                enabled: true
+            })
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    assert_eq!(
+        backend
+            .prepare_confirmation(prepare.clone())
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    backend
+        .set_terminal_permission(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    let mut stopped = spec.clone();
+    stopped.container_id = ContainerId(lab["containerId"].as_str().unwrap().into());
+    assert_eq!(
+        backend
+            .prepare_confirmation(PrepareConfirmationRequest {
+                scope: scope.clone(),
+                operation: ConfirmationOperation::Terminal(stopped)
+            })
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::ContainerNotRunning
+    );
+    async fn open(
+        backend: &Backend,
+        scope: &SessionScope,
+        spec: TerminalSpec,
+    ) -> TerminalHandleRequest {
+        let intent = backend
+            .prepare_confirmation(PrepareConfirmationRequest {
+                scope: scope.clone(),
+                operation: ConfirmationOperation::Terminal(spec.clone()),
+            })
+            .await
+            .unwrap();
+        let request = TerminalRequest {
+            scope: scope.clone(),
+            spec,
+            intent_id: intent.id,
+        };
+        let response = backend
+            .open_container_terminal(request.clone())
+            .await
+            .unwrap();
+        assert_eq!(
+            backend
+                .open_container_terminal(request)
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::InvalidIntent
+        );
+        TerminalHandleRequest {
+            scope: scope.clone(),
+            terminal_id: response.terminal_id,
+        }
+    }
+    async fn receive(
+        backend: &Backend,
+        key: &TerminalHandleRequest,
+        expected: Option<&str>,
+    ) -> TerminalOutput {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        let mut bytes = Vec::new();
+        let mut sequence = 0;
+        loop {
+            let value = backend.terminal_output(key.clone()).unwrap();
+            assert!(value.sequence > sequence);
+            sequence = value.sequence;
+            bytes.extend(&value.bytes);
+            assert!(bytes.len() < 1024 * 1024);
+            if let Some(expected) = expected {
+                if String::from_utf8_lossy(&bytes)
+                    .replace('\r', "")
+                    .contains(expected)
+                {
+                    return value;
+                }
+                assert_ne!(
+                    value.state,
+                    TerminalState::Exited,
+                    "Terminal exited before expected interactive response; error {:?}, exit {:?}",
+                    value.error,
+                    value.exit_code
+                );
+            } else if value.state == TerminalState::Exited {
+                return value;
+            }
+            assert!(
+                Instant::now() < deadline,
+                "No expected terminal event within deadline"
+            );
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    }
+    fn input(backend: &Backend, key: &TerminalHandleRequest, sequence: u32, bytes: &[u8]) {
+        backend
+            .terminal_input(TerminalInputRequest {
+                scope: key.scope.clone(),
+                terminal_id: key.terminal_id.clone(),
+                sequence,
+                bytes: bytes.into(),
+            })
+            .unwrap();
+    }
+    async fn running(backend: &Backend, key: &TerminalHandleRequest) {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            let value = backend.terminal_output(key.clone()).unwrap();
+            if value.state == TerminalState::Running {
+                break;
+            }
+            assert_eq!(value.state, TerminalState::Starting);
+            assert!(Instant::now() < deadline);
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    }
+    let key = open(&backend, &scope, spec.clone()).await;
+    running(&backend, &key).await;
+    let mut foreign = key.clone();
+    foreign.scope.session_generation += 1;
+    assert!(backend.terminal_output(foreign).is_err());
+    input(
+        &backend,
+        &key,
+        1,
+        b"printf '\\103\\104\\060\\063\\071\\137\\145\\143\\150\\157\\n'\r",
+    );
+    receive(&backend, &key, Some("CD039_echo")).await;
+    assert_eq!(
+        backend
+            .terminal_input(TerminalInputRequest {
+                scope: scope.clone(),
+                terminal_id: key.terminal_id.clone(),
+                sequence: 1,
+                bytes: b"duplicate".to_vec()
+            })
+            .unwrap_err()
+            .code,
+        ErrorCode::InvalidIntent
+    );
+    input(&backend, &key, 2, b"printf 'UID=%s\\n' \"$(id -u)\"\r");
+    receive(&backend, &key, Some("UID=1000")).await;
+    backend
+        .resize_terminal(TerminalResizeRequest {
+            scope: scope.clone(),
+            terminal_id: key.terminal_id.clone(),
+            columns: 111,
+            rows: 37,
+        })
+        .unwrap();
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    input(&backend, &key, 3, b"stty size\r");
+    receive(&backend, &key, Some("\n37 111\n")).await;
+    input(&backend, &key, 4, b"sleep 30\r");
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    let interrupt = Instant::now();
+    input(&backend, &key, 5, &[3]);
+    input(&backend,&key,6,b"printf '\\103\\104\\060\\063\\071\\137\\151\\156\\164\\145\\162\\162\\165\\160\\164\\n'\r");
+    receive(&backend, &key, Some("CD039_interrupt")).await;
+    assert!(interrupt.elapsed() < Duration::from_secs(3));
+    let listed = backend
+        .list_containers(ListContainersRequest {
+            scope: scope.clone(),
+        })
+        .await
+        .unwrap();
+    assert_eq!(listed.containers.len(), 4);
+    input(&backend, &key, 7, b"exit 7\r");
+    let exited = receive(&backend, &key, None).await;
+    assert_eq!(exited.exit_code, Some(7));
+    assert_eq!(exited.error, None);
+    backend.close_terminal(key).await.unwrap();
+    let mut absent = spec.clone();
+    absent.container_id = ContainerId(lab["noShellId"].as_str().unwrap().into());
+    let key = open(&backend, &scope, absent).await;
+    let missing = receive(&backend, &key, None).await;
+    assert_eq!(missing.error, Some(ErrorCode::TerminalShellUnavailable));
+    backend.close_terminal(key).await.unwrap();
+    let key = open(&backend, &scope, spec.clone()).await;
+    running(&backend, &key).await;
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: false,
+        })
+        .unwrap();
+    assert_eq!(
+        backend
+            .terminal_input(TerminalInputRequest {
+                scope: scope.clone(),
+                terminal_id: key.terminal_id.clone(),
+                sequence: 1,
+                bytes: b"must not dispatch".to_vec()
+            })
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    assert_eq!(
+        receive(&backend, &key, None).await.error,
+        Some(ErrorCode::PermissionDenied)
+    );
+    backend.close_terminal(key).await.unwrap();
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    backend
+        .set_terminal_permission(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    let key = open(&backend, &scope, spec).await;
+    running(&backend, &key).await;
+    backend
+        .disconnect_inventory_host(InventoryDisconnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: scope.selection.host_id.clone(),
+            token: connected.token,
+        })
+        .await
+        .unwrap();
+    let start = Instant::now();
+    backend.close_terminal(key).await.unwrap();
+    assert!(start.elapsed() < Duration::from_secs(3));
+    assert!(backend.activity_records().unwrap().is_empty());
+    backend.shutdown().await;
+    for path in std::fs::read_dir(&root).unwrap().flatten() {
+        if path.path().is_file() {
+            let bytes = std::fs::read(path.path()).unwrap();
+            assert!(!String::from_utf8_lossy(&bytes).contains("CD039_echo"));
+        }
+    }
+    println!(
+        "PASS native PTY: separate terminal permission and exact one-use intent; real non-root UID 1000, interactive echo, Ctrl-C, 111x37 resize, exit 7, shell-less running container typed failure, duplicate input rejected, JSON inventory stays non-PTY, revoke/disconnect reaps owned local SSH, no replay or transcript in activity/storage; PATH=/nonexistent."
     );
 }

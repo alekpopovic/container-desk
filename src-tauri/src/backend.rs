@@ -7,6 +7,7 @@ use crate::{
 use std::sync::{Arc, Mutex};
 mod compose_actions;
 mod inventory;
+mod terminal;
 
 /// Resource operations remain behind identity gates. Local version probes are separately bounded.
 pub struct Backend {
@@ -15,6 +16,7 @@ pub struct Backend {
     process_runner: crate::ssh::runner::Runner,
     sessions: Arc<crate::ssh::sessions::Sessions>,
     log_streams: crate::docker::live_logs::Subscriptions,
+    terminals: crate::ssh::terminal::Terminals,
     event_streams: crate::ssh::subscriptions::Subscriptions,
     shutting_down: std::sync::atomic::AtomicBool,
     config_home: std::path::PathBuf,
@@ -40,6 +42,7 @@ impl Backend {
             process_runner: crate::ssh::runner::Runner::default(),
             sessions: Arc::new(crate::ssh::sessions::Sessions::default()),
             log_streams: Default::default(),
+            terminals: Default::default(),
             event_streams: crate::ssh::subscriptions::Subscriptions::with_capacity(1),
             shutting_down: std::sync::atomic::AtomicBool::new(false),
             config_home,
@@ -58,6 +61,7 @@ impl Backend {
     pub async fn shutdown(&self) {
         self.shutting_down
             .store(true, std::sync::atomic::Ordering::SeqCst);
+        self.terminals.shutdown().await;
         self.sessions.shutdown().await;
         self.log_streams.shutdown().await;
         self.event_streams.shutdown().await;
@@ -959,6 +963,18 @@ impl Backend {
                 return Err(AppError::new(ErrorCode::ContainerNotStopped));
             }
         }
+        if let ConfirmationOperation::Terminal(spec) = &request.operation {
+            let detail = self
+                .inspect_container(InspectContainerRequest {
+                    scope: request.scope.clone(),
+                    container_id: spec.container_id.clone(),
+                    reveal_sensitive: false,
+                })
+                .await?;
+            if detail.summary.state != "running" {
+                return Err(AppError::new(ErrorCode::ContainerNotRunning));
+            }
+        }
         if let ConfirmationOperation::Compose(spec) = &request.operation {
             self.recheck_compose(&request.scope, spec).await?;
         }
@@ -1023,21 +1039,6 @@ impl Backend {
         })
         .await
         .map_err(|_| AppError::new(ErrorCode::Internal))?
-    }
-    pub fn open_container_terminal(
-        &self,
-        request: TerminalRequest,
-    ) -> Result<TerminalResponse, AppError> {
-        let authorized = self
-            .policy
-            .lock()
-            .map_err(|_| AppError::new(ErrorCode::Internal))?
-            .consume(
-                &request.scope,
-                &request.intent_id,
-                &ConfirmationOperation::Terminal(request.spec),
-            )?;
-        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(authorized.scope()))
     }
     #[cfg(test)]
     pub(crate) fn register_test_session(&self, scope: SessionScope) {
@@ -1213,6 +1214,7 @@ impl Default for Backend {
             process_runner: crate::ssh::runner::Runner::default(),
             sessions: Arc::new(crate::ssh::sessions::Sessions::default()),
             log_streams: Default::default(),
+            terminals: Default::default(),
             event_streams: crate::ssh::subscriptions::Subscriptions::with_capacity(1),
             shutting_down: std::sync::atomic::AtomicBool::new(false),
             config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
