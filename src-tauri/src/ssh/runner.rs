@@ -49,7 +49,7 @@ impl Default for Limits {
 impl Limits {
     fn validate(self) -> Result<(), RunError> {
         if self.deadline.is_zero()
-            || self.deadline > Duration::from_secs(30)
+            || self.deadline > Duration::from_secs(130)
             || self.stdout_bytes > 16 * 1024 * 1024
             || self.stderr_bytes > 256 * 1024
         {

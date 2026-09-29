@@ -1499,3 +1499,291 @@ async fn checkpoint029_owned_compose_projects_plugin_and_label_fallback() {
         "PASS native Compose: real CLI/isolated Engine direct with plugin and ProxyJump without plugin; two projects retain separate web services and created instances; nonexistent paths remain unverified; inspect supplements exact labels; same session reused and foreign daemon rejected."
     );
 }
+
+#[tokio::test]
+#[ignore = "requires explicitly owned lifecycle SSH/Docker lab"]
+async fn checkpoint032_owned_mutations_and_disconnect_never_replay() {
+    use std::time::Duration;
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let control = std::path::Path::new(&manifest).parent().unwrap();
+    let root = control.join("management-app-data");
+    let backend = Backend::new(&root, "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let host_id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: host_id.clone(),
+        })
+        .await
+        .unwrap();
+    let connected = ready(&backend, WorkspaceMode::Live, host_id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: host_id.clone(),
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    let target = ContainerId(lab["liveId"].as_str().unwrap().into());
+    async fn confirm(
+        backend: &Backend,
+        scope: &SessionScope,
+        target: &ContainerId,
+        operation: MutationOperation,
+    ) -> Result<MutationRequest, AppError> {
+        let spec = MutationSpec {
+            operation,
+            container_ids: vec![target.clone()],
+            timeout_seconds: 1,
+        };
+        let intent = backend
+            .prepare_confirmation(PrepareConfirmationRequest {
+                scope: scope.clone(),
+                operation: ConfirmationOperation::Mutation(spec.clone()),
+            })
+            .await?;
+        Ok(MutationRequest {
+            scope: scope.clone(),
+            intent_id: intent.id,
+            spec,
+        })
+    }
+    async fn inspect(
+        backend: &Backend,
+        scope: &SessionScope,
+        target: &ContainerId,
+    ) -> ContainerDetail {
+        backend
+            .inspect_container(InspectContainerRequest {
+                scope: scope.clone(),
+                container_id: target.clone(),
+                reveal_sensitive: false,
+            })
+            .await
+            .unwrap()
+    }
+    let baseline = std::fs::read_to_string(control.join("mutation-count"))
+        .unwrap_or_default()
+        .lines()
+        .count();
+    assert_eq!(
+        confirm(&backend, &scope, &target, MutationOperation::Stop)
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    assert_eq!(
+        confirm(
+            &backend,
+            &scope,
+            &ContainerId("f".repeat(64)),
+            MutationOperation::Stop
+        )
+        .await
+        .unwrap_err()
+        .code,
+        ErrorCode::ContainerNotFound
+    );
+    let first_slot = backend.read_hosts.acquire(&host_id).unwrap();
+    let second_slot = backend.read_hosts.acquire(&host_id).unwrap();
+    let preparation = confirm(&backend, &scope, &target, MutationOperation::Stop);
+    let release = async {
+        tokio::time::sleep(Duration::from_millis(250)).await;
+        drop(first_slot);
+        drop(second_slot);
+    };
+    let (prepared, ()) = tokio::join!(preparation, release);
+    assert!(
+        prepared.is_ok(),
+        "Confirmation must await admission before its single native read"
+    );
+    let before = inspect(&backend, &scope, &target).await.started_at;
+    for (operation, expected) in [
+        (MutationOperation::Stop, "exited"),
+        (MutationOperation::Start, "running"),
+        (MutationOperation::Restart, "running"),
+    ] {
+        let request = confirm(&backend, &scope, &target, operation.clone())
+            .await
+            .unwrap();
+        let repeated = request.clone();
+        assert_eq!(
+            backend.mutate_container(request).await.unwrap().outcome,
+            MutationOutcome::Succeeded
+        );
+        assert_eq!(
+            backend.mutate_container(repeated).await.unwrap_err().code,
+            ErrorCode::InvalidIntent
+        );
+        let actual = inspect(&backend, &scope, &target).await;
+        assert_eq!(actual.summary.state, expected);
+        if expected == "running" {
+            assert_eq!(actual.summary.health.as_deref(), Some("starting"));
+            assert_ne!(actual.started_at, before);
+        }
+        let snapshot = backend
+            .list_containers(ListContainersRequest {
+                scope: scope.clone(),
+            })
+            .await
+            .unwrap();
+        assert_eq!(
+            snapshot
+                .containers
+                .iter()
+                .find(|row| row.id == target)
+                .unwrap()
+                .state,
+            expected
+        );
+    }
+    let deadline = std::time::Instant::now() + Duration::from_secs(15);
+    loop {
+        if inspect(&backend, &scope, &target)
+            .await
+            .summary
+            .health
+            .as_deref()
+            == Some("healthy")
+        {
+            break;
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "Owned healthcheck did not become healthy"
+        );
+        tokio::time::sleep(Duration::from_millis(300)).await;
+    }
+    std::fs::write(
+        control.join("hold-mutation"),
+        "hold only owned mutation response",
+    )
+    .unwrap();
+    let request = confirm(&backend, &scope, &target, MutationOperation::Restart)
+        .await
+        .unwrap();
+    let replay = request.clone();
+    let mutation = backend.mutate_container(request);
+    tokio::pin!(mutation);
+    tokio::select! {
+        result = &mut mutation => panic!("Mutation returned before controlled disconnect: {result:?}"),
+        () = async {
+            let deadline = std::time::Instant::now() + Duration::from_secs(15);
+            while !control.join("mutation-dispatched").exists() {
+                assert!(std::time::Instant::now() < deadline);
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        } => ()
+    }
+    backend
+        .disconnect_inventory_host(InventoryDisconnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: host_id.clone(),
+            token: connected.token,
+        })
+        .await
+        .unwrap();
+    assert_eq!(mutation.await.unwrap().outcome, MutationOutcome::Unknown);
+    std::fs::remove_file(control.join("hold-mutation")).unwrap();
+    assert_eq!(
+        backend.activity_records().unwrap().last().unwrap().outcome,
+        crate::activity::ActivityOutcome::Unknown
+    );
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: host_id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, host_id.clone()).await;
+    let next = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id,
+                selection_generation: 2,
+            },
+        })
+        .unwrap()
+        .scope;
+    assert!(backend.mutate_container(replay).await.is_err());
+    assert_eq!(
+        confirm(&backend, &next, &target, MutationOperation::Restart)
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    assert_eq!(
+        inspect(&backend, &next, &target).await.summary.state,
+        "running"
+    );
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    assert_eq!(
+        std::fs::read_to_string(control.join("mutation-count"))
+            .unwrap()
+            .lines()
+            .count(),
+        baseline + 4
+    );
+    backend
+        .set_management(SetManagementRequest {
+            scope: next.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    let drift_request = confirm(&backend, &next, &target, MutationOperation::Stop)
+        .await
+        .unwrap();
+    std::fs::write(
+        control.join("mutation-identity-drift"),
+        "controlled probe mismatch, not an Engine change",
+    )
+    .unwrap();
+    assert_eq!(
+        backend
+            .mutate_container(drift_request)
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::StaleSession
+    );
+    assert!(backend.require_session(&next).is_err());
+    assert_eq!(
+        std::fs::read_to_string(control.join("mutation-count"))
+            .unwrap()
+            .lines()
+            .count(),
+        baseline + 4
+    );
+    std::fs::remove_file(control.join("mutation-identity-drift")).unwrap();
+    println!(
+        "PASS controlled daemon identity drift after confirmation: native SSH probe mismatch invalidated the session before mutation dispatch; command count unchanged."
+    );
+    backend.shutdown().await;
+    println!(
+        "PASS native lifecycle through ProxyJump: explicit opt-in and owned full IDs, stop/start/restart states, changed StartedAt, health starting then healthy; response loss after real restart recorded Unknown; reconnect stayed read-only and exact mutation count remained four with no replay; client PATH=/nonexistent."
+    );
+}

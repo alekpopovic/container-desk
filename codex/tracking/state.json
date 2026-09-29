@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T02:52:01+00:00",
+  "updated_at": "2026-09-29T03:24:12+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1072,6 +1072,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T02:52:36+00:00",
+      "id": "032",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T03:24:12+00:00",
+      "id": "032",
+      "action": "done",
+      "note": "Native release lifecycle/health and post-dispatch loss through ProxyJump passed with exact no-replay counts; controlled drift blocked dispatch; 116 Rust, 59 IPC and affected browser tests passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T02:52:36+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1475,12 +1509,14 @@
       "note": ""
     },
     "032": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T02:52:36+00:00",
+      "finished_at": "2026-09-29T03:24:12+00:00",
+      "evidence": "codex/tracking/evidence/032.md",
+      "evidence_sha256": "e0ca979fec94f9cc2cfd3cf2a7d3c33e881c139eb7aa6f2021485a2d6a130ed7",
+      "checks": [
+        "Native release lifecycle/health and post-dispatch loss through ProxyJump passed with exact no-replay counts; controlled drift blocked dispatch; 116 Rust, 59 IPC and affected browser tests passed"
+      ],
       "commit": "",
       "note": ""
     },

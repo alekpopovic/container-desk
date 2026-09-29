@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-management"
+description = "Enables the set_management command without any pre-configured scope."
+commands.allow = ["set_management"]
+
+[[permission]]
+identifier = "deny-set-management"
+description = "Denies the set_management command without any pre-configured scope."
+commands.deny = ["set_management"]

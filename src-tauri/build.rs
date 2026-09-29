@@ -3,6 +3,8 @@ fn main() {
         tauri_build::AppManifest::new().commands(&[
             "app_version",
             "get_activity",
+            "set_management",
+            "get_management",
             "get_host_inventory",
             "save_host",
             "remove_host",

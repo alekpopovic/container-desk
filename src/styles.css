@@ -1205,3 +1205,49 @@ legend {
   color: var(--muted);
   margin-top: 6px;
 }
+
+.container-management {
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+.container-management label {
+  display: grid;
+  gap: 0.35rem;
+  margin-block: 0.8rem;
+}
+.container-management input {
+  width: 100%;
+  min-width: 0;
+}
+.management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.mutation-confirmation {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-top: 0.75rem;
+}
+.mutation-confirmation dd {
+  margin: 0 0 0.6rem;
+  overflow-wrap: anywhere;
+}
+.container-management [role="status"] {
+  overflow-wrap: anywhere;
+}
+.container-management > * + * {
+  margin-top: 0.65rem;
+}
+.container-management h3 {
+  font-weight: 600;
+}
+.container-management input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  background: var(--surface);
+  color: var(--foreground);
+}

@@ -6,6 +6,10 @@
   "permissions": [
     "allow-app-version",
     "allow-get-activity",
+    "allow-set-management",
+    "allow-get-management",
+    "allow-prepare-confirmation",
+    "allow-mutate-container",
     "allow-list-hosts",
     "allow-connect-host",
     "allow-list-containers",

@@ -87,6 +87,8 @@ fn generated_contract_is_current() {
         SetSshExecutableResponse,
         IntentId,
         HostAccess,
+        SetManagementRequest,
+        ManagementState,
         ActivityRecord,
         ActivityOutcome,
         MutationOperation,

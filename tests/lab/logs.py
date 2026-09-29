@@ -25,6 +25,7 @@ def main():
     parser.add_argument('--jump', action='store_true', help='Use a second owned loopback sshd as an actual ProxyJump')
     parser.add_argument('--mvp', action='store_true', help='Integrated 030 native journey; requires --stream --stats --jump')
     parser.add_argument('--stream', action='store_true')
+    parser.add_argument('--management', action='store_true', help='Permit explicit lifecycle actions only on the owned live fixture')
     parser.add_argument('--reads', action='store_true', help='Slow native reads and disconnect cancellation; requires --stream')
     parser.add_argument('--events', action='store_true', help='Owned event lifecycle/reconnect checks; requires --stream')
     parser.add_argument('--stats', action='store_true', help='Check stats with the same owned workloads; requires --stream')
@@ -36,6 +37,7 @@ def main():
     args = parser.parse_args()
     if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
         parser.error('Native driver flags require --stream and both driver paths')
+    if args.management and (not args.stream or not args.jump or args.stats or args.events or args.reads or args.mvp): parser.error('--management requires --stream --jump and excludes other checkpoint modes')
     if args.mvp and (not args.stream or not args.stats or not args.jump or args.events or args.reads): parser.error('--mvp requires --stream --stats --jump')
     if args.reads and (not args.stream or args.stats or args.events): parser.error('--reads requires --stream and excludes --stats/--events')
     if args.events and (not args.stream or args.stats): parser.error('--events requires --stream and excludes --stats')
@@ -61,7 +63,11 @@ def main():
             for driver in (('json-file', 'none', 'live') if args.stream else ('json-file', 'none')):
                 name = root.name + '-' + driver
                 workload = sequence if driver != 'live' else "while true; do awk 'BEGIN { for (i=0; i<5000; i++) print \"024-synthetic-live-line\" }'; sleep 0.1; done"
-                created = subprocess.run(docker + ['create', '--name', name, '--label', 'dev.containerdesk.lab=023', '--network', 'none', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--pids-limit', '32', '--memory', '32m', '--log-driver', 'json-file' if driver == 'live' else driver] + (['--log-opt', 'max-size=2m', '--log-opt', 'max-file=1'] if driver == 'live' else []) + (['--label', 'com.docker.compose.project=' + ('mvp-live' if driver == 'live' else 'mvp-exited'), '--label', 'com.docker.compose.service=web', '--label', 'com.docker.compose.project.config_files=/remote/unverified/compose.yml', '--expose', '8080/tcp', '--expose', '53/udp'] + (['--health-cmd', '/bin/true', '--health-interval', '1s'] if driver == 'live' else []) if args.mvp else []) + [BASE, '/bin/sh', '-c', workload], env=env, check=True, capture_output=True, text=True, timeout=30)
+                management_flags = []
+                if args.management and driver == 'live':
+                    workload = 'rm -f /tmp/healthy; sleep 8; touch /tmp/healthy; ' + workload
+                    management_flags = ['--tmpfs', '/tmp:rw,noexec,nosuid,size=64k', '--health-cmd', 'test -f /tmp/healthy', '--health-interval', '1s', '--health-start-period', '10s']
+                created = subprocess.run(docker + ['create', '--name', name, '--label', 'dev.containerdesk.lab=023', '--network', 'none', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--pids-limit', '32', '--memory', '32m', '--log-driver', 'json-file' if driver == 'live' else driver] + (['--log-opt', 'max-size=2m', '--log-opt', 'max-file=1'] if driver == 'live' else []) + (['--label', 'com.docker.compose.project=' + ('mvp-live' if driver == 'live' else 'mvp-exited'), '--label', 'com.docker.compose.service=web', '--label', 'com.docker.compose.project.config_files=/remote/unverified/compose.yml', '--expose', '8080/tcp', '--expose', '53/udp'] + (['--health-cmd', '/bin/true', '--health-interval', '1s'] if driver == 'live' else []) if args.mvp else []) + management_flags + [BASE, '/bin/sh', '-c', workload], env=env, check=True, capture_output=True, text=True, timeout=30)
                 ident = created.stdout.strip()
                 assert len(ident) == 64 and all(c in '0123456789abcdef' for c in ident)
                 owned.append(ident)
@@ -85,7 +91,7 @@ def main():
             # This fixture-only gate prevents tests from reading unrelated host resources or changing state.
             gate = REPO / 'tests/lab/logs_gate.py'
             server_config = root / 'sshd_config'
-            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY no\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} {('--mvp ' if args.mvp else '')}--owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
+            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY no\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} {('--mvp ' if args.mvp else '')}{('--management ' if args.management else '')}--owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
             public = (root / 'host.pub').read_text().split()
             known = root / 'known_hosts'
             known.write_text(f'[127.0.0.1]:{port} {public[0]} {public[1]}\n')
@@ -158,15 +164,15 @@ def main():
                     watcher.start()
                 if args.stream and args.native_driver:
                     from native_logs import verify
-                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp)
-                checkpoint = 'checkpoint028_owned_reads' if args.reads else 'checkpoint027_owned_events' if args.events else 'checkpoint026_owned_stats' if args.stats else 'checkpoint024_owned_stream' if args.stream else 'checkpoint023_owned_logs'
+                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management)
+                checkpoint = 'checkpoint032_owned_mutations' if args.management else 'checkpoint028_owned_reads' if args.reads else 'checkpoint027_owned_events' if args.events else 'checkpoint026_owned_stats' if args.stats else 'checkpoint024_owned_stream' if args.stream else 'checkpoint023_owned_logs'
                 result = subprocess.run(['cargo', 'test', '--manifest-path', str(REPO / 'src-tauri/Cargo.toml'), '--locked', '--no-run', '--message-format=json'], env=env, capture_output=True, text=True, check=True, timeout=180)
                 executables = [json.loads(line)['executable'] for line in result.stdout.splitlines() if line.startswith('{') and json.loads(line).get('reason') == 'compiler-artifact' and json.loads(line).get('executable') and json.loads(line).get('target', {}).get('name') == 'containerdesk_lib' and json.loads(line).get('profile', {}).get('test') is True]
                 assert len(executables) == 1
                 test_env = {**env, 'PATH': '/nonexistent', 'CONTAINERDESK_LOG_LAB_MANIFEST': str(manifest)}
                 listed = subprocess.run([executables[0], checkpoint, '--ignored', '--list'], env=test_env, capture_output=True, text=True, check=True, timeout=10)
                 assert sum(line.endswith(': test') for line in listed.stdout.splitlines()) == 1
-                checked = subprocess.run([executables[0], checkpoint, '--ignored', '--nocapture'], env=test_env, capture_output=True, text=True, timeout=60)
+                checked = subprocess.run([executables[0], checkpoint, '--ignored', '--nocapture'], env=test_env, capture_output=True, text=True, timeout=180 if args.management else 60)
                 assert all(marker not in checked.stdout + checked.stderr for marker in ('023-synthetic-log-private', '024-synthetic-live-line')), 'Synthetic raw log entered application diagnostics'
                 print(checked.stdout, end='')
                 if checked.returncode:
@@ -174,7 +180,7 @@ def main():
                     raise RuntimeError('Native log checkpoint failed')
             assert hashlib.sha256(known.read_bytes()).hexdigest() == before
             if args.jump: print('PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.', flush=True)
-            print('PASS: owned slow native reads obey host limits and disconnect cancellation; strict trust unchanged.' if args.reads else 'PASS: owned Docker events, cancellation, gap/replay and authoritative deleted-container snapshot; strict client trust unchanged.' if args.events else 'PASS: stats running/stopped/disappeared/concurrent/disconnect checks; strict client trust unchanged.' if args.stats else 'PASS: native streaming/cancellation/network-loss checkpoint; strict client trust unchanged.' if args.stream else 'PASS: real exited fixture logs match independent native Docker CLI; unsupported driver, UTF-8/line bounds; no raw synthetic log in app diagnostics; strict client trust unchanged.')
+            print('PASS: explicitly enabled owned lifecycle actions and post-dispatch loss had no replay; strict client trust unchanged.' if args.management else 'PASS: owned slow native reads obey host limits and disconnect cancellation; strict trust unchanged.' if args.reads else 'PASS: owned Docker events, cancellation, gap/replay and authoritative deleted-container snapshot; strict client trust unchanged.' if args.events else 'PASS: stats running/stopped/disappeared/concurrent/disconnect checks; strict client trust unchanged.' if args.stats else 'PASS: native streaming/cancellation/network-loss checkpoint; strict client trust unchanged.' if args.stream else 'PASS: real exited fixture logs match independent native Docker CLI; unsupported driver, UTF-8/line bounds; no raw synthetic log in app diagnostics; strict client trust unchanged.')
         finally:
             finished.set()
             if watcher: watcher.join(timeout=2)

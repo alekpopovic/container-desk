@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { ContainerManagement } from "../management/ContainerManagement";
 import { ContainerStats } from "../stats/ContainerStats";
 import { StatsHistory } from "../stats/sampling";
 import { LiveLogs } from "../logs/LiveLogs";
@@ -372,6 +373,16 @@ export function ContainerInventory({
               <dt>Health</dt>
               <dd>{chosen.health ?? "Unknown"}</dd>
             </dl>
+            {inspectEnabled && view.scope && (
+              <ContainerManagement
+                key={JSON.stringify([view.scope, chosen.id])}
+                scope={view.scope}
+                row={chosen}
+                host={host?.name ?? "Selected host"}
+                stale={view.stale && !view.loading}
+                refresh={refresh}
+              />
+            )}
             {inspectEnabled && (!view.stale || view.loading) && view.scope && (
               <ContainerDetails
                 key={JSON.stringify([view.scope, chosen.id, view.updatedAt])}

@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -55,7 +55,7 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                 if script(condition): return
                 time.sleep(.1)
             (artifacts / 'native-timeout.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
-            print('Native state:', script('return {dialogs: document.querySelectorAll("dialog[open]").length, buttons: Array.from(document.querySelectorAll(".live-logs button"), b=>({text:b.textContent,disabled:b.disabled})), status: Array.from(document.querySelectorAll(".live-logs > p[role=status]"), p=>p.textContent)}'), flush=True)
+            print('Native state:', script('return {management:document.querySelector(".container-management")?.innerText,dialogs: document.querySelectorAll("dialog[open]").length, buttons: Array.from(document.querySelectorAll(".live-logs button"), b=>({text:b.textContent,disabled:b.disabled})), status: Array.from(document.querySelectorAll(".live-logs > p[role=status]"), p=>p.textContent)}'), flush=True)
             raise AssertionError('Native log condition did not become true: ' + condition)
         try:
             for _ in range(100):
@@ -83,13 +83,42 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             fill('Saved Docker executable', '/usr/bin/docker')
             button('Save host')
             button('Connect saved host')
-            wait('return document.body.innerText.includes("Ready · Read-only session")')
+            wait('return document.body.innerText.includes("Ready · SSH session")')
             if mvp:
                 assert script('return document.body.innerText.includes("logs-jump")')
                 (artifacts / 'native-jump-connected.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
             wait('return document.querySelectorAll("[data-container-id]").length === 3')
             click(f'//tr[@data-container-id="{live_id}"]//button')
+            if management:
+                wait('return document.querySelector(".inspect-detail")?.getAttribute("aria-busy") === "false"')
+                button('Enable management')
+                wait('return document.querySelector(".container-management")?.innerText.includes("Management enabled for this session")')
+                fill('Stop timeout (seconds)', '1')
+                button('Stop container')
+                wait('return document.querySelector(".mutation-confirmation")?.innerText.includes("' + live_id + '")')
+                script('document.querySelector(".mutation-confirmation").scrollIntoView({block:"center",behavior:"instant"})')
+                (artifacts / 'native-management-confirmation.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                button('Cancel action')
+                assert not (root / 'mutation-count').exists(), 'Cancelled confirmation must not dispatch'
+                for action, expected in [('Stop container', 'exited'), ('Start container', 'running'), ('Restart container', 'running')]:
+                    wait('return Array.from(document.querySelectorAll(".container-management button")).some(b=>b.textContent === "' + action + '" && !b.disabled)')
+                    button(action)
+                    wait('return document.querySelector(".mutation-confirmation") !== null')
+                    wait('return Array.from(document.querySelectorAll(".mutation-confirmation button")).some(b=>b.textContent === "Confirm action" && !b.disabled)')
+                    button('Confirm action')
+                    wait('return document.querySelector(".container-management [role=status]")?.innerText.includes("Observed state: ' + expected + '")', 30)
+                    if expected == 'running':
+                        assert script('return document.querySelector(".container-management [role=status]").innerText.includes("health: starting")')
+                script('document.querySelector(".container-management").scrollIntoView({block:"start",behavior:"instant"})')
+                (artifacts / 'native-management-health-starting.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                time.sleep(9)
+                button('Refresh action state')
+                wait('return document.querySelector(".container-management [role=status]")?.innerText.includes("health: healthy")')
+                assert (root / 'mutation-count').read_text().splitlines() == ['stop','start','restart']
+                button('Disable management')
+                wait('return document.querySelector(".container-management")?.innerText.includes("Read-only controls.")')
+                print('PASS native management UI: exact host/daemon/full-ID confirmation, cancellation sent nothing, explicit stop/start/restart each dispatched once, refreshed real states and delayed health starting/healthy, explicit revocation.', flush=True)
             if mvp:
                 wait('return document.querySelector(".inspect-detail")?.innerText.includes("healthy")')
                 click('//button[@role="tab" and normalize-space(.)="Ports"]')
@@ -226,7 +255,7 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             wait('return !document.querySelector(".live-logs")')
             if mvp:
                 button('Disconnect saved host')
-                wait('return document.body.innerText.includes("Disconnected · Read-only session")')
+                wait('return document.body.innerText.includes("Disconnected · SSH session")')
                 click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
                 wait('return document.querySelectorAll("[data-container-id]").length === 0')
                 assert script('return !document.querySelector(".container-stats") && !document.querySelector(".live-logs")')

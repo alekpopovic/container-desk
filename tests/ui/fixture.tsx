@@ -1,3 +1,4 @@
+import { ManagementFixture } from "./management-fixture";
 import { ComposeFixture } from "./compose-fixture";
 import { EventsFixture } from "./events-fixture";
 import { StatsFixture } from "./stats-fixture";
@@ -30,7 +31,9 @@ if (kind === "error")
 const root = document.getElementById("root");
 if (!root) throw new Error("Fixture root missing");
 createRoot(root).render(
-  kind === "compose" ? (
+  kind === "management" ? (
+    <ManagementFixture />
+  ) : kind === "compose" ? (
     <ComposeFixture />
   ) : kind === "events" ? (
     <EventsFixture />

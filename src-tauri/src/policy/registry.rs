@@ -403,6 +403,44 @@ pub fn confirmation(operation: &ConfirmationOperation) -> Result<CommandPlan, Ap
 mod tests {
     use super::*;
     #[test]
+    fn lifecycle_plans_validate_timeouts_and_keep_exact_targets_after_separator() {
+        for operation in [
+            MutationOperation::Start,
+            MutationOperation::Stop,
+            MutationOperation::Restart,
+        ] {
+            for timeout_seconds in [-1, 0, 121, i32::MAX] {
+                assert_eq!(
+                    confirmation(&ConfirmationOperation::Mutation(MutationSpec {
+                        operation: operation.clone(),
+                        container_ids: vec![ContainerId("a".repeat(64))],
+                        timeout_seconds
+                    }))
+                    .unwrap_err()
+                    .code,
+                    ErrorCode::InvalidLimits
+                );
+            }
+            let plan = confirmation(&ConfirmationOperation::Mutation(MutationSpec {
+                operation: operation.clone(),
+                container_ids: vec![ContainerId("a".repeat(64))],
+                timeout_seconds: 120,
+            }))
+            .unwrap();
+            assert_eq!(
+                &plan.args()[plan.args().len() - 2..],
+                &["--".to_string(), "a".repeat(64)]
+            );
+            assert!(plan.timeout_seconds() <= 130);
+            assert!(
+                !plan
+                    .args()
+                    .iter()
+                    .any(|arg| ["--force", "--attach", "--interactive"].contains(&arg.as_str()))
+            );
+        }
+    }
+    #[test]
     fn numeric_limits_ids_and_supported_variants_are_checked_before_building() {
         let id = ContainerId("a".repeat(64));
         for tail in [-1, 0, 20001, i32::MAX] {

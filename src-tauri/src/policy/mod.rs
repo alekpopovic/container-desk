@@ -82,6 +82,10 @@ impl PolicyEngine {
     }
     /// A future explicit management/terminal opt-in handler may call this after selecting a host.
     /// Persisted readOnly=false must never grant runtime access automatically.
+    pub fn access(&self, scope: &SessionScope) -> Result<HostAccess, AppError> {
+        self.require_session(scope)?;
+        Ok(self.sessions[&scope.session_id].access.clone())
+    }
     pub fn set_access(&mut self, scope: &SessionScope, access: HostAccess) -> Result<(), AppError> {
         self.require_session(scope)?;
         let session = self
@@ -121,6 +125,13 @@ impl PolicyEngine {
         } else {
             Err(AppError::new(ErrorCode::PermissionDenied).in_scope(scope))
         }
+    }
+    pub fn authorize_confirmation(
+        &self,
+        request: &PrepareConfirmationRequest,
+    ) -> Result<(), AppError> {
+        let plan = registry::confirmation(&request.operation)?;
+        self.require_access(&request.scope, plan.category())
     }
     pub fn prepare(
         &mut self,

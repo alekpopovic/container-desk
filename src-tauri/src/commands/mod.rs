@@ -141,6 +141,8 @@ mod tests {
                 container_logs,
                 prepare_confirmation,
                 get_activity,
+                set_management,
+                get_management,
                 mutate_container,
                 open_container_terminal
             ])
@@ -169,6 +171,11 @@ mod tests {
             json!({"operation":"restart","containerIds":["a".repeat(64)],"timeoutSeconds":10});
         let mut request =
             json!({"scope":scope,"intentId":format!("i_{}", "1".repeat(32)),"spec":spec});
+        assert_eq!(
+            invoke("set_management", json!({"scope":scope,"enabled":true})).unwrap_err()["code"],
+            "session_not_found",
+            "A renderer cannot grant management without an owned native session"
+        );
         assert_eq!(
             invoke("mutate_container", request.clone()).unwrap_err()["code"],
             "permission_denied"
@@ -330,18 +337,18 @@ pub async fn container_logs(
     backend.container_logs(request).await
 }
 #[tauri::command]
-pub fn prepare_confirmation(
+pub async fn prepare_confirmation(
     backend: tauri::State<'_, Backend>,
     request: PrepareConfirmationRequest,
 ) -> Result<ConfirmationIntent, AppError> {
-    backend.prepare_confirmation(request)
+    backend.prepare_confirmation(request).await
 }
 #[tauri::command]
-pub fn mutate_container(
+pub async fn mutate_container(
     backend: tauri::State<'_, Backend>,
     request: MutationRequest,
 ) -> Result<MutationResponse, AppError> {
-    backend.mutate_container(request)
+    backend.mutate_container(request).await
 }
 #[tauri::command]
 pub fn open_container_terminal(
@@ -530,4 +537,20 @@ pub fn get_activity(
     backend: tauri::State<'_, Backend>,
 ) -> Result<Vec<crate::activity::ActivityRecord>, AppError> {
     backend.activity_records()
+}
+
+#[tauri::command]
+pub fn set_management(
+    backend: tauri::State<'_, Backend>,
+    request: SetManagementRequest,
+) -> Result<ManagementState, AppError> {
+    backend.set_management(request)
+}
+
+#[tauri::command]
+pub fn get_management(
+    backend: tauri::State<'_, Backend>,
+    request: ListContainersRequest,
+) -> Result<ManagementState, AppError> {
+    backend.management_state(request.scope)
 }

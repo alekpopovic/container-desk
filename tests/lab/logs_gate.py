@@ -6,10 +6,12 @@ import os
 import shlex
 import sys
 import time
+import subprocess
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mvp', action='store_true')
+parser.add_argument('--management', action='store_true')
 parser.add_argument('--config', required=True)
 parser.add_argument('--control', type=Path)
 parser.add_argument('--owned', nargs='+', required=True)
@@ -31,6 +33,19 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
     if operation[:2] == ['--host', 'unix:///var/run/docker.sock']:
         operation = operation[2:]
     allowed = (len(operation) == 3 and operation[0] in ('version', 'info') and operation[1] == '--format') or (len(operation) == 4 and operation[:3] == ['context', 'inspect', '--format']) or operation in (['compose', 'version'], ['compose', 'version', '--format', 'json'])
+    if args.management and args.control and (args.control / 'mutation-identity-drift').exists() and len(operation) == 3 and operation[:2] == ['info', '--format']:
+        print('{"id":"controlled-drift-032","os":"linux","security":[]}')
+        sys.exit(0)
+    if args.management and operation and operation[0] in ('start', 'stop', 'restart'):
+        valid = (operation == ['start', '--', args.owned[-1]]) or (len(operation) == 5 and operation[0] in ('stop', 'restart') and operation[1] == '-t' and operation[2].isdigit() and 1 <= int(operation[2]) <= 120 and operation[3:] == ['--', args.owned[-1]])
+        if not valid or not args.control: sys.exit(126)
+        with (args.control / 'mutation-count').open('a') as counter: counter.write(operation[0] + '\n')
+        completed = subprocess.run(['/bin/sh', '-c', original], env=env, timeout=140)
+        if (args.control / 'hold-mutation').exists():
+            (args.control / 'mutation-dispatched').write_text(operation[0])
+            deadline = time.monotonic() + 40
+            while (args.control / 'hold-mutation').exists() and time.monotonic() < deadline: time.sleep(.02)
+        sys.exit(completed.returncode)
     if len(operation) == 7 and operation[:6] == ['stats', '--no-stream', '--no-trunc', '--format', '{{json .}}', '--'] and operation[6] in args.owned:
         allowed = True
         if args.control and (args.control / 'remove-during-stats').exists():

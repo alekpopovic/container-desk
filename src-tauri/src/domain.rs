@@ -178,7 +178,7 @@ impl AppError {
             ErrorCode::InvalidResponse => "The desktop returned an invalid response.",
             ErrorCode::Internal => "The operation could not be completed.",
             ErrorCode::StorageUnavailable => {
-                "Local settings cannot be saved. The original files were retained."
+                "Local data could not be read or saved. Check application storage before retrying."
             }
             ErrorCode::StorageConflict => "Settings changed. Reload before saving again.",
             ErrorCode::InvalidPreferences => "Settings contain invalid or unsupported values.",
@@ -580,6 +580,20 @@ pub enum HostAccess {
     ReadOnly,
     Manage,
     ManageAndTerminal,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SetManagementRequest {
+    pub scope: SessionScope,
+    pub enabled: bool,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ManagementState {
+    pub scope: SessionScope,
+    pub enabled: bool,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

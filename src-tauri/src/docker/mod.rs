@@ -8,6 +8,7 @@ use std::{ffi::OsString, fmt};
 pub(crate) mod inspect;
 pub mod listing;
 pub(crate) mod logs;
+pub(crate) mod mutations;
 pub(crate) mod probe;
 pub(crate) mod stats;
 

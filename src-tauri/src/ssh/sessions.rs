@@ -78,6 +78,14 @@ pub(crate) trait StageDriver: Send + Sync {
     ) -> StageFuture<'a, Result<super::runner::Job, AppError>> {
         Box::pin(async { Err(AppError::new(ErrorCode::FeatureUnavailable)) })
     }
+    fn mutate<'a>(
+        &'a self,
+        _request: MutationRequest,
+        _owner: crate::activity::Operation,
+        _current: crate::docker::mutations::Current,
+    ) -> StageFuture<'a, Result<MutationResponse, AppError>> {
+        Box::pin(async { Err(AppError::new(ErrorCode::FeatureUnavailable)) })
+    }
     fn quiesce(&self) -> StageFuture<'_, ()>;
 }
 pub(crate) struct NativeDriver {
@@ -180,6 +188,38 @@ impl StageDriver for NativeDriver {
                     StageOutcome::Probed(Box::new(report))
                 }
             }
+        })
+    }
+    fn mutate<'a>(
+        &'a self,
+        request: MutationRequest,
+        owner: crate::activity::Operation,
+        current: crate::docker::mutations::Current,
+    ) -> StageFuture<'a, Result<MutationResponse, AppError>> {
+        Box::pin(async move {
+            let client = self
+                .connection
+                .lock()
+                .await
+                .as_ref()
+                .map(|c| c.client())
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+            let binding = self
+                .docker_binding
+                .lock()
+                .await
+                .as_ref()
+                .cloned()
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+            crate::docker::mutations::run(
+                &client,
+                &self.docker_options,
+                &binding,
+                request,
+                owner,
+                current,
+            )
+            .await
         })
     }
     fn idle(&self) -> StageFuture<'_, Option<ConnectionDiagnosticCode>> {
@@ -558,6 +598,37 @@ impl Sessions {
             return Err(AppError::new(ErrorCode::StaleSession).in_scope(scope));
         }
         Ok(())
+    }
+    pub(crate) async fn mutate(
+        &self,
+        request: MutationRequest,
+        owner: crate::activity::Operation,
+        current: crate::docker::mutations::Current,
+    ) -> Result<MutationResponse, AppError> {
+        self.require_scope(&request.scope)?;
+        let driver = self
+            .control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+            .as_ref()
+            .and_then(|worker| worker.driver.upgrade())
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+        let scope = request.scope.clone();
+        // After dispatch, preserve Unknown even if disconnect invalidated this scope.
+        let result = driver.mutate(request, owner, current).await;
+        if result
+            .as_ref()
+            .is_err_and(|error| error.code == ErrorCode::StaleSession)
+        {
+            drop(driver);
+            let _ = self
+                .disconnect(&ConnectionToken {
+                    session_id: scope.session_id,
+                    session_generation: scope.session_generation,
+                })
+                .await;
+        }
+        result
     }
     pub async fn list(&self, scope: &SessionScope) -> Result<ListContainersResponse, AppError> {
         self.require_scope(scope)?;

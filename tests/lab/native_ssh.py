@@ -112,7 +112,7 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
             for alias, route in (("direct-known", "Direct"), ("via-known", "jump-known")):
                 add(alias, "Checkpoint " + alias, "/opt/fixture/docker-with-compose" if compose and alias=="direct-known" else "/usr/bin/docker")
                 button("Connect saved host")
-                text = wait_text("Ready · Read-only session")
+                text = wait_text("Ready · SSH session")
                 for expected in (route, engine["engineVersion"], engine["engineId"], "unix:///var/run/docker.sock"):
                     assert expected in text, f"Missing {expected!r} in native details"
                 script('document.querySelector("[aria-label=\\"Selected saved host\\"]").scrollIntoView()')
@@ -247,18 +247,18 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                     node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
                     command("POST", f"/element/{node}/click", {})
                 button("Disconnect saved host")
-                wait_text("Disconnected · Read-only session")
+                wait_text("Disconnected · SSH session")
                 assert engine["engineId"] not in details()
                 print(f"PASS native UI {alias}: actual Engine identity/version, {route}, readonly, disconnect; PATH=/nonexistent", flush=True)
             for alias, expected in (("direct-unknown", "not trusted"), ("direct-changed", "changed"),
                                     ("via-jump-absent", "Authentication")):
                 add(alias, "Checkpoint " + alias)
                 button("Connect saved host")
-                wait_text("Connection error · Read-only session")
+                wait_text("Connection error · SSH session")
                 assert expected.lower() in details().lower(), details()
                 (artifacts / f"native-denied-{alias}.png").write_bytes(base64.b64decode(command("GET", "/screenshot"), validate=True))
                 button("Disconnect saved host")
-                wait_text("Disconnected · Read-only session")
+                wait_text("Disconnected · SSH session")
                 print(f"PASS native UI {alias}: bounded diagnostic, explicit disconnect", flush=True)
             button("Checkpoint via-known · via-known")
             fill("Display name", "Checkpoint cancel")
@@ -269,17 +269,17 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
             wait_text("Checking remote capabilities")
             started = time.monotonic()
             button("Disconnect saved host")
-            wait_text("Disconnected · Read-only session")
+            wait_text("Disconnected · SSH session")
             assert time.monotonic() - started < 3, "cancel must not await the remote 30 second sleep"
             fill("Saved Docker executable", "/usr/bin/docker")
             fill("Display name", "Checkpoint reconnect")
             button("Save host changes")
             wait_text("Checkpoint reconnect")
             button("Connect saved host")
-            wait_text("Ready · Read-only session")
+            wait_text("Ready · SSH session")
             assert engine["engineId"] in details()
             button("Disconnect saved host")
-            wait_text("Disconnected · Read-only session")
+            wait_text("Disconnected · SSH session")
             print("PASS native UI cancellation and explicit reconnect: old probe cannot populate new session", flush=True)
         finally:
             if session:

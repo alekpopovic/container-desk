@@ -520,6 +520,12 @@ impl Backend {
             .read_slots
             .try_acquire()
             .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        self.list_containers_admitted(request).await
+    }
+    async fn list_containers_admitted(
+        &self,
+        request: ListContainersRequest,
+    ) -> Result<ListContainersResponse, AppError> {
         let authorized = self
             .policy
             .lock()
@@ -678,10 +684,84 @@ impl Backend {
         }
         Ok(sample)
     }
-    pub fn prepare_confirmation(
+    pub fn management_state(&self, scope: SessionScope) -> Result<ManagementState, AppError> {
+        self.require_live_mode()?;
+        self.require_session(&scope)?;
+        let enabled = self
+            .policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .access(&scope)?
+            != HostAccess::ReadOnly;
+        Ok(ManagementState { scope, enabled })
+    }
+    pub fn set_management(
+        &self,
+        request: SetManagementRequest,
+    ) -> Result<ManagementState, AppError> {
+        self.require_live_mode()?;
+        self.require_session(&request.scope)?;
+        if self.workspace_mode()?.scope.as_ref() != Some(&request.scope) {
+            return Err(AppError::new(ErrorCode::StaleSession));
+        }
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .set_access(
+                &request.scope,
+                if request.enabled {
+                    HostAccess::Manage
+                } else {
+                    HostAccess::ReadOnly
+                },
+            )?;
+        Ok(ManagementState {
+            scope: request.scope,
+            enabled: request.enabled,
+        })
+    }
+    pub async fn prepare_confirmation(
         &self,
         request: PrepareConfirmationRequest,
     ) -> Result<ConfirmationIntent, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_confirmation(&request)?;
+        self.require_session(&request.scope)?;
+        // Action targets must come from an actual current-scope native inventory.
+        if let ConfirmationOperation::Mutation(spec) = &request.operation {
+            // Wait for bounded read admission before issuing any command. No dispatched read or mutation is replayed here.
+            let mut admission = None;
+            for _ in 0..30 {
+                self.require_session(&request.scope)?;
+                match self.read_hosts.acquire(&request.scope.selection.host_id) {
+                    Ok(host) => {
+                        if let Ok(global) = self.read_slots.try_acquire() {
+                            admission = Some((host, global));
+                            break;
+                        }
+                    }
+                    Err(error) if error.code == ErrorCode::ResourceLimit => (),
+                    Err(error) => return Err(error),
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            }
+            let _admission = admission.ok_or_else(|| AppError::new(ErrorCode::ResourceLimit))?;
+            let inventory = self
+                .list_containers_admitted(ListContainersRequest {
+                    scope: request.scope.clone(),
+                })
+                .await?;
+            if !spec
+                .container_ids
+                .iter()
+                .all(|id| inventory.containers.iter().any(|row| &row.id == id))
+            {
+                return Err(AppError::new(ErrorCode::ContainerNotFound));
+            }
+        }
         self.policy
             .lock()
             .map_err(|_| AppError::new(ErrorCode::Internal))?
@@ -691,20 +771,48 @@ impl Backend {
         self.require_live_mode()?;
         self.activities.as_ref().map_err(Clone::clone)?.records()
     }
-    pub fn mutate_container(&self, request: MutationRequest) -> Result<MutationResponse, AppError> {
+    pub async fn mutate_container(
+        &self,
+        request: MutationRequest,
+    ) -> Result<MutationResponse, AppError> {
         self.require_live_mode()?;
-        let scope = request.scope.clone();
-        let _operation = self.activities.as_ref().map_err(Clone::clone)?.begin(
+        let owner = self.activities.as_ref().map_err(Clone::clone)?.begin(
             &mut *self
                 .policy
                 .lock()
                 .map_err(|_| AppError::new(ErrorCode::Internal))?,
-            request,
+            request.clone(),
         )?;
-        self.require_session(&scope)?;
-        // Prompt 032 supplies transport. This owner never dispatches a synthetic success.
-        // Dropping before dispatch records NotDispatched and releases the exact host slot.
-        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&scope))
+        self.require_session(&request.scope)?;
+        let permit = tokio::time::timeout(
+            std::time::Duration::from_secs(3),
+            self.read_slots.clone().acquire_owned(),
+        )
+        .await
+        .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+        .map_err(|_| AppError::new(ErrorCode::Disconnected))?;
+        let sessions = self.sessions.clone();
+        let policy = self.policy.clone();
+        let scope = request.scope.clone();
+        let operation = ConfirmationOperation::Mutation(request.spec.clone());
+        let current_sessions = sessions.clone();
+        let current = Arc::new(move || {
+            policy
+                .lock()
+                .map_err(|_| AppError::new(ErrorCode::Internal))?
+                .authorize_confirmation(&PrepareConfirmationRequest {
+                    scope: scope.clone(),
+                    operation: operation.clone(),
+                })?;
+            current_sessions.require_scope(&scope)
+        });
+        // Dropped IPC futures do not detach the lock from a still-running SSH child.
+        tauri::async_runtime::spawn(async move {
+            let _permit = permit;
+            sessions.mutate(request, owner, current).await
+        })
+        .await
+        .map_err(|_| AppError::new(ErrorCode::Internal))?
     }
     pub fn open_container_terminal(
         &self,

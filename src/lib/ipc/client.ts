@@ -43,7 +43,7 @@ const messages: Record<ErrorCode, string> = {
   invalid_response: "The desktop returned an invalid response.",
   internal: "The operation could not be completed.",
   storage_unavailable:
-    "Local settings cannot be saved. The original files were retained.",
+    "Local data could not be read or saved. Check application storage before retrying.",
   storage_conflict: "Settings changed. Reload before saving again.",
   invalid_preferences: "Settings contain invalid or unsupported values.",
   invalid_limits: "An operation limit is outside the supported range.",
@@ -1492,4 +1492,137 @@ export async function listCompose(
     }
   }
   return value as import("./generated.ts").ListComposeResponse;
+}
+
+import type {
+  ActivityRecord,
+  ConfirmationIntent,
+  ManagementState,
+  MutationSpec,
+  MutationResponse,
+} from "./generated.ts";
+function sameMutation(value: unknown, expected: MutationSpec): boolean {
+  return (
+    record(value) &&
+    value.operation === expected.operation &&
+    value.timeoutSeconds === expected.timeoutSeconds &&
+    Array.isArray(value.containerIds) &&
+    value.containerIds.length === expected.containerIds.length &&
+    value.containerIds.every((id, i) => id === expected.containerIds[i])
+  );
+}
+export async function setManagement(
+  selected: SessionScope,
+  enabled: boolean,
+  current: () => SessionScope | null,
+): Promise<ManagementState> {
+  const value = await call("set_management", { scope: selected, enabled }, () =>
+    sameScope(selected, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, selected) ||
+    value.enabled !== enabled
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as ManagementState;
+}
+export async function prepareMutation(
+  selected: SessionScope,
+  spec: MutationSpec,
+  current: () => SessionScope | null,
+): Promise<ConfirmationIntent> {
+  const value = await call(
+    "prepare_confirmation",
+    { scope: selected, operation: { category: "mutation", spec } },
+    () => sameScope(selected, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, selected) ||
+    typeof value.id !== "string" ||
+    !/^i_[a-f0-9]{32}$/.test(value.id) ||
+    !record(value.operation) ||
+    value.operation.category !== "mutation" ||
+    !sameMutation(value.operation.spec, spec) ||
+    !Number.isInteger(value.expiresInMs) ||
+    (value.expiresInMs as number) < 1 ||
+    (value.expiresInMs as number) > 30000
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as ConfirmationIntent;
+}
+export async function mutateContainer(
+  selected: SessionScope,
+  spec: MutationSpec,
+  intentId: string,
+  current: () => SessionScope | null,
+): Promise<MutationResponse> {
+  // Mutations never enter scheduledRead: exactly one invocation, including on transport failure.
+  const value = await call(
+    "mutate_container",
+    { scope: selected, spec, intentId },
+    () => sameScope(selected, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, selected) ||
+    !sameMutation(value.spec, spec) ||
+    !["succeeded", "failed", "unknown"].includes(value.outcome as string)
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as MutationResponse;
+}
+export async function getActivity(): Promise<ActivityRecord[]> {
+  const value = await call("get_activity");
+  if (
+    !Array.isArray(value) ||
+    value.length > 200 ||
+    !value.every(
+      (row) =>
+        record(row) &&
+        typeof row.id === "string" &&
+        /^i_[a-f0-9]{32}$/.test(row.id) &&
+        typeof row.hostId === "string" &&
+        /^h_[a-f0-9]{32}$/.test(row.hostId) &&
+        ["start", "stop", "restart"].includes(row.action as string) &&
+        Array.isArray(row.targets) &&
+        row.targets.length > 0 &&
+        row.targets.length <= 20 &&
+        row.targets.every(
+          (id: unknown) => typeof id === "string" && /^[a-f0-9]{64}$/.test(id),
+        ) &&
+        new Set(row.targets).size === row.targets.length &&
+        Number.isSafeInteger(row.startedAtMs) &&
+        (row.startedAtMs as number) >= 0 &&
+        Number.isSafeInteger(row.updatedAtMs) &&
+        (row.updatedAtMs as number) >= (row.startedAtMs as number) &&
+        (row.updatedAtMs as number) <= 253402300799999 &&
+        ["not_dispatched", "unknown", "succeeded", "failed"].includes(
+          row.outcome as string,
+        ),
+    )
+  )
+    throw new IpcError("invalid_response");
+  return value as ActivityRecord[];
+}
+
+export async function getManagement(
+  selected: SessionScope,
+  current: () => SessionScope | null,
+): Promise<ManagementState> {
+  const value = await call("get_management", { scope: selected }, () =>
+    sameScope(selected, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, selected) ||
+    typeof value.enabled !== "boolean"
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as ManagementState;
 }

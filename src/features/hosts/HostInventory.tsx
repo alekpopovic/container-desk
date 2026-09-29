@@ -238,7 +238,7 @@ export function HostInventory({
             <p>
               {host.group || "Ungrouped"} ·{" "}
               {host.readOnly
-                ? "Read-only"
+                ? "Read-only by default"
                 : "Management preference (session remains read-only)"}{" "}
               ·{" "}
               {inventory?.connection?.hostId === host.id
@@ -487,7 +487,7 @@ export function HostInventory({
             {connection
               ? native.connectionLabels[connection.state]
               : "Disconnected"}{" "}
-            · Read-only session
+            · SSH session
           </p>
           <div className="host-actions">
             <button

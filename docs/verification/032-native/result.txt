@@ -1,0 +1,9 @@
+Native CLI oracle: stdout/stderr records 4 2 largest stderr line bytes 300589
+PASS native management UI: exact host/daemon/full-ID confirmation, cancellation sent nothing, explicit stop/start/restart each dispatched once, refreshed real states and delayed health starting/healthy, explicit revocation.
+PASS native release Tauri channel: actual follow batches, event-loop stall/drop marker, bounded preview, stop, timestamp resume, route unmount; app storage/diagnostics clean.
+PASS controlled daemon identity drift after confirmation: native SSH probe mismatch invalidated the session before mutation dispatch; command count unchanged.
+PASS native lifecycle through ProxyJump: explicit opt-in and owned full IDs, stop/start/restart states, changed StartedAt, health starting then healthy; response loss after real restart recorded Unknown; reconnect stayed read-only and exact mutation count remained four with no replay; client PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 133 filtered out; finished in 38.65s
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: explicitly enabled owned lifecycle actions and post-dispatch loss had no replay; strict client trust unchanged.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
