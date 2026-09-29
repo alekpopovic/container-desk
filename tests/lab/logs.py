@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Real logs through an owned loopback sshd. Never mount the host Docker socket into a target.
 Only generated, labelled workload IDs are admitted by the temporary SSH command gate.
-No host inventory/list/mutation command is admitted. No user SSH/Docker configuration is used.
+Inventory and explicitly enabled mutations are restricted to owned IDs. No user SSH/Docker configuration is used.
 """
 import argparse
 import hashlib
@@ -194,7 +194,15 @@ def main():
                     watcher.start()
                 if args.stream and args.native_driver:
                     from native_logs import verify
-                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions)
+                    try:
+                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions)
+                    except Exception:
+                        # Only bounded state fields from owned fixtures; no logs, env or generic inspect dump.
+                        if args.management:
+                            state = subprocess.run(docker + ['inspect', '--format', '{{.State.Status}} {{.State.ExitCode}} {{.State.OOMKilled}} {{if .State.Health}}{{.State.Health.Status}}{{end}}', '--', owned[2]], env=env, capture_output=True, text=True, timeout=10)
+                            print('Owned lifecycle state oracle:', state.stdout.strip(), flush=True)
+                            print('Owned dispatched actions:', (root/'mutation-count').read_text().splitlines() if (root/'mutation-count').exists() else [], flush=True)
+                        raise
                 checkpoint = 'checkpoint037_owned_compose' if args.compose_actions else 'checkpoint036_owned_networks' if args.networks else 'checkpoint033_owned_batch' if args.batch else 'checkpoint032_owned_mutations' if args.management else 'checkpoint028_owned_reads' if args.reads else 'checkpoint027_owned_events' if args.events else 'checkpoint026_owned_stats' if args.stats else 'checkpoint024_owned_stream' if args.stream else 'checkpoint023_owned_logs'
                 result = subprocess.run(['cargo', 'test', '--manifest-path', str(REPO / 'src-tauri/Cargo.toml'), '--locked', '--no-run', '--message-format=json'], env=env, capture_output=True, text=True, check=True, timeout=180)
                 executables = [json.loads(line)['executable'] for line in result.stdout.splitlines() if line.startswith('{') and json.loads(line).get('reason') == 'compiler-artifact' and json.loads(line).get('executable') and json.loads(line).get('target', {}).get('name') == 'containerdesk_lib' and json.loads(line).get('profile', {}).get('test') is True]

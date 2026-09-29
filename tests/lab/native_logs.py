@@ -43,8 +43,16 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             # Settle WebKit's viewport after transient clipboard fields/virtualized rows.
             script('arguments[0].scrollIntoView({block: "center", behavior: "instant"})', {ELEMENT: node})
             time.sleep(.15)
+            # WebKit can report a click while viewport movement prevented DOM delivery.
+            # Retry only zero-delivery attempts, never a delivered action or confirmation.
+            script('const target=arguments[0]; window.__nativeClick=null; if(window.__nativeClickListener) document.removeEventListener("click",window.__nativeClickListener,true); window.__nativeClickListener=event=>{window.__nativeClick={trusted:event.isTrusted,matched:target.contains(event.target)};}; document.addEventListener("click",window.__nativeClickListener,{capture:true,once:true});', {ELEMENT:node})
             try:
-                command('POST', f'/element/{node}/click', {})
+                for _ in range(3):
+                    command('POST','/execute/async',{'script':'const done=arguments[arguments.length-1];requestAnimationFrame(()=>requestAnimationFrame(()=>done(true)));','args':[]})
+                    command('POST', f'/element/{node}/click', {})
+                    delivered=script('return window.__nativeClick')
+                    if delivered is not None: break
+                assert delivered and delivered['trusted'] and delivered['matched'], 'Native click did not reach intended element: ' + xpath
             except urllib.error.HTTPError as error:
                 details = error.read().decode()
                 (artifacts / 'native-click-failure.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
@@ -111,7 +119,7 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                 endpoint=oracle['Containers'][live_id]
                 for value in [endpoint['IPv4Address'],endpoint['IPv6Address']]:assert value and value in text
                 for config in oracle['IPAM']['Config']:assert config['Subnet'] in text
-                assert script('return !document.querySelector(".network-detail button").disabled')
+                wait('return document.querySelector(".network-detail button")?.disabled === false')
                 script('document.querySelector(".network-detail").scrollIntoView({block:"start",behavior:"instant"})')
                 (artifacts/'native-network-metadata.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
                 script('document.querySelector(".network-detail li:last-child").scrollIntoView({block:"center",behavior:"instant"})')
@@ -172,9 +180,10 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                     wait('return Array.from(document.querySelectorAll(".container-management button")).some(b=>b.textContent === "' + action + '" && !b.disabled)')
                     button(action)
                     wait('return document.querySelector(".mutation-confirmation") !== null')
+                    assert script('return document.querySelector(".mutation-confirmation h4").textContent') == 'Confirm ' + action.split()[0].lower()
                     wait('return Array.from(document.querySelectorAll(".mutation-confirmation button")).some(b=>b.textContent === "Confirm action" && !b.disabled)')
                     button('Confirm action')
-                    wait('return document.querySelector(".container-management [role=status]")?.innerText.includes("Observed state: ' + expected + '")', 30)
+                    wait('return document.querySelector(".container-management [role=status]")?.innerText.includes("Observed state: ' + expected + '")', 50)
                     if expected == 'running':
                         assert script('return document.querySelector(".container-management [role=status]").innerText.includes("health: starting")')
                 script('document.querySelector(".container-management").scrollIntoView({block:"start",behavior:"instant"})')

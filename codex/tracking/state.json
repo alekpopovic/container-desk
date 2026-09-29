@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T05:25:39+00:00",
+  "updated_at": "2026-09-29T05:47:33+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1276,6 +1276,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T05:26:18+00:00",
+      "id": "038",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T05:47:33+00:00",
+      "id": "038",
+      "action": "done",
+      "note": "PASS: 134 Rust tests and clippy; 74 IPC tests; 72 browser cases; rebuilt production native lifecycle, batch and Compose journeys plus direct/ProxyJump resource and dual-stack network checks. Reproduced and fixed pre-action read coalescing; endpoint read-only/revocation gates passed.",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T05:26:18+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1751,12 +1785,14 @@
       "note": ""
     },
     "038": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T05:26:18+00:00",
+      "finished_at": "2026-09-29T05:47:33+00:00",
+      "evidence": "codex/tracking/evidence/038.md",
+      "evidence_sha256": "fbce9b895ff5fb4bf8598e57d6c52f9d4702a7cec85e56845fa5ef1145a53b82",
+      "checks": [
+        "PASS: 134 Rust tests and clippy; 74 IPC tests; 72 browser cases; rebuilt production native lifecycle, batch and Compose journeys plus direct/ProxyJump resource and dual-stack network checks. Reproduced and fixed pre-action read coalescing; endpoint read-only/revocation gates passed."
+      ],
       "commit": "",
       "note": ""
     },

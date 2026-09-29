@@ -79,6 +79,24 @@ export class IpcError extends Error implements AppError {
 }
 
 const reads = new ReadScheduler((code) => new IpcError(code));
+function readHostKey(scope: SessionScope) {
+  return JSON.stringify([scope.selection.hostId, scope.daemonId]);
+}
+async function mutationCall(
+  command: "mutate_container" | "mutate_compose_project",
+  request:
+    | import("./generated.ts").MutationRequest
+    | import("./generated.ts").ComposeMutationRequest,
+  current: () => SessionScope | null,
+) {
+  const selected = structuredClone(request.scope);
+  try {
+    return await call(command, request, () => sameScope(selected, current()));
+  } finally {
+    // Even a lost response can follow a completed mutation. Reconciliation must start a new read.
+    reads.invalidate(readHostKey(selected));
+  }
+}
 function scheduledRead(
   command: ReadCommand,
   request: { scope: SessionScope },
@@ -87,7 +105,7 @@ function scheduledRead(
   const captured = structuredClone(request);
   // Exact request (including session, full ID and reveal flag) is the single-flight identity.
   return reads.run(
-    JSON.stringify([captured.scope.selection.hostId, captured.scope.daemonId]),
+    readHostKey(captured.scope),
     JSON.stringify([command, captured]),
     command,
     () => sameScope(captured.scope, current()),
@@ -1610,10 +1628,10 @@ export async function mutateContainer(
   current: () => SessionScope | null,
 ): Promise<MutationResponse> {
   // Mutations never enter scheduledRead: exactly one invocation, including on transport failure.
-  const value = await call(
+  const value = await mutationCall(
     "mutate_container",
     { scope: selected, spec, intentId },
-    () => sameScope(selected, current()),
+    current,
   );
   if (
     !record(value) ||
@@ -2099,9 +2117,7 @@ export async function mutateComposeProject(
   current: () => SessionScope | null,
 ): Promise<import("./generated.ts").ComposeMutationResponse> {
   // A dispatched project command is never sent through the read retry scheduler.
-  const value = await call("mutate_compose_project", request, () =>
-    sameScope(request.scope, current()),
-  );
+  const value = await mutationCall("mutate_compose_project", request, current);
   if (
     !record(value) ||
     !scope(value.scope) ||

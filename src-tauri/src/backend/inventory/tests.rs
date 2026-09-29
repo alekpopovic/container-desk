@@ -1588,12 +1588,88 @@ async fn checkpoint032_owned_mutations_and_disconnect_never_replay() {
             .code,
         ErrorCode::PermissionDenied
     );
+    // Exercise the public mutation endpoints directly, independently of disabled UI controls.
+    for operation in [
+        MutationOperation::Start,
+        MutationOperation::Stop,
+        MutationOperation::Restart,
+        MutationOperation::Remove,
+    ] {
+        assert_eq!(
+            backend
+                .mutate_container(MutationRequest {
+                    scope: scope.clone(),
+                    intent_id: IntentId("i_".to_owned() + &"0".repeat(32)),
+                    spec: MutationSpec {
+                        operation,
+                        container_ids: vec![target.clone()],
+                        timeout_seconds: 1
+                    },
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+    }
+    assert_eq!(
+        backend
+            .open_container_terminal(TerminalRequest {
+                scope: scope.clone(),
+                intent_id: IntentId("i_".to_owned() + &"0".repeat(32)),
+                spec: TerminalSpec {
+                    container_id: target.clone(),
+                    shell: TerminalShell::Sh,
+                    columns: 80,
+                    rows: 24
+                },
+            })
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
     backend
         .set_management(SetManagementRequest {
             scope: scope.clone(),
             enabled: true,
         })
         .unwrap();
+    let revoked = confirm(&backend, &scope, &target, MutationOperation::Stop)
+        .await
+        .unwrap();
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: false,
+        })
+        .unwrap();
+    assert!(!backend.management_state(scope.clone()).unwrap().enabled);
+    assert_eq!(
+        backend
+            .mutate_container(revoked.clone())
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    assert_eq!(
+        backend.mutate_container(revoked).await.unwrap_err().code,
+        ErrorCode::InvalidIntent
+    );
+    assert_eq!(
+        std::fs::read_to_string(control.join("mutation-count"))
+            .unwrap_or_default()
+            .lines()
+            .count(),
+        baseline
+    );
+
     assert_eq!(
         confirm(
             &backend,
@@ -2622,12 +2698,68 @@ async fn checkpoint037_owned_compose_restart_verification_and_configuration_drif
             .code,
         ErrorCode::PermissionDenied
     );
+    for operation in [
+        ComposeActionOperation::Start,
+        ComposeActionOperation::Stop,
+        ComposeActionOperation::Restart,
+    ] {
+        let mut denied = spec.clone();
+        denied.operation = operation;
+        assert_eq!(
+            backend
+                .mutate_compose_project(ComposeMutationRequest {
+                    scope: scope.clone(),
+                    intent_id: IntentId("i_".to_owned() + &"0".repeat(32)),
+                    spec: denied,
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::PermissionDenied
+        );
+    }
     backend
         .set_management(SetManagementRequest {
             scope: scope.clone(),
             enabled: true,
         })
         .unwrap();
+    let revoked_intent = backend.prepare_confirmation(prepare.clone()).await.unwrap();
+    let revoked = ComposeMutationRequest {
+        scope: scope.clone(),
+        intent_id: revoked_intent.id,
+        spec: spec.clone(),
+    };
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: false,
+        })
+        .unwrap();
+    assert!(!backend.management_state(scope.clone()).unwrap().enabled);
+    assert_eq!(
+        backend
+            .mutate_compose_project(revoked.clone())
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    assert_eq!(
+        backend
+            .mutate_compose_project(revoked)
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::InvalidIntent
+    );
+
     let intent = backend.prepare_confirmation(prepare.clone()).await.unwrap();
     let mutation = ComposeMutationRequest {
         scope: scope.clone(),

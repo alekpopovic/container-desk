@@ -38,7 +38,12 @@ type Job = {
   deadline: number;
   active: boolean;
 };
-type Host = { jobs: Map<string, Job>; active: number; background: number };
+type Host = {
+  jobs: Map<string, Job>;
+  active: number;
+  background: number;
+  epoch: number;
+};
 /** Only finite idempotent reads enter this scheduler. Native Rust still enforces its own limits. */
 export class ReadScheduler {
   private hosts = new Map<string, Host>();
@@ -62,9 +67,10 @@ export class ReadScheduler {
     if (!host) {
       if (this.hosts.size >= 3)
         return Promise.reject(this.error("resource_limit"));
-      host = { jobs: new Map(), active: 0, background: 0 };
+      host = { jobs: new Map(), active: 0, background: 0, epoch: 0 };
       this.hosts.set(hostKey, host);
     }
+    key = `${host.epoch}:${key}`;
     let job = host.jobs.get(key);
     if (!job) {
       if (host.jobs.size >= 16)
@@ -89,6 +95,19 @@ export class ReadScheduler {
     );
     this.drain();
     return result as Promise<T>;
+  }
+  /** An action may change any resource view. Never deliver or join a pre-completion read. */
+  invalidate(hostKey: string) {
+    const host = this.hosts.get(hostKey);
+    if (!host) return;
+    host.epoch++;
+    for (const job of host.jobs.values()) {
+      for (const consumer of job.consumers)
+        consumer.reject(this.error("operation_cancelled"));
+      job.consumers = [];
+    }
+    // Active native work still owns its slots until completion; queued work is discarded.
+    this.drain();
   }
   private purge(job: Job) {
     job.consumers = job.consumers.filter((consumer) => {

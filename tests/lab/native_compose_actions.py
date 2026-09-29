@@ -41,7 +41,16 @@ def verify(root,artifacts,script,command,click,button,fill,wait,element):
     assert 'synthetic-compose-037-private' not in script('return document.querySelector(".compose-management").innerText')
     script('document.querySelector("[aria-label=\\"Observed Compose service state\\"]").scrollIntoView({block:"center",behavior:"instant"})')
     (artifacts/'native-compose-observed.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+    wait('return Array.from(document.querySelectorAll("button")).some(b=>b.textContent==="Disable Compose management" && !b.disabled)')
+    script('window.__revokeClick=[];document.addEventListener("click",event=>window.__revokeClick.push({trusted:event.isTrusted,label:event.target.closest("button")?.textContent}),{capture:true,once:true})')
+    for _ in range(3):
+        command('POST','/execute/async',{'script':'const done=arguments[arguments.length-1];requestAnimationFrame(()=>requestAnimationFrame(()=>done(true)));','args':[]})
+        button('Disable Compose management')
+        if script('return window.__revokeClick.length>0'):break
+    assert script('return window.__revokeClick.some(e=>e.trusted && e.label==="Disable Compose management")')
+    wait('return Array.from(document.querySelectorAll("button")).some(b=>b.textContent==="Enable Compose management")')
+    assert script('return Array.from(document.querySelectorAll(".compose-management .management-actions button")).every(b=>b.disabled)')
     click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
     button('Disconnect saved host')
     wait('return document.body.innerText.includes("Disconnected · SSH session")')
-    print('PASS native Compose UI: explicit quoted remote files/name, verification, management opt-in, full host/daemon/service/ID confirmation, cancel dispatched nothing, exactly one restart, both services observed running and disconnect.',flush=True)
+    print('PASS native Compose UI: explicit quoted remote files/name, verification, management opt-in, full host/daemon/service/ID confirmation, cancel dispatched nothing, exactly one restart, both services observed running, explicit return to read-only and disconnect.',flush=True)

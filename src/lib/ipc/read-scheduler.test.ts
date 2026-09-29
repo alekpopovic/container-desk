@@ -263,3 +263,54 @@ test("real IPC adapter joins duplicate inventory reads and fences a stale consum
     Reflect.deleteProperty(globalThis, "window");
   }
 });
+
+test("mutation invalidation fences old readers, preserves native slots and other hosts, and never retries discarded reads", async () => {
+  const clock = new FakeClock();
+  const scheduler = new ReadScheduler(error, clock);
+  const finish: Array<(v: string) => void> = [];
+  const fail: Array<(e: unknown) => void> = [];
+  let starts = 0;
+  const run = (host: string, key: string) =>
+    scheduler.run(
+      host,
+      key,
+      "inspect_container",
+      () => true,
+      () => {
+        starts++;
+        return new Promise<string>((resolve, reject) => {
+          finish.push(resolve);
+          fail.push(reject);
+        });
+      },
+    );
+  const old = run("host", "same");
+  const duplicate = run("host", "same");
+  const second = run("host", "second");
+  const queued = run("host", "queued");
+  const other = run("other", "same");
+  const cancelled = Promise.all(
+    [old, duplicate, second, queued].map((p) =>
+      assert.rejects(p, { code: "operation_cancelled" }),
+    ),
+  );
+  scheduler.invalidate("host");
+  await cancelled;
+  const fresh = run("host", "same");
+  assert.equal(
+    starts,
+    3,
+    "old active native reads still occupy both host slots",
+  );
+  fail[0]?.(error("transport_unavailable"));
+  await settle();
+  assert.equal(starts, 4, "fresh read starts once a real native slot releases");
+  finish[1]?.("old");
+  finish[2]?.("independent");
+  finish[3]?.("fresh");
+  assert.equal(await other, "independent");
+  assert.equal(await fresh, "fresh");
+  await clock.tick(3000);
+  assert.equal(starts, 4);
+  assert.equal(clock.timers.size, 0);
+});

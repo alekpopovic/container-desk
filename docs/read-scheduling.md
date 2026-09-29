@@ -15,3 +15,7 @@ The inventory cache retains last-success time and explicitly stale rows while a 
 `codex/tracking/evidence/028.md` records controlled-clock tests, maximum measured concurrent reads, actual slow SSH/Docker cancellation and native Linux regression evidence. Simulated clock jumps are not a claim of a physical laptop suspend/resume test.
 
 Prompt 032 adds a bounded admission wait for confirmation inventory reads and reserves one of the existing four native global command permits for a submitted lifecycle action. Preparation does not retry a dispatched command; mutations remain outside the renderer read scheduler and retain their own host lock through completion. See [lifecycle controls](container-management.md).
+
+## Reads after management actions (038)
+
+Container and Compose mutation IPC calls invalidate finite read consumers for their host/daemon when the call settles, including a transport failure or unknown outcome. A read already in flight may have sampled the state before the action. It must not be joined by a later post-action inspection or delivered as a fresh result. The scheduler rejects those consumers, drops queued work, and uses a new per-host epoch for subsequent coalescing. Discarded work cannot retry. Active native calls keep their slots until their promises settle, so invalidation cannot bypass host/global limits; other hosts keep their consumers. This does not retry a mutation, cancel a dispatched mutation, or infer its outcome. An explicit fresh read reconciles current state.

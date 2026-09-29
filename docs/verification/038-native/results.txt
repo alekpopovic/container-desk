@@ -1,0 +1,77 @@
+038 native management checkpoint; Ubuntu 26.04.1 x86_64/X11/WebKitGTK.
+Action journeys use production SHA-256 d129c93fb8531237c97bc23006817ff3f33c366c75badd902556aa7bf81b2ca7.
+Resource/network journeys use the unchanged read-view implementation in the pre-fix 037 release; see evidence.
+
+resources:
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 150 filtered out; finished in 6.53s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+PASS real Engine direct-known: native SSH, fresh daemon identity, version 28.3.3, empty docker ps JSONL, 5 s / 16 MiB bounds; PATH=/nonexistent
+PASS real Engine via-known: native SSH, fresh daemon identity, version 28.3.3, empty docker ps JSONL, 5 s / 16 MiB bounds; PATH=/nonexistent
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 1.68s
+PASS real Docker listing direct-known: 2 complete IDs/count match independent native CLI and provisioning; wrong daemon rejected; client PATH=/nonexistent
+PASS real Docker listing via-known: 2 complete IDs/count match independent native CLI and provisioning; wrong daemon rejected; client PATH=/nonexistent
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 2.90s
+PASS live resource sessions: direct/ProxyJump actual IDs, old/disconnected scopes rejected, inflight read cancelled below 3s, all permits released; controlled identity drift revokes the session
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 3.82s
+PASS native Compose: real CLI/isolated Engine direct with plugin and ProxyJump without plugin; two projects retain separate web services and created instances; nonexistent paths remain unverified; inspect supplements exact labels; same session reused and foreign daemon rejected.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 4.06s
+PASS native images direct and ProxyJump: isolated Engine oracle matched two immutable identities, multiple tags deduplicated, real dangling filter, metadata size and exact two container references; all label values masked, missing image typed, foreign host scope rejected, read-only permission unchanged; PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 3.97s
+PASS native volumes direct and ProxyJump: named/anonymous/unused metadata matched isolated Engine oracle; actual container deletion during inspect retained two correct mount references and marked incomplete, reread reconciled; RO/RW mounts, masked labels/options, typed missing volume, old scope rejection, unchanged read-only management; PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 7.92s
+PASS volume command gate: only fixed Docker metadata/probe argv admitted; no returned mountpoint used as a command argument or filesystem read.
+PASS native live table direct-known: two real containers, row selection and refresh
+PASS native Compose direct-known: two projects/same web service, plugin/fallback status, unverified missing remote path and shared container detail/log navigation.
+PASS native images direct-known: two deduplicated identities, shared tags, masked labels, actual dangling filter with no tags, exact container reference opens existing detail view.
+PASS native volumes direct-known: named/anonymous/unused, metadata-only mountpoint, masked labels/options, actual RO/RW mounts, snapshot warning, shared container detail navigation.
+PASS native UI direct-known: actual Engine identity/version, Direct, readonly, disconnect; PATH=/nonexistent
+PASS native live table via-known: two real containers, row selection and refresh
+PASS native Compose via-known: two projects/same web service, plugin/fallback status, unverified missing remote path and shared container detail/log navigation.
+PASS native images via-known: two deduplicated identities, shared tags, masked labels, actual dangling filter with no tags, exact container reference opens existing detail view.
+PASS native volumes via-known: named/anonymous/unused, metadata-only mountpoint, masked labels/options, actual RO/RW mounts, snapshot warning, shared container detail navigation.
+PASS native UI via-known: actual Engine identity/version, jump-known, readonly, disconnect; PATH=/nonexistent
+PASS native UI direct-unknown: bounded diagnostic, explicit disconnect
+PASS native UI direct-changed: bounded diagnostic, explicit disconnect
+PASS native UI via-jump-absent: bounded diagnostic, explicit disconnect
+PASS native UI cancellation and explicit reconnect: old probe cannot populate new session
+PASS: 15 native SSH cases; config/trust hashes unchanged; no askpass invoked
+Cleaned owned containers, network, agent and temporary key directory.
+
+networks-recheck:
+PASS native network UI: actual custom bridge/internal flag, IPv4/IPv6 IPAM and endpoint addresses, masked metadata, full-ID attachment navigation and disconnect over strict ProxyJump.
+PASS actual network over strict ProxyJump: owned internal dual-stack bridge, full network identity, exact nonzero attachment count and container identity, both IP families/IPAM matched independent Docker inspect; options/labels masked, foreign/disconnected scope refused, management stayed read-only; PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 1.97s
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: owned network metadata and nonzero IPv4/IPv6 attachment count matched real Docker inspect over strict ProxyJump.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
+
+lifecycle-final-fixed:
+PASS native management UI: exact host/daemon/full-ID confirmation, cancellation sent nothing, explicit stop/start/restart each dispatched once, refreshed real states and delayed health starting/healthy, explicit revocation.
+PASS native release Tauri channel: actual follow batches, event-loop stall/drop marker, bounded preview, stop, timestamp resume, route unmount; app storage/diagnostics clean.
+PASS controlled daemon identity drift after confirmation: native SSH probe mismatch invalidated the session before mutation dispatch; command count unchanged.
+PASS native lifecycle through ProxyJump: explicit opt-in and owned full IDs, stop/start/restart states, changed StartedAt, health starting then healthy; response loss after real restart recorded Unknown; reconnect stayed read-only and exact mutation count remained four with no replay; client PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 34.13s
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: explicitly enabled owned lifecycle actions and post-dispatch loss had no replay; strict client trust unchanged.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
+
+batch-final-fixed:
+PASS native batch UI: two explicit full IDs and host, sequential stop results retained, running removal disabled, stopped removal separate acknowledgement and cancellation sent nothing, selected live fixture restored.
+PASS native release Tauri channel: actual follow batches, event-loop stall/drop marker, bounded preview, stop, timestamp resume, route unmount; app storage/diagnostics clean.
+PASS native batch over strict ProxyJump: success, actual disappearance, controlled permission denial individually retained; pending cancellation preserved dispatched success and sent no second command; running removal refused at preparation and again after a real state race; two stopped removals succeeded without force/volume flags; durable partial history survived reopen; exact eight commands, no replay, PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 19.67s
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: batch partial outcomes, cancellation, stopped removal and native state race checks.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
+
+compose-fixed:
+PASS native Compose UI: explicit quoted remote files/name, verification, management opt-in, full host/daemon/service/ID confirmation, cancel dispatched nothing, exactly one restart, both services observed running, explicit return to read-only and disconnect.
+PASS native verified Compose over strict ProxyJump: spaces/apostrophes and ordered files, absent required env file and wrong project rejected, reversed file order rejected, readonly/confirmation enforced, two existing services restarted once, stopped, then started with each actual state observed, consumed intent not replayed, actual config drift after confirmation failed before dispatch, no resolved secret in returned activity.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 22.13s
+PASS independent Compose oracle: 4 explicit lifecycle command(s); both owned services running with newer start times; both unrelated project services retain original start times; no deployment/build/pull/down command admitted by app gate.
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: verified Compose project action and unchanged unrelated project.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
+
+Earlier failed native attempts are recorded in evidence. Reproduced stale UI observation after stop/start: UI exited, independent owned Docker state running, exit code 0, OOMKilled false, healthy. Fixed pre-action read coalescing and verified with deterministic IPC tests plus rebuilt native journeys.
+Automation issues: undelivered WebKit clicks now require trusted intended-element delivery; network link awaits current inventory; lifecycle wait covers preflight plus command deadline. No delivered mutation is retried.
