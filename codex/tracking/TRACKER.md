@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T17:03:28+00:00
+Updated: 2026-09-29T17:08:37+00:00
 
-blocked: **0** | done: **59** | in_progress: **0** | pending: **1**
+blocked: **0** | done: **60** | in_progress: **0** | pending: **0**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -69,7 +69,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 057 | 06 Quality and delivery | User and contributor documentation | medium | done | codex/tracking/evidence/057.md |
 | 058 | 06 Quality and delivery | Native platform acceptance matrix | high | done | codex/tracking/evidence/058.md |
 | 059 | 06 Quality and delivery | Release candidate review and defect closure | high | done | codex/tracking/evidence/059.md |
-| 060 | 06 Quality and delivery | Final handover and release gate | high | pending | — |
+| 060 | 06 Quality and delivery | Final handover and release gate | high | done | codex/tracking/evidence/060.md |
 
 ## History
 
@@ -194,3 +194,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T16:55:12+00:00 — 058: done; Native CI 36594720178: all three clients passed 13 standard checks and eight real encrypted-agent SSH/Docker/PTY groups; Mac package GUI/support passed; exact final Linux deb/AppImage passed fresh Ubuntu desktop VMs; manifests/source/executable hashes and cleanup verified
 - 2026-09-29T16:55:52+00:00 — 059: start;
 - 2026-09-29T17:03:28+00:00 — 059: done; All 001-058 evidence reviewed; final local 13-check verifier passed; six exact native-tested packages/30 local candidate files passed source/hash/runtime-evidence/archive/credential-pattern checks; release notes/checklist ready; no publication
+- 2026-09-29T17:04:05+00:00 — 060: start;
+- 2026-09-29T17:08:37+00:00 — 060: done; Final handover complete; exact six native-tested packages and 31 candidate files passed final manifest/provenance/runtime-evidence/security-content smoke; app source unchanged; all required platform gates met; unrelated CI relocation preserved

@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "sourceCommit": "ce33d6cd9bba5823642749a26d3e6d367a9bab73",
+  "packages": 6,
+  "candidateFiles": 31,
+  "topManifestSha256": "8495b93b9b813373c59230a6d0fc1485fbbd94249859893c33401fba73f5c1e0",
+  "unexpectedFiles": 0,
+  "symlinks": 0,
+  "credentialPatternMatches": 0,
+  "packageArchiveContentsInspected": [
+    "both Mac app archives",
+    "Linux deb data archive"
+  ],
+  "appImageAcceptance": "exact digest bound to real FUSE execution report; not re-executed by this provenance check",
+  "targets": [
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "standardChecks": 13,
+      "nativeGroups": 8,
+      "observedSshIdentitiesReaped": 577,
+      "sourceVerified": true,
+      "packageHashesVerified": true,
+      "runtimeEvidenceVerified": true
+    },
+    {
+      "target": "aarch64-apple-darwin",
+      "standardChecks": 13,
+      "nativeGroups": 8,
+      "observedSshIdentitiesReaped": 483,
+      "sourceVerified": true,
+      "packageHashesVerified": true,
+      "runtimeEvidenceVerified": true
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "standardChecks": 13,
+      "nativeGroups": 8,
+      "observedSshIdentitiesReaped": 560,
+      "sourceVerified": true,
+      "packageHashesVerified": true,
+      "runtimeEvidenceVerified": true
+    }
+  ],
+  "publicationPerformed": false,
+  "newNativeExecutionClaimed": false
+}

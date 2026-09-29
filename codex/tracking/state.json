@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T17:03:28+00:00",
+  "updated_at": "2026-09-29T17:08:37+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -2058,6 +2058,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T17:04:05+00:00",
+      "id": "060",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T17:08:37+00:00",
+      "id": "060",
+      "action": "done",
+      "note": "Final handover complete; exact six native-tested packages and 31 candidate files passed final manifest/provenance/runtime-evidence/security-content smoke; app source unchanged; all required platform gates met; unrelated CI relocation preserved",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T17:04:05+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2797,12 +2831,14 @@
       "note": ""
     },
     "060": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T17:04:05+00:00",
+      "finished_at": "2026-09-29T17:08:37+00:00",
+      "evidence": "codex/tracking/evidence/060.md",
+      "evidence_sha256": "6f2dc0e6619f6a10462c049125912e642815444bbee1fe9e1bd7127dc794e8fd",
+      "checks": [
+        "Final handover complete; exact six native-tested packages and 31 candidate files passed final manifest/provenance/runtime-evidence/security-content smoke; app source unchanged; all required platform gates met; unrelated CI relocation preserved"
+      ],
       "commit": "",
       "note": ""
     }
