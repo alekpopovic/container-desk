@@ -1282,3 +1282,47 @@ pub struct EventBatch {
     pub ended: bool,
     pub error: Option<ErrorCode>,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ListComposeRequest {
+    pub scope: SessionScope,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum ComposeConfigurationStatus {
+    Unverified,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ComposeInstance {
+    pub container_id: ContainerId,
+    pub name: String,
+    pub service: Option<String>,
+    pub state: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ComposeProject {
+    pub name: String,
+    pub status: Option<String>,
+    pub from_plugin: bool,
+    pub from_labels: bool,
+    pub config_files_reported: Vec<String>,
+    pub working_directories_reported: Vec<String>,
+    pub configuration: ComposeConfigurationStatus,
+    pub instances: Vec<ComposeInstance>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ListComposeResponse {
+    pub scope: SessionScope,
+    pub plugin: ComposeAvailability,
+    pub listing_error: Option<ErrorCode>,
+    pub projects: Vec<ComposeProject>,
+}

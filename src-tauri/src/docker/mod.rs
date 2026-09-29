@@ -152,3 +152,5 @@ mod tests;
 pub(crate) mod live_logs;
 
 pub(crate) mod events;
+
+pub(crate) mod compose;

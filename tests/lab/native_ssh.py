@@ -22,7 +22,7 @@ def unused_port():
         return sock.getsockname()[1]
 
 
-def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, inventory=False, inspect=False):
+def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, inventory=False, inspect=False, compose=False):
     env = os.environ.copy()
     for key in ("LD_LIBRARY_PATH", "LD_PRELOAD", "GTK_PATH", "GIO_MODULE_DIR", "SSH_AUTH_SOCK"):
         env.pop(key, None)
@@ -58,6 +58,8 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
 
         def button(text):
             node = element(f'//button[normalize-space(.)="{text}"]')
+            script('arguments[0].scrollIntoView({block:"center",behavior:"instant"})', {ELEMENT:node})
+            time.sleep(.15)
             command("POST", f"/element/{node}/click", {})
 
         def tab(text):
@@ -108,7 +110,7 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
             command("POST", "/timeouts", {"implicit": 5000, "script": 5000, "pageLoad": 15000})
             button("Add host")
             for alias, route in (("direct-known", "Direct"), ("via-known", "jump-known")):
-                add(alias, "Checkpoint " + alias)
+                add(alias, "Checkpoint " + alias, "/opt/fixture/docker-with-compose" if compose and alias=="direct-known" else "/usr/bin/docker")
                 button("Connect saved host")
                 text = wait_text("Ready · Read-only session")
                 for expected in (route, engine["engineVersion"], engine["engineId"], "unix:///var/run/docker.sock"):
@@ -197,6 +199,38 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                         command("POST", "/execute/async", {"script": "const done = arguments[arguments.length - 1]; requestAnimationFrame(() => requestAnimationFrame(() => done(true)));", "args": []})
                         (artifacts / f"native-inspect-{alias}.png").write_bytes(base64.b64decode(command("GET", "/screenshot"), validate=True))
                         print(f"PASS native inspect {alias}: tabbed real fields, not-configured health, exposure versus bindings, clipboard ID readback, Rust redaction, reveal/hide", flush=True)
+                    if compose:
+                        node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Compose"]')
+                        command("POST", f"/element/{node}/click", {})
+                        deadline = time.monotonic() + 20
+                        while time.monotonic() < deadline:
+                            if script('return document.querySelectorAll(".compose-project-choice").length') == 2: break
+                            time.sleep(.1)
+                        else: raise AssertionError('Native Compose projects did not load')
+                        text = script('return document.querySelector(".compose-view").innerText')
+                        assert ('Remote Compose plugin available.' if alias=='direct-known' else 'Remote Compose plugin absent;') in text
+                        assert '/remote/nonexistent/compose.yml' in text and 'unverified' in text
+                        assert 'web' in text
+                        script('document.querySelector(".compose-view").scrollIntoView({block:"start",behavior:"instant"})')
+                        (artifacts / f"native-compose-{alias}.png").write_bytes(base64.b64decode(command("GET", "/screenshot"), validate=True))
+                        node = element('//button[contains(@class,"compose-project-choice") and starts-with(normalize-space(.),"checkpoint-b")]')
+                        command("POST", f"/element/{node}/click", {})
+                        deadline = time.monotonic() + 15
+                        while time.monotonic() < deadline:
+                            if script('return Array.from(document.querySelectorAll(".compose-instances button")).some(b=>b.textContent.trim()==="listing-second" && !b.disabled)'): break
+                            time.sleep(.1)
+                        else: raise AssertionError('Selected Compose instance did not become available in the authoritative inventory')
+                        button('listing-second')
+                        deadline = time.monotonic() + 15
+                        while time.monotonic() < deadline:
+                            if script('return document.querySelector(".detail-panel")?.innerText.includes("listing-second")'): break
+                            time.sleep(.1)
+                        else:
+                            print('Compose navigation state:', script('return {hash:location.hash,selected:document.querySelector(".selected-container code")?.textContent,project:document.querySelector(".compose-project h3")?.textContent,buttons:Array.from(document.querySelectorAll(".compose-instances button"),b=>({name:b.textContent,disabled:b.disabled}))}'), flush=True)
+                            (artifacts/'native-compose-navigation-timeout.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                            raise AssertionError('Compose instance did not open existing container detail view')
+                        assert script('return !!document.querySelector(".live-logs")')
+                        print(f'PASS native Compose {alias}: two projects/same web service, plugin/fallback status, unverified missing remote path and shared container detail/log navigation.', flush=True)
                     node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
                     command("POST", f"/element/{node}/click", {})
                 button("Disconnect saved host")

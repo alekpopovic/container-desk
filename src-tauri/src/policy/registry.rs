@@ -11,6 +11,9 @@ pub enum OperationCategory {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ResponseKind {
     ContainerList,
+    ComposeList,
+    ComposeIds,
+    ComposeLabels,
     ContainerStats,
     StatsState,
     ContainerDetail,
@@ -24,6 +27,11 @@ pub enum ResponseKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReadOperation {
     ListContainers,
+    ListCompose,
+    ComposeContainerIds,
+    InspectComposeLabels {
+        container_ids: Vec<ContainerId>,
+    },
     FollowEvents {
         since: Option<String>,
     },
@@ -96,6 +104,56 @@ fn limits(value: i32, min: i32, max: i32) -> Result<u32, AppError> {
 }
 pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
     Ok(match operation {
+        ReadOperation::ListCompose => plan(
+            &["docker", "compose", "ls", "--all", "--format", "json"],
+            OperationCategory::Read,
+            ResponseKind::ComposeList,
+            30,
+        ),
+        ReadOperation::ComposeContainerIds => plan(
+            &[
+                "docker",
+                "ps",
+                "--all",
+                "--quiet",
+                "--no-trunc",
+                "--filter",
+                "label=com.docker.compose.project",
+            ],
+            OperationCategory::Read,
+            ResponseKind::ComposeIds,
+            30,
+        ),
+        ReadOperation::InspectComposeLabels { container_ids } => {
+            if container_ids.is_empty() || container_ids.len() > 64 {
+                return Err(AppError::new(ErrorCode::InvalidLimits));
+            }
+            let mut seen = HashSet::new();
+            for id in container_ids {
+                id.validate()?;
+                if !seen.insert(id) {
+                    return Err(AppError::new(ErrorCode::InvalidId));
+                }
+            }
+            let mut command = plan(
+                &[
+                    "docker",
+                    "inspect",
+                    "--type",
+                    "container",
+                    "--format",
+                    crate::docker::compose::LABEL_TEMPLATE,
+                    "--",
+                ],
+                OperationCategory::Read,
+                ResponseKind::ComposeLabels,
+                30,
+            );
+            command
+                .args
+                .extend(container_ids.iter().map(|id| id.0.clone()));
+            command
+        }
         ReadOperation::FollowEvents { since } => {
             validate_log_range(since.as_deref(), None)?;
             let mut result = plan(

@@ -1,6 +1,6 @@
 # Read scheduling and stale data
 
-The IPC client schedules only the finite read commands `list_containers`, `inspect_container`, `container_logs` and `container_stats`. Mutations, confirmation intents, terminal input, native exports and stream startup/ACKs use their existing separate paths. The scheduler has no generic mutation retry entry point.
+The IPC client schedules only the finite read commands `list_containers`, `list_compose`, `inspect_container`, `container_logs` and `container_stats`. Mutations, confirmation intents, terminal input, native exports and stream startup/ACKs use their existing separate paths. The scheduler has no generic mutation retry entry point.
 
 Scheduling retains at most three host/daemon groups, sixteen outstanding request identities per group and thirty-two consumers per identical request. The complete serialized request is the single-flight key, including scope/session generations, full resource ID and sensitive-value reveal flag. Repeated identical refresh requests share one native result; each consumer retains its own lifetime check. Cancelling one view does not discard another current consumer. Completed results are not cached by the scheduler.
 

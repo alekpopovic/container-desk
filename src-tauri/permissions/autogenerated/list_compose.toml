@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-compose"
+description = "Enables the list_compose command without any pre-configured scope."
+commands.allow = ["list_compose"]
+
+[[permission]]
+identifier = "deny-list-compose"
+description = "Denies the list_compose command without any pre-configured scope."
+commands.deny = ["list_compose"]

@@ -5,6 +5,15 @@ RUN apk add --no-cache openssh-server docker-cli docker-engine python3 sudo \
     && addgroup lab docker \
     && passwd -d lab \
     && mkdir -p /run/sshd /lab
+# Default CLI remains plugin-absent for prior checkpoints. Explicit lab wrapper enables it.
+RUN apk add --no-cache docker-cli-compose \
+    && mkdir -p /opt/fixture/compose-plugins \
+    && for directory in /usr/libexec/docker/cli-plugins /usr/lib/docker/cli-plugins; do \
+         if [ -f "$directory/docker-compose" ]; then mv "$directory/docker-compose" /opt/fixture/compose-plugins/docker-compose; fi; \
+       done \
+    && test -x /opt/fixture/compose-plugins/docker-compose
+COPY docker_compose_enabled.sh /opt/fixture/docker-with-compose
+RUN chmod 0755 /opt/fixture/docker-with-compose
 COPY docker_probe_fixture.py /opt/fixture/docker_probe_fixture.py
 COPY docker_list_change.sh /opt/fixture/docker-list-change
 COPY docker_list_hang.sh /opt/fixture/docker-list-hang

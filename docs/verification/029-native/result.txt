@@ -1,0 +1,26 @@
+Real isolated Docker Engine ready: 28.3.3
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 118 filtered out; finished in 6.44s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+PASS real Engine direct-known: native SSH, fresh daemon identity, version 28.3.3, empty docker ps JSONL, 5 s / 16 MiB bounds; PATH=/nonexistent
+PASS real Engine via-known: native SSH, fresh daemon identity, version 28.3.3, empty docker ps JSONL, 5 s / 16 MiB bounds; PATH=/nonexistent
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 1.60s
+Owned remote Compose version: Docker Compose version v2.36.2
+PASS real Docker listing direct-known: 2 complete IDs/count match independent native CLI and provisioning; wrong daemon rejected; client PATH=/nonexistent
+PASS real Docker listing via-known: 2 complete IDs/count match independent native CLI and provisioning; wrong daemon rejected; client PATH=/nonexistent
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 2.59s
+PASS live resource sessions: direct/ProxyJump actual IDs, old/disconnected scopes rejected, inflight read cancelled below 3s, all permits released; controlled identity drift revokes the session
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 3.82s
+PASS native Compose: real CLI/isolated Engine direct with plugin and ProxyJump without plugin; two projects retain separate web services and created instances; nonexistent paths remain unverified; inspect supplements exact labels; same session reused and foreign daemon rejected.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 3.88s
+PASS native live table direct-known: two real containers, row selection and refresh
+PASS native Compose direct-known: two projects/same web service, plugin/fallback status, unverified missing remote path and shared container detail/log navigation.
+PASS native UI direct-known: actual Engine identity/version, Direct, readonly, disconnect; PATH=/nonexistent
+PASS native live table via-known: two real containers, row selection and refresh
+PASS native Compose via-known: two projects/same web service, plugin/fallback status, unverified missing remote path and shared container detail/log navigation.
+PASS native UI via-known: actual Engine identity/version, jump-known, readonly, disconnect; PATH=/nonexistent
+PASS native UI direct-unknown: bounded diagnostic, explicit disconnect
+PASS native UI direct-changed: bounded diagnostic, explicit disconnect
+PASS native UI via-jump-absent: bounded diagnostic, explicit disconnect
+PASS native UI cancellation and explicit reconnect: old probe cannot populate new session
+PASS: 15 native SSH cases; config/trust hashes unchanged; no askpass invoked
+Cleaned owned containers, network, agent and temporary key directory.

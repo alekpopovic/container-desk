@@ -1430,3 +1430,66 @@ export async function containerStats(
   }
   return result as import("./generated.ts").StatsSample;
 }
+
+export async function listCompose(
+  expected: SessionScope,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").ListComposeResponse> {
+  const value = await scheduledRead(
+    "list_compose",
+    { scope: expected },
+    current,
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, expected) ||
+    !["available", "absent", "unknown"].includes(String(value.plugin)) ||
+    !(
+      value.listingError === null ||
+      (typeof value.listingError === "string" &&
+        Object.hasOwn(messages, value.listingError))
+    ) ||
+    !Array.isArray(value.projects) ||
+    value.projects.length > 1000
+  )
+    throw new IpcError("invalid_response");
+  const names = new Set<string>();
+  const ids = new Set<string>();
+  const reports = (v: unknown) =>
+    Array.isArray(v) && v.length <= 128 && v.every((x) => text(x));
+  for (const p of value.projects) {
+    if (
+      !record(p) ||
+      !text(p.name) ||
+      !p.name ||
+      names.has(p.name) ||
+      !(p.status === null || text(p.status)) ||
+      typeof p.fromPlugin !== "boolean" ||
+      typeof p.fromLabels !== "boolean" ||
+      (!p.fromPlugin && !p.fromLabels) ||
+      p.configuration !== "unverified" ||
+      !reports(p.configFilesReported) ||
+      !reports(p.workingDirectoriesReported) ||
+      !Array.isArray(p.instances) ||
+      p.instances.length > 5000
+    )
+      throw new IpcError("invalid_response");
+    names.add(p.name);
+    for (const item of p.instances) {
+      if (
+        !record(item) ||
+        typeof item.containerId !== "string" ||
+        !/^[a-f0-9]{64}$/.test(item.containerId) ||
+        ids.has(item.containerId) ||
+        !text(item.name) ||
+        !text(item.state) ||
+        !(item.service === null || text(item.service))
+      )
+        throw new IpcError("invalid_response");
+      ids.add(item.containerId);
+      if (ids.size > 5000) throw new IpcError("invalid_response");
+    }
+  }
+  return value as import("./generated.ts").ListComposeResponse;
+}

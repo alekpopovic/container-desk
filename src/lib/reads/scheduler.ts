@@ -1,6 +1,7 @@
 import type { ErrorCode } from "../ipc/generated.ts";
 export type ReadCommand =
   | "list_containers"
+  | "list_compose"
   | "inspect_container"
   | "container_logs"
   | "container_stats";

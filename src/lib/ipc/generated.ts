@@ -50,6 +50,11 @@ memoryBytes: string | null, memorySwapBytes: string | null, nanoCpus: string | n
 export type ListHostsResponse = { hosts: Array<HostSummary>, };
 export type ConnectHostRequest = { selection: HostSelection, };
 export type ConnectHostResponse = { scope: SessionScope, capabilities: HostCapabilities, };
+export type ListComposeRequest = { scope: SessionScope, };
+export type ListComposeResponse = { scope: SessionScope, plugin: ComposeAvailability, listingError: ErrorCode | null, projects: Array<ComposeProject>, };
+export type ComposeProject = { name: string, status: string | null, fromPlugin: boolean, fromLabels: boolean, configFilesReported: Array<string>, workingDirectoriesReported: Array<string>, configuration: ComposeConfigurationStatus, instances: Array<ComposeInstance>, };
+export type ComposeInstance = { containerId: ContainerId, name: string, service: string | null, state: string, };
+export type ComposeConfigurationStatus = "unverified";
 export type ListContainersRequest = { scope: SessionScope, };
 export type ListContainersResponse = { scope: SessionScope, containers: Array<ContainerSummary>, };
 export type CancelSubscriptionRequest = { scope: SessionScope, subscriptionId: SubscriptionId, };

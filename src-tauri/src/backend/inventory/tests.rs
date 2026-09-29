@@ -1390,3 +1390,112 @@ async fn checkpoint028_owned_reads_bound_slow_daemon_and_cancel_old_generation()
         "PASS native read scheduler admission: two slow SSH/Docker reads at most, third rejected, disconnect reaps both and releases all slots, old scope rejected, fresh session returns three owned containers."
     );
 }
+
+#[tokio::test]
+#[ignore = "requires isolated Engine/SSH Compose lab, plugin enabled and absent wrappers"]
+async fn checkpoint029_owned_compose_projects_plugin_and_label_fallback() {
+    let manifest = std::env::var("CONTAINERDESK_SSH_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest).parent().unwrap();
+    for (index, (alias, binary, plugin)) in [
+        (
+            "direct-known",
+            "/opt/fixture/docker-with-compose",
+            ComposeAvailability::Available,
+        ),
+        ("via-known", "/usr/bin/docker", ComposeAvailability::Absent),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let backend = Backend::new(
+            &root.join(format!("compose-{index}")),
+            "/unused-lab-home".into(),
+        );
+        let mut host = draft(alias, lab["config"].as_str().unwrap());
+        host.docker.executable = Some(binary.into());
+        let saved = backend
+            .save_host(SaveHostRequest {
+                mode: WorkspaceMode::Live,
+                expected_revision: 0,
+                id: None,
+                draft: host,
+            })
+            .await
+            .unwrap();
+        let id = saved.saved.preferences.hosts[0].id.clone();
+        backend
+            .connect_inventory_host(InventoryConnectRequest {
+                mode: WorkspaceMode::Live,
+                host_id: id.clone(),
+            })
+            .await
+            .unwrap();
+        let connected = ready(&backend, WorkspaceMode::Live, id.clone()).await;
+        let scope = backend
+            .connect_host(ConnectHostRequest {
+                selection: HostSelection {
+                    host_id: id.clone(),
+                    selection_generation: 1,
+                },
+            })
+            .unwrap()
+            .scope;
+        let response = backend
+            .list_compose(ListComposeRequest {
+                scope: scope.clone(),
+            })
+            .await
+            .unwrap();
+        assert_eq!(response.plugin, plugin);
+        assert!(response.listing_error.is_none());
+        assert_eq!(response.projects.len(), 2);
+        for p in &response.projects {
+            assert!(p.from_labels);
+            assert_eq!(p.from_plugin, plugin == ComposeAvailability::Available);
+            assert_eq!(p.configuration, ComposeConfigurationStatus::Unverified);
+            assert_eq!(p.instances.len(), 1);
+            assert_eq!(p.instances[0].service.as_deref(), Some("web"));
+            assert_eq!(p.instances[0].state, "created");
+        }
+        assert!(
+            response.projects[0]
+                .config_files_reported
+                .contains(&"/remote/nonexistent/compose.yml".into())
+        );
+        let detail = backend
+            .inspect_container(InspectContainerRequest {
+                scope: scope.clone(),
+                container_id: response.projects[0].instances[0].container_id.clone(),
+                reveal_sensitive: false,
+            })
+            .await
+            .unwrap();
+        assert_eq!(detail.summary.compose.unwrap().project, "checkpoint-a");
+        assert!(detail.environment_values_masked);
+        assert_eq!(
+            backend
+                .host_inventory(InventoryModeRequest {
+                    mode: WorkspaceMode::Live
+                })
+                .unwrap()
+                .connection
+                .unwrap()
+                .token,
+            connected.token
+        );
+        let mut foreign = scope;
+        foreign.daemon_id = "other-daemon".into();
+        assert!(
+            backend
+                .list_compose(ListComposeRequest { scope: foreign })
+                .await
+                .is_err()
+        );
+        backend.shutdown().await;
+    }
+    println!(
+        "PASS native Compose: real CLI/isolated Engine direct with plugin and ProxyJump without plugin; two projects retain separate web services and created instances; nonexistent paths remain unverified; inspect supplements exact labels; same session reused and foreign daemon rejected."
+    );
+}

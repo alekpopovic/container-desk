@@ -1,3 +1,4 @@
+import { ComposeInventory } from "./features/compose/ComposeInventory";
 import { isTauri } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ContainerInventory } from "./features/containers/ContainerInventory";
@@ -148,6 +149,20 @@ export default function App() {
             void containers.refresh();
           }}
           select={containers.select}
+        />
+      }
+      composeExtra={
+        <ComposeInventory
+          view={containers.view}
+          native={native && workspace.mode.mode === "live"}
+          refreshContainers={() => {
+            void containers.refresh();
+          }}
+          openContainer={(scope, id) => {
+            if (scope !== containers.view.scope) return;
+            containers.select(id);
+            window.location.hash = "/containers";
+          }}
         />
       }
       savedHosts={

@@ -1105,3 +1105,103 @@ legend {
   padding: 0 16px;
   color: var(--muted);
 }
+
+.compose-view,
+.compose-empty {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.compose-tools,
+.compose-pages {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.compose-tools label {
+  display: grid;
+  gap: 8px;
+}
+.compose-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.3fr) minmax(0, 1fr);
+  gap: 24px;
+}
+.compose-project-choice {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.compose-project-choice[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.compose-project-choice small,
+.compose-instances code,
+.compose-instances small {
+  display: block;
+}
+.compose-project code,
+.compose-instances td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.compose-instances {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.compose-instances td,
+.compose-instances th {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.compose-instances th:nth-child(2) {
+  width: 50%;
+}
+@media (max-width: 900px) {
+  .compose-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.compose-tools input {
+  width: 100%;
+  max-width: 24rem;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--canvas);
+  color: var(--foreground);
+}
+.compose-view p {
+  margin: 10px 0;
+  line-height: 1.5;
+}
+.compose-view h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 4px 0 12px;
+}
+.compose-view h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 18px 0 8px;
+}
+.compose-project ul {
+  padding-left: 18px;
+  list-style: disc;
+}
+.compose-instances code {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+}

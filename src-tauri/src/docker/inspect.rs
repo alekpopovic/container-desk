@@ -203,6 +203,7 @@ pub fn parse(
         }
         environment.push(detail_value(scope, name.into(), value.into(), reveal)?);
     }
+    let compose = super::compose::group_labels(&labels);
     let labels = labels
         .into_iter()
         .map(|(k, v)| detail_value(scope, k, v, reveal))
@@ -305,7 +306,7 @@ pub fn parse(
             status,
             health: small(scope, state.health.and_then(|h| h.status))?,
             ports,
-            compose: None,
+            compose,
             cli: None,
         },
         environment_names: environment.iter().map(|e| e.name.clone()).collect(),

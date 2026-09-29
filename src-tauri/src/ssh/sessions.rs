@@ -34,6 +34,12 @@ pub(crate) trait StageDriver: Send + Sync {
     ) -> StageFuture<'a, Result<ListContainersResponse, AppError>> {
         Box::pin(async move { Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(scope)) })
     }
+    fn compose<'a>(
+        &'a self,
+        scope: &'a SessionScope,
+    ) -> StageFuture<'a, Result<ListComposeResponse, AppError>> {
+        Box::pin(async move { Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(scope)) })
+    }
     fn inspect<'a>(
         &'a self,
         request: &'a InspectContainerRequest,
@@ -210,6 +216,28 @@ impl StageDriver for NativeDriver {
                 .cloned()
                 .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
             crate::docker::listing::read(&client, &self.docker_options, &binding, scope).await
+        })
+    }
+    fn compose<'a>(
+        &'a self,
+        scope: &'a SessionScope,
+    ) -> StageFuture<'a, Result<ListComposeResponse, AppError>> {
+        Box::pin(async move {
+            let client = self
+                .connection
+                .lock()
+                .await
+                .as_ref()
+                .map(|owner| owner.client())
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+            let binding = self
+                .docker_binding
+                .lock()
+                .await
+                .as_ref()
+                .cloned()
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+            crate::docker::compose::read(&client, &self.docker_options, &binding, scope).await
         })
     }
     fn inspect<'a>(
@@ -541,6 +569,32 @@ impl Sessions {
             .and_then(|worker| worker.driver.upgrade())
             .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
         let result = driver.list(scope).await;
+        self.require_scope(scope)?;
+        if result
+            .as_ref()
+            .is_err_and(|error| error.code == ErrorCode::StaleSession)
+        {
+            // Actual daemon/context drift revokes this read session. Foreign requests fail before dispatch.
+            drop(driver);
+            let _ = self
+                .disconnect(&ConnectionToken {
+                    session_id: scope.session_id.clone(),
+                    session_generation: scope.session_generation,
+                })
+                .await;
+        }
+        result
+    }
+    pub async fn compose(&self, scope: &SessionScope) -> Result<ListComposeResponse, AppError> {
+        self.require_scope(scope)?;
+        let driver = self
+            .control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+            .as_ref()
+            .and_then(|worker| worker.driver.upgrade())
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(scope))?;
+        let result = driver.compose(scope).await;
         self.require_scope(scope)?;
         if result
             .as_ref()

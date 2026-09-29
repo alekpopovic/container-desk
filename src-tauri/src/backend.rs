@@ -559,6 +559,30 @@ impl Backend {
         Ok(response)
     }
 
+    pub async fn list_compose(
+        &self,
+        request: ListComposeRequest,
+    ) -> Result<ListComposeResponse, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(&request.scope, &ReadOperation::ListCompose)?;
+        self.require_session(&request.scope)?;
+        let _host = self.read_hosts.acquire(&request.scope.selection.host_id)?;
+        let _read = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let response = self.sessions.compose(&request.scope).await;
+        self.require_session(&request.scope)?;
+        let response = response?;
+        if response.scope != request.scope {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(response)
+    }
+
     pub async fn inspect_container(
         &self,
         request: InspectContainerRequest,

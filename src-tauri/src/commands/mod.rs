@@ -510,3 +510,11 @@ pub fn ack_docker_events(
 ) -> Result<(), AppError> {
     backend.ack_docker_events(request)
 }
+
+#[tauri::command]
+pub async fn list_compose(
+    backend: tauri::State<'_, Backend>,
+    request: ListComposeRequest,
+) -> Result<ListComposeResponse, AppError> {
+    backend.list_compose(request).await
+}

@@ -10,6 +10,7 @@ fn main() {
             "list_hosts",
             "connect_host",
             "list_containers",
+            "list_compose",
             "cancel_subscription",
             "get_preferences",
             "set_theme",

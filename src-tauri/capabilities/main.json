@@ -8,6 +8,7 @@
     "allow-list-hosts",
     "allow-connect-host",
     "allow-list-containers",
+    "allow-list-compose",
     "allow-cancel-subscription",
     "allow-get-preferences",
     "allow-set-theme",

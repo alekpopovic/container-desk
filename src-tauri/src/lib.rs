@@ -33,6 +33,7 @@ pub fn run() {
             commands::list_hosts,
             commands::connect_host,
             commands::list_containers,
+            commands::list_compose,
             commands::cancel_subscription,
             commands::get_preferences,
             commands::set_theme,

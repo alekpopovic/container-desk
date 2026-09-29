@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T02:09:20+00:00",
+  "updated_at": "2026-09-29T02:32:40+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -970,6 +970,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T02:09:48+00:00",
+      "id": "029",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T02:32:40+00:00",
+      "id": "029",
+      "action": "done",
+      "note": "108 Rust tests, 56 IPC tests, 48 affected browser cases and final 6 Compose cases; real isolated Engine/plugin and absent-plugin ProxyJump backend plus native Tauri UI passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T02:09:48+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1337,12 +1371,14 @@
       "note": ""
     },
     "029": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T02:09:48+00:00",
+      "finished_at": "2026-09-29T02:32:40+00:00",
+      "evidence": "codex/tracking/evidence/029.md",
+      "evidence_sha256": "4b6aef604f81714a68f8d4a186b99e2b23665964d2e495b7c8c14ad426677bb2",
+      "checks": [
+        "108 Rust tests, 56 IPC tests, 48 affected browser cases and final 6 Compose cases; real isolated Engine/plugin and absent-plugin ProxyJump backend plus native Tauri UI passed"
+      ],
       "commit": "",
       "note": ""
     },

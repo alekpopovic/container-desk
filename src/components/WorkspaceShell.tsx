@@ -128,6 +128,7 @@ export function WorkspaceShell({
   settingsExtra,
   hostsExtra,
   containersExtra,
+  composeExtra,
   savedHosts = [],
   demo,
 }: {
@@ -136,6 +137,7 @@ export function WorkspaceShell({
   settingsExtra?: ReactNode;
   hostsExtra?: ReactNode;
   containersExtra?: ReactNode;
+  composeExtra?: ReactNode;
   savedHosts?: SavedHost[];
   demo?: DemoControls;
 }) {
@@ -420,6 +422,8 @@ export function WorkspaceShell({
             </section>
           ) : route === "containers" && containersExtra ? (
             containersExtra
+          ) : route === "compose" && composeExtra ? (
+            composeExtra
           ) : (
             <ResourceWorkspace route={route} state={state} />
           )}

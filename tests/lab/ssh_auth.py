@@ -35,12 +35,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", action="store_true", help="Run a real isolated empty Docker Engine in the SSH target")
     parser.add_argument("--listing", action="store_true", help="Seed two metadata-only containers in the private Engine for listing checks")
+    parser.add_argument("--compose", action="store_true", help="Native Compose project reads on isolated Engine; requires --inventory")
     parser.add_argument("--inspect", action="store_true", help="Check native inspect and secret redaction; requires --inventory")
     parser.add_argument("--inventory", action="store_true", help="Check live resource sessions and cancellation; requires --listing")
     parser.add_argument("--native-artifacts", type=Path, help="Explicit directory for this run native screenshots")
     parser.add_argument("--native-driver", type=Path, help="Optional external tauri-driver executable for the real native UI journey")
     parser.add_argument("--webkit-driver", type=Path, help="WebKitWebDriver executable, required with --native-driver")
     args = parser.parse_args()
+    if args.compose and not args.inventory:
+        parser.error("--compose requires --inventory")
     if args.inspect and not args.inventory:
         parser.error("--inspect requires --inventory")
     if args.inventory and not args.listing:
@@ -222,6 +225,9 @@ def main():
                 executable = next(item["executable"] for item in artifacts
                                   if item.get("reason") == "compiler-artifact" and item.get("profile", {}).get("test") and item.get("executable"))
                 native_test(executable, "checkpoint018_real_engine", {**test_env, "PATH": "/nonexistent"})
+            if args.compose:
+                dc("exec", names[-1], "python3", "-c", "from pathlib import Path; import json; p=Path('/tmp/compose-enabled-config'); p.mkdir(mode=0o755); (p/'config.json').write_text(json.dumps({'cliPluginsExtraDirs':['/opt/fixture/compose-plugins']}))")
+                print("Owned remote Compose version: " + dc("exec", names[-1], "/opt/fixture/docker-with-compose", "compose", "version", capture_output=True).stdout.strip(), flush=True)
             if args.listing:
                 # A zero-layer fixture image needs no download or workload execution. Docker load
                 # still needs a mount namespace: --listing alone gives the owned target SYS_ADMIN
@@ -240,10 +246,11 @@ def main():
                 subprocess.run(docker + ["exec", "-i", names[-1], "docker", "load"], input=archive.getvalue(),
                                env=env, check=True, timeout=30, stdout=subprocess.DEVNULL)
                 expected = []
-                for name in ("listing-first", "listing-second"):
+                for index, name in enumerate(("listing-first", "listing-second")):
                     expected.append(dc("exec", names[-1], "docker", "create", "--network", "none", "--name", name,
                                        "--label", "dev.containerdesk.fixture=019", "--label", "test.value=comma,equals=next",
                                        *(["--env", "CHECKPOINT_TOKEN=synthetic-inspect-021-secret", "--label", "innocent=synthetic-label-021-secret", "--expose", "8080/tcp", "--expose", "53/udp"] if args.inspect else []),
+                                       *(["--label", "com.docker.compose.project=" + ("checkpoint-a" if index == 0 else "checkpoint-b"), "--label", "com.docker.compose.service=web", "--label", "com.docker.compose.config-hash=fixture", "--label", "com.docker.compose.project.working_dir=/remote/missing"] + (["--label", "com.docker.compose.project.config_files=/remote/nonexistent/compose.yml"] if index == 0 else []) if args.compose else []),
                                        "containerdesk-empty:019", capture_output=True).stdout.strip())
                 current = json.loads(manifest.read_text())
                 current["expectedContainerIds"] = expected
@@ -253,9 +260,11 @@ def main():
                 native_test(executable, "checkpoint020_live_inventory", {**test_env, "PATH": "/nonexistent"})
             if args.inspect:
                 native_test(executable, "checkpoint021_live_inspect", {**test_env, "PATH": "/nonexistent"})
+            if args.compose:
+                native_test(executable, "checkpoint029_owned_compose", {**test_env, "PATH": "/nonexistent"})
             if args.native_driver:
                 from native_ssh import verify
-                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect)
+                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect, args.compose)
             assert not marker.exists()
             assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
             print(f"PASS: {len(cases)} native SSH cases; config/trust hashes unchanged; no askpass invoked", flush=True)
