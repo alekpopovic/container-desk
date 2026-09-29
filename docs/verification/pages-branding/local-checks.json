@@ -53,5 +53,5 @@
     "Existing published v0.1.0 installers and native icon files remain unchanged.",
     "Owner commit 5636d34 restored native CI before this work; its workflow is preserved."
   ],
-  "deployment": "Pending publication; a separate deployment receipt will record real public results."
+  "deployment": "See deployment.json for verified public URLs, asset hashes and successful hosted deployment."
 }

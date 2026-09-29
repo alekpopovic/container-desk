@@ -1,0 +1,454 @@
+{
+  "verifiedAt": "2026-09-29T18:11:58.576366+00:00",
+  "site": {
+    "html_url": "https://alekpopovic.github.io/container-desk/",
+    "build_type": "legacy",
+    "source": {
+      "branch": "main",
+      "path": "/docs"
+    },
+    "public": true,
+    "https_enforced": true
+  },
+  "deployment": {
+    "id": 36609897582,
+    "html_url": "https://github.com/alekpopovic/container-desk/actions/runs/36609897582",
+    "head_sha": "f2d1150fdff7bc463b5ec03bab6fc013ab8bfbed",
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "pagesBuild": {
+    "url": "https://api.github.com/repos/alekpopovic/container-desk/pages/builds/1248322971",
+    "status": "built",
+    "commit": "f2d1150fdff7bc463b5ec03bab6fc013ab8bfbed",
+    "duration": 45240,
+    "created_at": "2026-09-29T18:08:13Z",
+    "updated_at": "2026-09-29T18:08:58Z",
+    "error": {
+      "message": null
+    }
+  },
+  "browser": {
+    "base": "https://alekpopovic.github.io/container-desk/",
+    "results": [
+      {
+        "width": 1440,
+        "themePersistence": true,
+        "search": true,
+        "noOverflow": true,
+        "literalTemplates": true
+      },
+      {
+        "width": 768,
+        "themePersistence": true,
+        "search": true,
+        "noOverflow": true,
+        "literalTemplates": true
+      },
+      {
+        "width": 390,
+        "themePersistence": true,
+        "search": true,
+        "noOverflow": true,
+        "literalTemplates": true
+      }
+    ],
+    "noJavaScript": true,
+    "errors": []
+  },
+  "publicHttpChecks": [
+    {
+      "path": "volume-inventory.html",
+      "bytes": 17085
+    },
+    {
+      "path": "verification-command.html",
+      "bytes": 20718
+    },
+    {
+      "path": "user-guide.html",
+      "bytes": 27658
+    },
+    {
+      "path": "updates.html",
+      "bytes": 22074
+    },
+    {
+      "path": "toolchains.html",
+      "bytes": 26465
+    },
+    {
+      "path": "terminal-transport.html",
+      "bytes": 24925
+    },
+    {
+      "path": "support-reports.html",
+      "bytes": 16577
+    },
+    {
+      "path": "ssh-runner.html",
+      "bytes": 16512
+    },
+    {
+      "path": "ssh-resolution.html",
+      "bytes": 16190
+    },
+    {
+      "path": "ssh-multiplexing.html",
+      "bytes": 17041
+    },
+    {
+      "path": "ssh-discovery.html",
+      "bytes": 16239
+    },
+    {
+      "path": "ssh-authentication.html",
+      "bytes": 19120
+    },
+    {
+      "path": "signing.html",
+      "bytes": 22681
+    },
+    {
+      "path": "settings.html",
+      "bytes": 16858
+    },
+    {
+      "path": "security-review.html",
+      "bytes": 25753
+    },
+    {
+      "path": "resource-limits.html",
+      "bytes": 20484
+    },
+    {
+      "path": "remote-commands.html",
+      "bytes": 17297
+    },
+    {
+      "path": "release-review.html",
+      "bytes": 20535
+    },
+    {
+      "path": "regression-tests.html",
+      "bytes": 19428
+    },
+    {
+      "path": "read-scheduling.html",
+      "bytes": 17398
+    },
+    {
+      "path": "project-status.html",
+      "bytes": 17495
+    },
+    {
+      "path": "platform-matrix.html",
+      "bytes": 21469
+    },
+    {
+      "path": "operation-policy.html",
+      "bytes": 17971
+    },
+    {
+      "path": "network-inventory.html",
+      "bytes": 16163
+    },
+    {
+      "path": "native-testing.html",
+      "bytes": 19962
+    },
+    {
+      "path": "native-dependencies.html",
+      "bytes": 15735
+    },
+    {
+      "path": "mutation-activity.html",
+      "bytes": 16754
+    },
+    {
+      "path": "macos-packages.html",
+      "bytes": 18808
+    },
+    {
+      "path": "log-viewer.html",
+      "bytes": 17717
+    },
+    {
+      "path": "log-snapshots.html",
+      "bytes": 16819
+    },
+    {
+      "path": "live-log-streams.html",
+      "bytes": 17564
+    },
+    {
+      "path": "linux-packages.html",
+      "bytes": 20314
+    },
+    {
+      "path": "ipc-contract.html",
+      "bytes": 17809
+    },
+    {
+      "path": "integration-lab.html",
+      "bytes": 23894
+    },
+    {
+      "path": "image-inventory.html",
+      "bytes": 16318
+    },
+    {
+      "path": "host-inventory.html",
+      "bytes": 16522
+    },
+    {
+      "path": "github-pages.html",
+      "bytes": 18085
+    },
+    {
+      "path": "execution.html",
+      "bytes": 14250
+    },
+    {
+      "path": "docker-events.html",
+      "bytes": 15836
+    },
+    {
+      "path": "docker-capabilities.html",
+      "bytes": 18715
+    },
+    {
+      "path": "development.html",
+      "bytes": 22378
+    },
+    {
+      "path": "desktop-launch.html",
+      "bytes": 19397
+    },
+    {
+      "path": "design-system.html",
+      "bytes": 17653
+    },
+    {
+      "path": "demo-mode.html",
+      "bytes": 14885
+    },
+    {
+      "path": "container-statistics.html",
+      "bytes": 17402
+    },
+    {
+      "path": "container-management.html",
+      "bytes": 16225
+    },
+    {
+      "path": "container-listing.html",
+      "bytes": 18705
+    },
+    {
+      "path": "container-inventory.html",
+      "bytes": 16005
+    },
+    {
+      "path": "container-inspect.html",
+      "bytes": 15924
+    },
+    {
+      "path": "container-detail-panels.html",
+      "bytes": 14477
+    },
+    {
+      "path": "connection-state.html",
+      "bytes": 17914
+    },
+    {
+      "path": "connection-recovery.html",
+      "bytes": 16564
+    },
+    {
+      "path": "compose-discovery.html",
+      "bytes": 16312
+    },
+    {
+      "path": "compose-actions.html",
+      "bytes": 19404
+    },
+    {
+      "path": "ci.html",
+      "bytes": 23996
+    },
+    {
+      "path": "checkpoints.html",
+      "bytes": 20700
+    },
+    {
+      "path": "branding.html",
+      "bytes": 18548
+    },
+    {
+      "path": "batch-actions.html",
+      "bytes": 15579
+    },
+    {
+      "path": "accessibility.html",
+      "bytes": 15702
+    },
+    {
+      "path": "RELEASE_NOTES.html",
+      "bytes": 18666
+    },
+    {
+      "path": "RELEASE_CHECKLIST.html",
+      "bytes": 18078
+    },
+    {
+      "path": "index.html",
+      "initialError": "curl: (22) The requested URL returned error: 502\n",
+      "retry": "passed",
+      "bytes": 23219
+    },
+    {
+      "path": "FINAL_HANDOVER.html",
+      "bytes": 29046
+    },
+    {
+      "path": "404.html",
+      "bytes": 12278
+    },
+    {
+      "path": "releases/v0.1.0.html",
+      "bytes": 20769
+    },
+    {
+      "path": "checkpoints/046-feature-complete.html",
+      "bytes": 23739
+    },
+    {
+      "path": "checkpoints/038-management.html",
+      "bytes": 20582
+    },
+    {
+      "path": "checkpoints/030-read-only.html",
+      "bytes": 21571
+    },
+    {
+      "path": "checkpoints/018-ssh.html",
+      "bytes": 25106
+    },
+    {
+      "path": "decisions/0001-architecture.html",
+      "bytes": 22538
+    },
+    {
+      "path": "verification/047-native/RESULTS.html",
+      "bytes": 14926
+    },
+    {
+      "path": "verification/046-native/RESULTS.html",
+      "bytes": 16513
+    },
+    {
+      "path": "verification/040-native/RESULTS.html",
+      "bytes": 16616
+    },
+    {
+      "path": "verification/043-native/RESULTS.html",
+      "bytes": 16913
+    },
+    {
+      "path": "verification/042-native/RESULTS.html",
+      "bytes": 17327
+    },
+    {
+      "path": "verification/041-native/RESULTS.html",
+      "bytes": 16677
+    },
+    {
+      "path": "assets/site.css",
+      "sha256": "74efa27a5f1b7a43e22126dbb909c6b859a55b56f51a3d13ae1e3fd7869106e5",
+      "bytes": 9867
+    },
+    {
+      "path": "assets/site.js",
+      "sha256": "2fac1e33c21b50811101498f1dbf0ffe902ae7172ac6ed88d39eb28b48409cb5",
+      "bytes": 3478
+    },
+    {
+      "path": "assets/brand/mark.svg",
+      "sha256": "c065521a11547bba17d972a52d2769eff46fc9f99d2a319bdadd5470f131e4b7",
+      "bytes": 352
+    },
+    {
+      "path": "assets/brand/social-card.png",
+      "sha256": "eff195b66b3aabbcd26199ff8cf5df44f5917ac73936bf48607fa06a16bbf2a2",
+      "bytes": 46903
+    },
+    {
+      "path": "assets/brand/wordmark-dark.svg",
+      "sha256": "b075e91ee0a0419fef0b5322fe6b5ec15ca891b0d022fc7d3347d5f3c2af610e",
+      "bytes": 678
+    },
+    {
+      "path": "assets/brand/containerdesk-brand-kit.zip",
+      "sha256": "9fc494e1b837d5e645e20cdfa45dc04417af117f977f7bd3f9e3853ee1237428",
+      "bytes": 112410
+    },
+    {
+      "path": "assets/brand/tokens.json",
+      "sha256": "870d9b41f0898297be79b13624f7c62c425cca3ce6e1a922186f193d493053f8",
+      "bytes": 583
+    },
+    {
+      "path": "assets/brand/mark-512.png",
+      "sha256": "2856136f9e52070e62a5b48af16917a9386a249e52f5cffcbaa99c43df9990b3",
+      "bytes": 8891
+    },
+    {
+      "path": "assets/brand/wordmark-light.svg",
+      "sha256": "80ad25afb33b48c3dda801a78edb5f930cc67031e3835b8ac6b1cbfd68769269",
+      "bytes": 678
+    },
+    {
+      "path": "assets/brand/banner.svg",
+      "sha256": "514801cd5fd7b7a14d15ed701b3873c009a5ada111ad8bd2183225532b525302",
+      "bytes": 1368
+    },
+    {
+      "path": "assets/brand/mark-mono.svg",
+      "sha256": "bcfc1cc7ce9498e04279f9598a5efa92aba51433bf4cb8542decf6edb2e5af30",
+      "bytes": 354
+    },
+    {
+      "path": "assets/brand/USAGE.txt",
+      "sha256": "6c40424cb859626e622392f654e4d6f0688ab9a1c5eae1156d530fb555acdb4e",
+      "bytes": 725
+    },
+    {
+      "path": "assets/brand/wordmark-light.png",
+      "sha256": "d346e915de9a9fa669ed376542704eb07315a529d651208aff7dde737dba63b1",
+      "bytes": 9810
+    },
+    {
+      "path": "assets/brand/wordmark-dark.png",
+      "sha256": "b1982926b488fe8f4f12af46dd3e4f032a6921005b0efd1c7f06d64063c8dd82",
+      "bytes": 9930
+    },
+    {
+      "path": "assets/brand/banner.png",
+      "sha256": "4512045d67df86a4012f6094c106929fe68dc16f961094f066ad61c04320c78a",
+      "bytes": 38865
+    },
+    {
+      "path": "assets/brand/social-card.svg",
+      "sha256": "53351a90b50ae76b67c8ace5965390df09e5807252a53066da0e62288af8a8af",
+      "bytes": 1141
+    }
+  ],
+  "notes": [
+    "All 76 HTML pages and 16 static URLs fetched anonymously over verified HTTPS.",
+    "Static asset hashes match committed source, including ZIP branding download.",
+    "A transient HTTP 502 for index.html passed a subsequent read retry.",
+    "No custom deployment or release workflow was added; GitHub managed Pages deployment runs from main/docs.",
+    "This receipt records a docs deployment, not native installation or signing evidence."
+  ]
+}
