@@ -9,6 +9,8 @@ import base64
 import hashlib
 import json
 import os
+import platform
+import secrets
 from pathlib import Path
 import shlex
 import signal
@@ -19,6 +21,7 @@ import time
 
 REPO = Path(__file__).resolve().parents[2]
 IMAGE_SHA512 = 'd0ddf1faae4d44aee3ad6621f166bd414c2f99b6974fb455408612d59cbb31a5390ca259800ac0c6b60505493880ed6de8beb986f6d0883b26c8e84ce75a266c'
+ARM_IMAGE_SHA512 = 'a53620902f99b1fd4591125d348e4385f036d590607f4fa90d6f85fea0248007ec763cc81d025f347ede5bd746b3726cf5eddd461b6c94c35376f71cb7558317'
 PRIVATE = ('127.49.0.2', 22222)
 
 
@@ -40,32 +43,62 @@ def main():
     parser.add_argument('--qemu-root', type=Path, required=True, help='Extracted distribution packages; usr/bin and usr/share')
     parser.add_argument('--image', type=Path, required=True, help='Official pinned Alpine 3.22.4 BIOS/cloud-init qcow2')
     parser.add_argument('--artifacts', type=Path, required=True)
+    parser.add_argument('--tcg', action='store_true', help='Use software CPU emulation for the remote VM when KVM is unavailable')
+    parser.add_argument('--encrypted-agent', action='store_true', help='058 require encrypted generated key and owned native agent')
+    parser.add_argument('--provision-only', action='store_true', help='Check native VM/SSH prerequisites only; not backend acceptance')
     parser.add_argument('--quick-start-tools', type=Path, help='Opt into the 057 native GUI quick-start before backend checks')
     args = parser.parse_args()
+    if args.encrypted_agent and args.quick_start_tools:
+        parser.error('Encrypted-agent matrix and the 057 walkthrough use separate owned agents; run each separately')
     args.artifacts.mkdir(parents=True, exist_ok=True)
     tools = args.qemu_root.resolve()
     image = args.image.resolve()
-    assert hashlib.sha512(image.read_bytes()).hexdigest() == IMAGE_SHA512, 'Unexpected base image'
+    mac = platform.system() == 'Darwin'
+    arm = mac and platform.machine() == 'arm64'
+    image_hash = ARM_IMAGE_SHA512 if arm else IMAGE_SHA512
+    assert hashlib.sha512(image.read_bytes()).hexdigest() == image_hash, 'Unexpected base image'
     assert closed(PRIVATE), 'Private endpoint conflicts with an existing local listener'
     env = os.environ.copy()
     for key in ('SSH_AUTH_SOCK', 'SSH_AGENT_PID', 'SSH_ASKPASS', 'LD_PRELOAD'):
         env.pop(key, None)
-    qenv = {**env, 'LD_LIBRARY_PATH': str(tools / 'usr/lib/x86_64-linux-gnu')}
-    qemu = tools / 'usr/bin/qemu-system-x86_64'
-    result = {'schema': 1, 'baseImageSha512': IMAGE_SHA512,
+    qenv = env if mac else {**env, 'LD_LIBRARY_PATH': str(tools / 'usr/lib/x86_64-linux-gnu')}
+    bins = tools/'bin' if mac else tools/'usr/bin'
+    qemu = bins/('qemu-system-aarch64' if arm else 'qemu-system-x86_64')
+    result = {'schema': 2, 'appVersion': json.loads((REPO/'package.json').read_text())['version'],
+              'sourceCommit': run(['git','rev-parse','HEAD'],cwd=REPO).stdout.strip(),
+              'guestAcceleration': 'tcg' if mac or args.tcg else 'kvm', 'baseImageSha512': image_hash, 'clientOs': platform.platform(), 'clientArchitecture': platform.machine(),
+              'encryptedAgentRequested': args.encrypted_agent,
               'qemu': run([str(qemu), '--version'], env=qenv).stdout.splitlines()[0],
               'clientSsh': run(['/usr/bin/ssh', '-V']).stderr.strip(),
               'hostDockerUsed': False, 'privilegedContainers': False,
               'privateAddress': list(PRIVATE), 'privateDirectTcpClosedBefore': True}
-    with tempfile.TemporaryDirectory(prefix='containerdesk-049-') as area:
+    with tempfile.TemporaryDirectory(prefix='containerdesk-049-', dir='/tmp') as area:
         root = Path(area)
         vm = None
+        agent = None
+        unrelated = None
         client = None
         observed = set()
         vm_identity = None
         try:
+            passphrase = secrets.token_urlsafe(24) if args.encrypted_agent else ''
             for name in ('client', 'direct', 'jump', 'private', 'wrong'):
-                run(['/usr/bin/ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-f', str(root / name)])
+                run(['/usr/bin/ssh-keygen', '-q', '-t', 'ed25519', '-N', passphrase if name == 'client' else '', '-f', str(root / name)])
+            if args.encrypted_agent:
+                agent = subprocess.Popen(['/usr/bin/ssh-agent', '-D', '-a', str(root/'agent')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                for _ in range(100):
+                    if (root/'agent').exists(): break
+                    time.sleep(.05)
+                env['SSH_AUTH_SOCK'] = str(root/'agent')
+                # Only an ephemeral lab key. The passphrase never enters reports or app env.
+                (root/'passphrase').write_text(passphrase)
+                (root/'passphrase').chmod(0o600)
+                (root/'askpass').write_text('#!/bin/sh\nexec /bin/cat '+shlex.quote(str(root/'passphrase'))+'\n')
+                (root/'askpass').chmod(0o700)
+                denied_key = subprocess.run(['/usr/bin/ssh-keygen', '-y', '-P', '', '-f', str(root/'client')], capture_output=True, timeout=10)
+                assert denied_key.returncode != 0, 'Generated identity must actually be encrypted'
+                empty = subprocess.run(['/usr/bin/ssh-add', '-l'], env=env, capture_output=True, timeout=5)
+                assert empty.returncode == 1, 'Owned agent must start empty'
             public = lambda name: ' '.join((root / (name + '.pub')).read_text().split()[:2])
             files = []
 
@@ -101,12 +134,17 @@ for entry in Path("/proc").iterdir():
             guest_file("/opt/owned project's/compose.yml", json.dumps(compose), '0644')
             cloud = {'users': ['default'], 'ssh_pwauth': False, 'write_files': files,
                      'runcmd': [['/bin/sh', '/opt/containerdesk/setup.sh']]}
-            (root / 'user-data').write_text('#cloud-config\n' + json.dumps(cloud))
-            (root / 'user-data').chmod(0o600)
-            (root / 'meta-data').write_text('instance-id: containerdesk-049\nlocal-hostname: owned049\n')
-            run([str(tools / 'usr/bin/genisoimage'), '-quiet', '-output', str(root / 'seed.iso'), '-volid', 'cidata',
-                 '-joliet', '-rock', str(root / 'user-data'), str(root / 'meta-data')])
-            run([str(tools / 'usr/bin/qemu-img'), 'create', '-f', 'qcow2', '-F', 'qcow2', '-b', str(image), str(root / 'disk.qcow2'), '8G'], env=qenv)
+            seed = root/'seed'
+            seed.mkdir(mode=0o700)
+            (seed / 'user-data').write_text('#cloud-config\n' + json.dumps(cloud))
+            (seed / 'user-data').chmod(0o600)
+            (seed / 'meta-data').write_text('instance-id: containerdesk-049\nlocal-hostname: owned049\n')
+            if mac:
+                run(['/usr/bin/hdiutil', 'makehybrid', '-o', str(root/'seed.iso'), '-iso', '-joliet', '-default-volume-name', 'cidata', str(seed)])
+            else:
+                run([str(bins/'genisoimage'), '-quiet', '-output', str(root/'seed.iso'), '-volid', 'cidata',
+                     '-joliet', '-rock', str(seed/'user-data'), str(seed/'meta-data')])
+            run([str(bins / 'qemu-img'), 'create', '-f', 'qcow2', '-F', 'qcow2', '-b', str(image), str(root / 'disk.qcow2'), '8G'], env=qenv)
             # Hold both ephemeral ports until immediately before QEMU binds them; a race fails closed.
             sockets = [socket.socket(), socket.socket()]
             for sock in sockets:
@@ -126,18 +164,26 @@ for entry in Path("/proc").iterdir():
                     ('direct-bad', 'direct', direct_port, 'bad-direct', None),
                     ('private-bad', 'private', PRIVATE[1], 'bad-private', 'jump-owned'),
                     ('jump-bad', 'jump', jump_port, 'bad-jump', None),
-                    ('via-bad-jump', 'private', PRIVATE[1], 'known', 'jump-bad')]:
+                    ('via-bad-jump', 'private', PRIVATE[1], 'known', 'jump-bad'),
+                    ('direct-unknown', 'direct', direct_port, 'empty-known', None)]:
                 sections.append(f'Host {alias}\n HostName {PRIVATE[0] if role == "private" else "127.0.0.1"}\n Port {port}\n'
                                 f' HostKeyAlias {role}-key\n UserKnownHostsFile {root / trust}\n'
                                 + (f' ProxyJump {jump}\n' if jump else ''))
-            config.write_text(''.join(sections) + f'Host *\n User lab\n IdentityFile {root / "client"}\n IdentitiesOnly yes\n'
-                              ' IdentityAgent none\n BatchMode yes\n StrictHostKeyChecking yes\n UpdateHostKeys no\n'
+            (root/'empty-known').write_text('')
+            identity_file = root/('client.pub' if args.encrypted_agent else 'client')
+            identity_agent = str(root/'agent') if args.encrypted_agent else 'none'
+            config.write_text(''.join(sections) + f'Host *\n User lab\n IdentityFile {identity_file}\n IdentitiesOnly yes\n'
+                              f' IdentityAgent {identity_agent}\n BatchMode yes\n StrictHostKeyChecking yes\n UpdateHostKeys no\n'
                               ' ForwardAgent no\n ConnectTimeout 3\n GlobalKnownHostsFile /dev/null\n')
             config.chmod(0o600)
-            watched = [config, root / 'known'] + list(root.glob('bad-*'))
+            watched = [config, root / 'known', root/'empty-known'] + list(root.glob('bad-*'))
             hashes = {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
-            command = [str(qemu), '-enable-kvm', '-cpu', 'host', '-smp', '2', '-m', '2048',
-                       '-L', str(tools / 'usr/share/qemu'), '-bios', str(tools / 'usr/share/seabios/bios-256k.bin'),
+            machine = (['-machine', 'virt', '-cpu', 'cortex-a72', '-bios', str(tools/'share/qemu/edk2-aarch64-code.fd')] if arm else [])
+            acceleration = ['-accel', 'tcg,thread=multi'] if mac or args.tcg else ['-enable-kvm', '-cpu', 'host']
+            if args.tcg and not mac: machine = ['-cpu', 'max']
+            if mac and not arm: machine = ['-cpu', 'max']
+            firmware = [] if mac else ['-L', str(tools/'usr/share/qemu'), '-bios', str(tools/'usr/share/seabios/bios-256k.bin')]
+            command = [str(qemu), *acceleration, *machine, '-smp', '2', '-m', '2048', *firmware,
                        '-display', 'none', '-vga', 'none', '-global', 'virtio-net-pci.romfile=', '-monitor', 'none', '-serial', 'file:' + str(root / 'serial.log'),
                        '-no-reboot', '-drive', f'file={root / "disk.qcow2"},format=qcow2,if=virtio',
                        '-drive', f'file={root / "seed.iso"},format=raw,media=cdrom,readonly=on',
@@ -149,7 +195,21 @@ for entry in Path("/proc").iterdir():
             def remote(command, **kwargs):
                 return run(['/usr/bin/ssh', '-F', str(config), '-T', '-n', '-l', 'root', '--', 'direct-owned', command], env=env, **kwargs)
 
-            deadline = time.monotonic() + 240
+            if args.encrypted_agent:
+                # First prove an actual SSH auth refusal with the empty owned agent.
+                auth_deadline = time.monotonic()+900
+                while True:
+                    failed = subprocess.run(['/usr/bin/ssh', '-F', str(config), '-T', '-n', '--', 'direct-owned', 'true'], env=env, capture_output=True, timeout=8)
+                    if b'Permission denied' in failed.stderr: break
+                    assert vm.poll() is None, 'VM exited during encrypted-agent preflight'
+                    if time.monotonic()>auth_deadline: raise RuntimeError('VM SSH did not reach empty-agent authentication check')
+                    time.sleep(1)
+                assert failed.returncode == 255 and not failed.stdout
+                run(['/usr/bin/ssh-add', str(root/'client')], env={**env, 'SSH_ASKPASS':str(root/'askpass'), 'SSH_ASKPASS_REQUIRE':'force', 'DISPLAY':':0'})
+                result['encryptedKeyRejectsEmptyPassphrase'] = True
+                result['emptyAgentAuthenticationRejected'] = True
+                result['encryptedKeyLoadedIntoNativeAgent'] = True
+            deadline = time.monotonic() + (900 if mac or args.tcg else 240)
             while True:
                 assert vm.poll() is None, 'VM exited: ' + (root / 'qemu.log').read_text()[-2000:]
                 try:
@@ -158,8 +218,18 @@ for entry in Path("/proc").iterdir():
                 except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
                     if time.monotonic() >= deadline:
                         # Seed contains private keys: never dump cloud-init/user-data or serial logs.
-                        raise RuntimeError('Guest setup did not finish within 240 seconds; private logs removed on cleanup') from None
+                        raise RuntimeError('Guest setup exceeded its native platform deadline; private logs removed on cleanup') from None
                     time.sleep(1)
+            if args.provision_only:
+                result.update(provisionOnly=True, backendAcceptance='not_run')
+                (args.artifacts/'provision.json').write_text(json.dumps(result,indent=2)+'\n')
+                print(json.dumps(result,indent=2),flush=True)
+                return
+            unrelated = subprocess.Popen(['/usr/bin/ssh', '-F', str(config), '-M', '-N', '-S', str(root/'user-master'), '-l', 'root', '--', 'direct-owned'], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+            for _ in range(100):
+                if (root/'user-master').exists(): break
+                time.sleep(.05)
+            assert unrelated.poll() is None and (root/'user-master').exists()
             print('Dedicated VM Docker ready; checking private transport and native backend.', flush=True)
             assert closed(PRIVATE)
             denied = subprocess.run(['/usr/bin/ssh', '-F', str(config), '-T', '-n', '-o', 'ProxyJump=none', '--',
@@ -191,6 +261,7 @@ for entry in Path("/proc").iterdir():
             build = run(['cargo', 'test', '--manifest-path', str(REPO / 'src-tauri/Cargo.toml'), '--locked', '--lib', '--no-run', '--message-format=json'], env=env, timeout=180)
             records = [json.loads(line) for line in build.stdout.splitlines() if line.startswith('{')]
             executable = next(item['executable'] for item in records if item.get('reason') == 'compiler-artifact' and item.get('profile', {}).get('test') and item.get('executable'))
+            result['nativeTestExecutableSha256'] = hashlib.sha256(Path(executable).read_bytes()).hexdigest()
             listed = run([executable, 'checkpoint049_disposable_integration', '--ignored', '--list'], env=env).stdout
             assert sum(line.endswith(': test') for line in listed.splitlines()) == 1, 'Expected exactly one native test'
             since = int(remote('date +%s').stdout.strip()) + 1
@@ -208,7 +279,10 @@ for entry in Path("/proc").iterdir():
                         if marker.exists() and not done.exists():
                             remote("exec 'python3' '/opt/containerdesk/cut.py'")
                             done.write_text('owned guest lab SSH sessions cut')
-                    observed.update((pid, int(started)) for pid, started in process_sample(client.pid)['sshIdentities'])
+                    if mac:
+                        observed.update(ssh_identities(config, exclude=unrelated.pid))
+                    else:
+                        observed.update((pid, int(started)) for pid, started in process_sample(client.pid)['sshIdentities'])
                     if time.monotonic() > deadline:
                         raise RuntimeError('Native integration deadline exceeded')
                     time.sleep(.05)
@@ -219,7 +293,7 @@ for entry in Path("/proc").iterdir():
             if client.returncode:
                 print(log[-8000:])  # Rust's redacted types; no raw shell/inspect transcript.
                 raise RuntimeError('Native integration assertions failed')
-            assert len(result['checks']) == 6, 'Missing native acceptance checks'
+            assert len(result['checks']) == 7, 'Missing native acceptance checks'
             until = int(remote('date +%s').stdout.strip()) + 1
             events = [json.loads(line) for line in remote(f"docker events --since {since} --until {until} --filter type=container --format '{{{{json .}}}}'").stdout.splitlines()]
             counts = {}
@@ -237,6 +311,9 @@ for entry in Path("/proc").iterdir():
             remote('docker rm -f -- ' + ' '.join(shlex.quote(row['Id']) for row in oracle))
             assert not remote('docker ps --all --quiet').stdout.strip()
             result['guestContainersRemoved'] = len(oracle)
+            assert unrelated.poll() is None, 'Application terminated unrelated SSH master'
+            run(['/usr/bin/ssh', '-F', str(config), '-S', str(root/'user-master'), '-O', 'check', '-l', 'root', '--', 'direct-owned'], env=env)
+            result['unrelatedSshMasterPreserved'] = True
             assert observed and all(identity(pid) != (pid, started) for pid, started in observed), 'Owned SSH processes survived backend shutdown'
             result['observedSshIdentitiesReaped'] = len(observed)
         finally:
@@ -244,15 +321,20 @@ for entry in Path("/proc").iterdir():
                 if identity(pid) == (pid, started):
                     try: os.kill(pid, signal.SIGTERM)
                     except ProcessLookupError: pass
-            for child in (client, vm):
+            for child in (unrelated, client, vm):
                 if child is not None:
                     if child.poll() is None:
-                        os.killpg(child.pid, signal.SIGTERM)
+                        try: os.killpg(child.pid, signal.SIGTERM)
+                        except ProcessLookupError: pass
                         try:
                             child.wait(timeout=10)
                         except subprocess.TimeoutExpired:
-                            os.killpg(child.pid, signal.SIGKILL)
+                            try: os.killpg(child.pid, signal.SIGKILL)
+                            except ProcessLookupError: pass
                     child.wait(timeout=10)
+            if agent is not None:
+                agent.terminate(); agent.wait(timeout=10)
+                result['ownedAgentReaped'] = agent.poll() is not None
             result['vmReaped'] = vm_identity is not None and identity(vm_identity[0]) != vm_identity
     result['temporaryKeysSeedAndDiskRemoved'] = not root.exists()
     assert result['vmReaped'] and result['temporaryKeysSeedAndDiskRemoved']
@@ -260,7 +342,25 @@ for entry in Path("/proc").iterdir():
     print(json.dumps(result, indent=2))
 
 
+def ssh_identities(config, exclude):
+    rows = run(['/bin/ps', '-axo', 'pid=,lstart=,command=']).stdout.splitlines()
+    result=set()
+    for row in rows:
+        fields=row.split(None,6)
+        if len(fields)==7 and str(config) in fields[6] and re_ssh(fields[6]):
+            pid=int(fields[0])
+            if pid != exclude: result.add((pid,' '.join(fields[1:6])))
+    return result
+
+
+def re_ssh(command):
+    return command.startswith(('/usr/bin/ssh ', 'ssh '))
+
+
 def identity(pid):
+    if platform.system() == 'Darwin':
+        value=subprocess.run(['/bin/ps','-p',str(pid),'-o','lstart='],capture_output=True,text=True,timeout=5)
+        return (pid,' '.join(value.stdout.split())) if value.returncode==0 and value.stdout.strip() else None
     try:
         stat = Path(f'/proc/{pid}/stat').read_text().rsplit(')', 1)[1].split()
         return pid, int(stat[19])

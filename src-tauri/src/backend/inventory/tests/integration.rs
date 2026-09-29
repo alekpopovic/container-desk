@@ -308,6 +308,32 @@ async fn checkpoint049_disposable_integration() {
             })
             .unwrap();
         receive(&backend, &handle, "37 111").await;
+        backend
+            .terminal_input(TerminalInputRequest {
+                scope: scope.clone(),
+                terminal_id: handle.terminal_id.clone(),
+                sequence: 3,
+                bytes: b"sleep 30\r".to_vec(),
+            })
+            .unwrap();
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        backend
+            .terminal_input(TerminalInputRequest {
+                scope: scope.clone(),
+                terminal_id: handle.terminal_id.clone(),
+                sequence: 4,
+                bytes: vec![3],
+            })
+            .unwrap();
+        backend
+            .terminal_input(TerminalInputRequest {
+                scope: scope.clone(),
+                terminal_id: handle.terminal_id.clone(),
+                sequence: 5,
+                bytes: b"printf 'CD058_%s\\n' INTERRUPTED\r".to_vec(),
+            })
+            .unwrap();
+        receive(&backend, &handle, "CD058_INTERRUPTED").await;
         backend.close_terminal(handle.clone()).await.unwrap();
         let stale_intent = backend
             .prepare_confirmation(PrepareConfirmationRequest {
@@ -398,10 +424,15 @@ async fn checkpoint049_disposable_integration() {
             }
         }
         println!(
-            "PASS 049: {alias}: handshake, exact inventory, masked inspect, logs, stats, cancelled follow, read-only denial, stop/start once, verified Compose restart once, PTY echo/resize/close, actual SSH session loss, reconnect/new read-only scope, no stale action/input or persisted payload"
+            "PASS 049: {alias}: handshake, exact inventory, masked inspect, logs, stats, cancelled follow, read-only denial, stop/start once, verified Compose restart once, PTY echo/resize/Ctrl-C/close, actual SSH session loss, reconnect/new read-only scope, no stale action/input or persisted payload"
         );
     }
-    for alias in ["direct-bad", "private-bad", "via-bad-jump"] {
+    for alias in [
+        "direct-bad",
+        "private-bad",
+        "via-bad-jump",
+        "direct-unknown",
+    ] {
         let backend = Backend::new(&root.join(alias), "/unused-lab-home".into());
         let saved = backend
             .save_host(SaveHostRequest {
@@ -431,7 +462,11 @@ async fn checkpoint049_disposable_integration() {
                 if current.state == ConnectionState::Error {
                     assert_eq!(
                         current.diagnostic.unwrap().code,
-                        ConnectionDiagnosticCode::ChangedHostKey
+                        if alias == "direct-unknown" {
+                            ConnectionDiagnosticCode::UnknownHostKey
+                        } else {
+                            ConnectionDiagnosticCode::ChangedHostKey
+                        }
                     );
                     break;
                 }
@@ -442,7 +477,9 @@ async fn checkpoint049_disposable_integration() {
         .await
         .unwrap();
         backend.shutdown().await;
-        println!("PASS 049: {alias}: native changed host key rejected before Docker readiness");
+        println!(
+            "PASS 049: {alias}: native unknown/changed host key rejected before Docker readiness"
+        );
     }
     let runner = crate::ssh::runner::Runner::default();
     let began = std::time::Instant::now();

@@ -44,7 +44,7 @@ The stronger dedicated-VM direct/private-bastion transport suite is independentl
 
 ## Native system prerequisites
 
-The only desktop distribution executed so far is Ubuntu **26.04.1 x86_64**. Ubuntu 24.04 LTS remains the planned packaging/runtime baseline and needs its own native gate. Following the current [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), prepare an Ubuntu development machine with:
+The desktop has native evidence on Ubuntu **26.04.1 x86_64** and a clean Ubuntu **24.04.5 x86_64** deb installation in 053. Both Mac architectures have package/launch evidence in 054; full per-platform remote acceptance is recorded separately in the [platform matrix](platform-matrix.md). Following the current [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/), prepare an Ubuntu development machine with:
 
 ```sh
 sudo apt update
