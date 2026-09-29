@@ -1,0 +1,21 @@
+# macOS app and DMG packages
+
+ContainerDesk targets macOS 15.0 or later on two explicit native architectures: Apple Silicon `aarch64-apple-darwin` and Intel `x86_64-apple-darwin`. There is no universal or Rosetta compatibility claim. Native GitHub jobs assert the machine and compiler architecture and use the committed Node/npm/Rust/Tauri versions. Runtime claims require the corresponding executed package test, recorded in [054 evidence](../codex/tracking/evidence/054.md).
+
+After the standard verification gate, `scripts/package_ci.py` creates a versioned `.app.tar.gz` and `.dmg` for the current native architecture. Metadata schema 2 lists both hashes/lengths and the source revision; SHA256SUMS also covers metadata. Bundle identity is `dev.containerdesk.app`, minimum system version is `15.0`, and Tauri converts the committed ContainerDesk icon to ICNS. The app uses ordinary user SSH files and the system `/usr/bin/ssh`; no shell-profile startup, embedded SSH key or remote agent is required.
+
+The DMG presents ContainerDesk and an Applications link, with a configured 660×400 window and icon positions. [Tauri documents a CI limitation](https://v2.tauri.app/distribute/dmg/) affecting icon position/size styling; the actual DMG structure is checked independently and pixel-perfect Finder layout is not assumed. The usual installation copies the app into Applications, then opens it with Finder. The acceptance test launches a copy made from the actual mounted DMG.
+
+## Native package test
+
+`python3 tests/lab/macos_package_smoke.py --packages dist-artifacts --artifacts test-results/macos-package` is opt-in locally and runs after macOS CI packaging. It requires a fresh profile and an existing OS accessibility grant. It never changes OS access controls or links its external Swift client into the application.
+
+The test verifies hashes, mounts the DMG read-only, checks the Applications link, copies the actual app into an owned temporary Applications directory, unmounts the image, checks Mach-O architecture/permissions/Info.plist/icon/signature state, and opens the copied app using Finder through AppleScript. Its native accessibility tree must expose a real window and application controls. Startup must create `~/Library/Application Support/dev.containerdesk.app` with private preferences/lock permissions.
+
+A second LaunchServices launch uses a minimal PATH and an empty temporary `/usr/bin/ssh-agent`. Native Settings → Run diagnostics must show available `/usr/bin/ssh` and reachable inherited agent socket. This checks agent access, not loaded-key authentication or a remote Docker connection. The test requests normal app termination, reaps its agent, removes only its previously absent owned profile and discards the copied application/mount. Screenshots and per-launch results are kept with the CI reports. Absence of native permissions is a failed/pending gate, not grounds to bypass them.
+
+## Distribution status
+
+These are local unsigned or linker-ad-hoc-signed development packages. No Developer ID certificate, Apple account, notarization ticket or release token is supplied. The packager refuses signing-related environment values. Local Finder execution of an unquarantined CI-created app does not establish Gatekeeper acceptance for an internet download. Signing/notarization readiness belongs to 055; do not prescribe Gatekeeper/security-control bypasses as installation requirements.
+
+No public publishing workflow is included, by the user's explicit scope decision. A CI artifact is not an approved public installer. Flatpak/Snap/store sandboxing and Mac App Store entitlement design are outside this first package set.

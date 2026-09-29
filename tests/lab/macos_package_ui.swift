@@ -74,7 +74,7 @@ do {
   if args[3] == "diagnostics" {
     try press(root, "Settings")
     try press(root, "Run diagnostics")
-    _ = try waitFor(root, "OpenSSH: Available")
+    _ = try waitFor(root, "OpenSSH is available.")
     _ = try waitFor(root, "/usr/bin/ssh")
     _ = try waitFor(root, "The inherited SSH agent socket is reachable. Loaded keys were not checked; a selected host may use a different IdentityAgent.")
     report["nativeOpenSshAvailable"] = true
@@ -97,6 +97,24 @@ do {
   report["passed"] = true
 } catch {
   report["error"] = String(describing: error)
+  if let app = application {
+    var queue = [AXUIElementCreateApplication(app.processIdentifier)]
+    var visited = Set<CFHashCode>()
+    var labels: [[String: String]] = []
+    while !queue.isEmpty && visited.count < 2000 {
+      let element = queue.removeLast()
+      guard visited.insert(CFHash(element)).inserted else { continue }
+      var entry: [String: String] = [:]
+      for key in [kAXRoleAttribute, kAXTitleAttribute, kAXDescriptionAttribute, kAXValueAttribute] {
+        if let value = attribute(element, key) as? String, !value.isEmpty {
+          entry[key] = String(value.prefix(1000))
+        }
+      }
+      if !entry.isEmpty { labels.append(entry) }
+      queue.append(contentsOf: children(element).reversed())
+    }
+    report["ownedFreshProfileAccessibility"] = labels
+  }
   // Bound failure cleanup to this exact installed application only.
   if let app = application, !app.isTerminated { app.terminate() }
 }
