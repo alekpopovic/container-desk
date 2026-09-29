@@ -16,6 +16,14 @@ REPO = Path(__file__).resolve().parents[2]
 ELEMENT = "element-6066-11e4-a52e-4f735466cecf"
 
 
+def application_binary():
+    """Explicit lab artifact; never silently automate a distributable release."""
+    binary = Path(os.environ.get('CONTAINERDESK_NATIVE_BINARY', str(REPO / 'src-tauri/target/native-automation/containerdesk')))
+    if not binary.is_absolute() or not binary.is_file():
+        raise RuntimeError('Build native automation first: npm run desktop:build:automation')
+    return binary
+
+
 def unused_port():
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
@@ -104,7 +112,7 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                         raise
                     time.sleep(0.1)
             result = request("POST", "/session", {"capabilities": {"alwaysMatch": {
-                "browserName": "wry", "tauri:options": {"application": str(REPO / "src-tauri/target/release/containerdesk")},
+                "browserName": "wry", "tauri:options": {"application": str(application_binary())},
             }}})
             session = result["sessionId"]
             command("POST", "/timeouts", {"implicit": 5000, "script": 5000, "pageLoad": 15000})

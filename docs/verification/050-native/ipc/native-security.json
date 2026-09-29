@@ -1,0 +1,21 @@
+{
+  "invalidAliases": 6,
+  "relativeConfigRejected": true,
+  "set_management": "denied",
+  "prepare_confirmation": "denied",
+  "inspect_container": "denied",
+  "plugin:shell|execute": "denied",
+  "plugin:fs|read_text_file": "denied",
+  "plugin:webview|create_webview_window": "denied",
+  "invalidSessionIdRejected": true,
+  "hostileHostTextInert": true,
+  "seededSecretsAbsentFromDefaultReport": true,
+  "inlineScriptBlocked": true,
+  "externalNavigationBlocked": true,
+  "popupsBlocked": true,
+  "formsAndFramesBlocked": true,
+  "nonAppSchemesAndPathsBlocked": true,
+  "ownedHttpRequests": 0,
+  "standaloneTcpListeners": 0,
+  "originalOrigin": "tauri://localhost"
+}

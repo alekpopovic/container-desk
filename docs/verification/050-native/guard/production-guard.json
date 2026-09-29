@@ -1,0 +1,15 @@
+{
+  "productionSha256": "fd08f54ac11194ce11b74dd8d69ac2b5cfdac178b88170a2c3d80fa967dfcecc",
+  "realWindowOpened": true,
+  "forcedAutomationVariablesIgnored": [
+    "TAURI_AUTOMATION",
+    "TAURI_WEBDRIVER_PORT",
+    "TAURI_WEBVIEW_AUTOMATION",
+    "WEBKIT_INSPECTOR_HTTP_SERVER",
+    "WEBKIT_INSPECTOR_SERVER"
+  ],
+  "webKitChildrenWithSanitizedEnvironment": 2,
+  "applicationTcpListeners": 0,
+  "webdriverRejected": "client_deadline_20_seconds",
+  "nativeWindowClosed": true
+}

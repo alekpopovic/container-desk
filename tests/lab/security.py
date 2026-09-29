@@ -13,7 +13,7 @@ import tempfile
 import threading
 import time
 import urllib.request
-from native_ssh import REPO, ELEMENT, unused_port
+from native_ssh import REPO, ELEMENT, unused_port, application_binary
 from native_launch import close_window
 
 
@@ -99,7 +99,7 @@ def run(root,tools,artifacts,baseline):
             for _ in range(100):
                 try:request('GET','/status');break
                 except OSError:time.sleep(.1)
-            session=request('POST','/session',{'capabilities':{'alwaysMatch':{'browserName':'wry','tauri:options':{'application':str(binary)}}}})['sessionId']
+            session=request('POST','/session',{'capabilities':{'alwaysMatch':{'browserName':'wry','tauri:options':{'application':str(application_binary())}}}})['sessionId']
             command('POST','/timeouts',{'implicit':5000,'script':10000,'pageLoad':15000})
             wait('return document.querySelectorAll("nav[aria-label=Resources] a").length===7')
             original=script('return location.href')
@@ -151,7 +151,7 @@ def run(root,tools,artifacts,baseline):
             results.update(externalNavigationBlocked=True,popupsBlocked=True,formsAndFramesBlocked=True,nonAppSchemesAndPathsBlocked=True,ownedHttpRequests=0,standaloneTcpListeners=0,originalOrigin=original)
             (artifacts/'native-security.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
             (artifacts/'native-security.json').write_text(json.dumps(results,indent=2)+'\n')
-            print('PASS native release: exact local UI survives external/data/file/path navigation and popup/form/frame probes; zero owned HTTP requests; inline script blocked; actual IPC rejects malformed aliases/IDs and unauthorized commands; hostile host text inert; default report omits seeded secrets; standalone binary and descendants have no TCP listener.',flush=True)
+            print('PASS native automation build: exact local UI survives external/data/file/path navigation and popup/form/frame probes; zero owned HTTP requests; inline script blocked; actual IPC rejects malformed aliases/IDs and unauthorized commands; hostile host text inert; default report omits seeded secrets; standalone binary and descendants have no TCP listener.',flush=True)
         finally:
             if session:
                 try:command('DELETE','')

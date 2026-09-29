@@ -7,7 +7,7 @@ import signal
 import subprocess
 import time
 import urllib.request
-from native_ssh import unused_port, ELEMENT, REPO
+from native_ssh import unused_port, ELEMENT, REPO, application_binary
 
 
 def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False, recovery=False, keyboard=False, pressure=False, checkpoint=False):
@@ -80,7 +80,7 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                     request('GET', '/status')
                     break
                 except OSError: time.sleep(.1)
-            result = request('POST', '/session', {'capabilities': {'alwaysMatch': {'browserName': 'wry', 'tauri:options': {'application': str(REPO / 'src-tauri/target/release/containerdesk')}}}})
+            result = request('POST', '/session', {'capabilities': {'alwaysMatch': {'browserName': 'wry', 'tauri:options': {'application': str(application_binary())}}}})
             session = result['sessionId']
             command('POST', '/timeouts', {'implicit': 5000, 'script': 5000, 'pageLoad': 15000})
             if (stats or terminal or keyboard or pressure) and xdotool:

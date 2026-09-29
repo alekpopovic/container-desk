@@ -1,0 +1,22 @@
+{
+  "activity": [],
+  "appVersion": "0.1.0",
+  "architecture": "x86_64",
+  "connection": null,
+  "platform": "linux",
+  "privacy": "Only app-controlled enums, counts and bucketed durations. Host/path pseudonyms are local to this report. No user-supplied text, addresses, IDs, config, environment, logs, terminal or inspect data. Review before sharing; versions, outcomes and counts can still reveal operational context.",
+  "retention": {
+    "activityMaxBytes": 524288,
+    "activityMaxRecords": 200,
+    "exportedActivityMaxRecords": 20,
+    "previewMaxBytes": 65536,
+    "previewValidSeconds": 300
+  },
+  "schemaVersion": 1,
+  "sourceErrors": [],
+  "transport": {
+    "connectionPolicy": "app_owned_multiplex_with_direct_fallback",
+    "executable": "system-openssh",
+    "kind": "native_openssh"
+  }
+}

@@ -36,6 +36,7 @@
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build --no-bundle -- --locked",
+    "desktop:build:automation": "python3 tests/lab/build_automation.py",
     "typecheck": "tsc --noEmit",
     "test": "node --test src/lib/ipc/*.test.ts",
     "lint": "biome lint .",

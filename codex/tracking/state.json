@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T10:02:21+00:00",
+  "updated_at": "2026-09-29T10:12:55+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1684,6 +1684,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T10:03:06+00:00",
+      "id": "050",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T10:12:55+00:00",
+      "id": "050",
+      "action": "done",
+      "note": "Actual Linux desktop suite passed: production automation refusal, native host/error/IPC/log/PTY journeys; separate feature-gated build; 151 Rust and 87 Node tests; macOS explicitly pending unavailable native runner",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T10:03:06+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2303,12 +2337,14 @@
       "note": ""
     },
     "050": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T10:03:06+00:00",
+      "finished_at": "2026-09-29T10:12:55+00:00",
+      "evidence": "codex/tracking/evidence/050.md",
+      "evidence_sha256": "83a4b26c5239cc907c2f662131f13f8de3ff3304100084eda9c40b8d02f7ac07",
+      "checks": [
+        "Actual Linux desktop suite passed: production automation refusal, native host/error/IPC/log/PTY journeys; separate feature-gated build; 151 Rust and 87 Node tests; macOS explicitly pending unavailable native runner"
+      ],
       "commit": "",
       "note": ""
     },

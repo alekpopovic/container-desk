@@ -9,7 +9,7 @@ import socket
 import subprocess
 import time
 import urllib.request
-from native_ssh import unused_port, ELEMENT, REPO
+from native_ssh import unused_port, ELEMENT, REPO, application_binary
 
 XDOTOOL = Path('/tmp/containerdesk-025-tools/xdotool/usr/bin/xdotool')
 
@@ -55,7 +55,7 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, *_
     ssh = owned_home / 'OpenSSH klijent'
     ssh.symlink_to('/usr/bin/ssh')
     app = owned_home / 'ContainerDesk aplikacija'
-    app.symlink_to(REPO / 'src-tauri/target/release/containerdesk')
+    app.symlink_to(application_binary())
     profile_marker = root / 'profile-executed'
     for name in ('.profile', '.bashrc', '.zprofile', '.zshrc'):
         (owned_home / name).write_text("/usr/bin/touch '" + str(profile_marker) + "'\n")

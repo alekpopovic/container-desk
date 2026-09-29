@@ -1,0 +1,13 @@
+{
+  "linux": "passed",
+  "macos": "pending: no native macOS runner in this execution",
+  "nativeAutomationSha256": "251d0a1de73b3b7ca7cf2f2f3865027c28b822df227cf093cdcce642aec454b3",
+  "productionSha256": "fd08f54ac11194ce11b74dd8d69ac2b5cfdac178b88170a2c3d80fa967dfcecc",
+  "journeys": [
+    "production automation refusal",
+    "host selection and native connection errors",
+    "log cancel and bounded PTY",
+    "actual IPC authorization"
+  ],
+  "browserMocksUsed": false
+}
