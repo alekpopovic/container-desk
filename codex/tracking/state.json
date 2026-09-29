@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T11:44:26+00:00",
+  "updated_at": "2026-09-29T12:27:42+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1786,6 +1786,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T12:26:53+00:00",
+      "id": "052",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "blocked",
+        "started_at": "2026-09-29T10:37:24+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": "CI and unsigned packages passed on Ubuntu 24.04 and macOS arm64/x86_64 (run 36560379638). Automatic approval review rejected adding the required separate manual public-publisher workflow with contents: write. User authorization or explicit scope change is pending; publisher absent. See codex/tracking/evidence/052.md."
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T12:27:42+00:00",
+      "id": "052",
+      "action": "done",
+      "note": "User explicitly omitted public-publisher workflow; previously verified three-platform CI retained; actionlint, tracker validate and git diff --check passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T12:26:53+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2429,14 +2463,16 @@
       "note": ""
     },
     "052": {
-      "status": "blocked",
-      "started_at": "2026-09-29T10:37:24+00:00",
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T12:26:53+00:00",
+      "finished_at": "2026-09-29T12:27:42+00:00",
+      "evidence": "codex/tracking/evidence/052.md",
+      "evidence_sha256": "fdeba909fdb2b9d04156fbdec867e2922db0b3300b8cfcd88c8e59200bd90133",
+      "checks": [
+        "User explicitly omitted public-publisher workflow; previously verified three-platform CI retained; actionlint, tracker validate and git diff --check passed"
+      ],
       "commit": "",
-      "note": "CI and unsigned packages passed on Ubuntu 24.04 and macOS arm64/x86_64 (run 36560379638). Automatic approval review rejected adding the required separate manual public-publisher workflow with contents: write. User authorization or explicit scope change is pending; publisher absent. See codex/tracking/evidence/052.md."
+      "note": ""
     },
     "053": {
       "status": "pending",
