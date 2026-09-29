@@ -1,0 +1,7 @@
+{
+  "sourceSearch": "No fetch, XMLHttpRequest, WebSocket, sendBeacon, updater, reqwest, telemetry, analytics or sentry references in runtime source/manifests",
+  "searchExit": 1,
+  "productionCsp": "default-src 'self'; script-src 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; frame-ancestors 'none'",
+  "pluginsConfiguration": {},
+  "limitations": "Source review is supported separately by bounded ordinary-native idle observation; not a claim about all OS services."
+}

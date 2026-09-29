@@ -1,0 +1,11 @@
+{
+  "platform": "Linux X11",
+  "productionSha256": "abc3bd287e3a8c100a03fb25a6b84bf1971679b56874619231d01c003453dd09",
+  "nativeWindow": true,
+  "normalClose": true,
+  "idleSecondsAfterWindow": 15,
+  "tracedChildProcesses": true,
+  "internetConnectOrAddressedSendAttempts": 0,
+  "passed": true,
+  "scope": "Fresh-profile launch, 15 seconds idle and normal close; not all future interactions or OS-service traffic"
+}

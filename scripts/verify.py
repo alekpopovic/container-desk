@@ -17,6 +17,9 @@ CARGO = ['--manifest-path', 'src-tauri/Cargo.toml', '--locked']
 
 
 def tool_versions():
+    from version import check as check_application_version
+    try: check_application_version(REPO)
+    except (ValueError, KeyError) as error: raise RuntimeError(str(error)) from error
     package = json.loads((REPO/'package.json').read_text())
     rust = re.search(r'^channel\s*=\s*"([^"]+)"', (REPO/'rust-toolchain.toml').read_text(), re.M).group(1)
     expected = {'node': package['engines']['node'], 'npm': package['engines']['npm'], 'rustc': rust, 'cargo': rust}

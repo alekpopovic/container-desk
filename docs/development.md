@@ -21,7 +21,7 @@ Use `npm run verify:install` for locked dependencies, then `npm run verify` for 
 | `npm run desktop:build:automation` | Build an explicit native test artifact and restore the ordinary release; see [native testing](native-testing.md) |
 | `npm run preview` | Serve built frontend locally for browser inspection; no Rust bridge |
 
-On Linux, the unbundled release executable is `src-tauri/target/release/containerdesk`. On macOS, build natively for the host architecture; the unbundled executable has the same relative path. Run the binary to inspect the production shell. Installer formats, native platform acceptance and signing/notarization belong to later prompts; `bundle.active` is deliberately false for this increment.
+On Linux, the unbundled release executable is `src-tauri/target/release/containerdesk`. On macOS, build natively for the host architecture; the unbundled executable has the same relative path. Run the binary to inspect the production shell. Create checked installers with the separate [CI packager](ci.md); `bundle.active` stays false for the ordinary executable build. Native installation and optional signing evidence are recorded in the platform package docs. See [manual updates and version alignment](updates.md) before preparing a new version.
 
 ## Application entry points and native verification
 

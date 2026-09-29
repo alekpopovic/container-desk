@@ -1,0 +1,22 @@
+test_cleanup_failure_cannot_return_success (test_macos_signing.SigningTests.test_cleanup_failure_cannot_return_success) ... ok
+test_cleanup_on_success_partial_import_and_downstream_failure (test_macos_signing.SigningTests.test_cleanup_on_success_partial_import_and_downstream_failure) ... ok
+test_invalid_identity_team_and_certificate_are_refused (test_macos_signing.SigningTests.test_invalid_identity_team_and_certificate_are_refused) ... ok
+test_missing_each_secret_blocks_without_exposing_values (test_macos_signing.SigningTests.test_missing_each_secret_blocks_without_exposing_values) ... ok
+test_signature_requires_identity_runtime_timestamp_and_empty_entitlements (test_macos_signing.SigningTests.test_signature_requires_identity_runtime_timestamp_and_empty_entitlements) ... ok
+test_valid_shape_does_not_claim_valid_certificate_or_notarization (test_macos_signing.SigningTests.test_valid_shape_does_not_claim_valid_certificate_or_notarization) ... ok
+test_aggregate_false_is_refused (test_package_ci.PackageGateTests.test_aggregate_false_is_refused) ... ok
+test_digest_known_value (test_package_ci.PackageGateTests.test_digest_known_value) ... ok
+test_each_missing_required_check_is_refused (test_package_ci.PackageGateTests.test_each_missing_required_check_is_refused) ... ok
+test_falsely_aggregate_passed_failure_or_skip_is_refused (test_package_ci.PackageGateTests.test_falsely_aggregate_passed_failure_or_skip_is_refused) ... ok
+test_installation_is_not_verification (test_package_ci.PackageGateTests.test_installation_is_not_verification) ... ok
+test_passed_checks_are_accepted (test_package_ci.PackageGateTests.test_passed_checks_are_accepted) ... ok
+test_authoritative_version_and_all_derived_versions_align (test_version.VersionTests.test_authoritative_version_and_all_derived_versions_align) ... ok
+test_each_derived_version_mismatch_is_rejected (test_version.VersionTests.test_each_derived_version_mismatch_is_rejected) ... ok
+test_invalid_version_does_not_change_any_file (test_version.VersionTests.test_invalid_version_does_not_change_any_file) ... ok
+test_literal_bundle_version_is_rejected (test_version.VersionTests.test_literal_bundle_version_is_rejected) ... ok
+test_nested_npm_lock_root_mismatch_is_rejected (test_version.VersionTests.test_nested_npm_lock_root_mismatch_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.069s
+
+OK

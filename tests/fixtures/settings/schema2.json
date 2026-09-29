@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "revision": 7,
+  "theme": "dark",
+  "selectedHostId": "h_11111111111111111111111111111111",
+  "hosts": [
+    {
+      "id": "h_11111111111111111111111111111111",
+      "alias": "rollback-lab",
+      "displayName": "Rollback fixture",
+      "group": "Disposable",
+      "labels": ["fixture"],
+      "readOnly": true
+    }
+  ],
+  "trustedConfigPath": "/tmp/fixture-only/config",
+  "sshExecutableOverride": "/usr/bin/ssh"
+}

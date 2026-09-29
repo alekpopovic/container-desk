@@ -371,3 +371,64 @@ fn unicode_paths_and_denied_writes_keep_existing_settings() {
     let reopened = SettingsStore::load(Box::new(FileStorage::open(&path).unwrap())).unwrap();
     assert_eq!(reopened.snapshot().preferences.hosts, preferences().hosts);
 }
+
+#[test]
+fn upgrade_fixture_retains_preupgrade_copy_and_manual_rollback_restores_exact_bytes() {
+    let dir = TestDir::new();
+    let original = include_bytes!("../../../tests/fixtures/settings/schema2.json");
+    // Use the real file adapter, not the in-memory adapter: migration performs actual atomic writes.
+    let adapter = FileStorage::open(&dir.0).unwrap();
+    adapter.commit(original, None).unwrap();
+    drop(adapter);
+    let independent_backup = dir.0.join("before-upgrade-schema2.json");
+    fs::copy(dir.0.join("preferences/settings.json"), &independent_backup).unwrap();
+    fs::set_permissions(&independent_backup, fs::Permissions::from_mode(0o600)).unwrap();
+    let mut store = SettingsStore::load(Box::new(FileStorage::open(&dir.0).unwrap())).unwrap();
+    let migrated = store.snapshot();
+    assert_eq!(migrated.notice, Some(StorageNotice::Migrated));
+    assert_eq!(migrated.preferences.schema_version, 3);
+    assert_eq!(migrated.preferences.hosts[0].alias, "rollback-lab");
+    assert_eq!(
+        fs::read(dir.0.join("preferences/settings.previous.json")).unwrap(),
+        original
+    );
+    store
+        .set_theme(SetThemeRequest {
+            expected_revision: 7,
+            theme: Theme::Light,
+        })
+        .unwrap();
+    drop(store);
+    // The rolling previous file now holds schema 3: it is not an enduring downgrade backup.
+    let previous: serde_json::Value = serde_json::from_slice(
+        &fs::read(dir.0.join("preferences/settings.previous.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(previous["schemaVersion"], 3);
+    assert_eq!(fs::read(&independent_backup).unwrap(), original);
+    // Simulate the documented closed-app rollback procedure, preserving the newer file too.
+    fs::rename(
+        dir.0.join("preferences/settings.json"),
+        dir.0.join("after-upgrade-schema3.json"),
+    )
+    .unwrap();
+    fs::copy(&independent_backup, dir.0.join("preferences/settings.json")).unwrap();
+    let restored = fs::read(dir.0.join("preferences/settings.json")).unwrap();
+    assert_eq!(restored, original);
+    assert_eq!(
+        fs::metadata(dir.0.join("preferences/settings.json"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777,
+        0o600
+    );
+    // Opening this old schema in the current app upgrades again; no reverse migrator is claimed.
+    let reopened = SettingsStore::load(Box::new(FileStorage::open(&dir.0).unwrap())).unwrap();
+    assert_eq!(reopened.snapshot().notice, Some(StorageNotice::Migrated));
+    assert_eq!(reopened.snapshot().preferences.theme, Theme::Dark);
+    assert_eq!(
+        reopened.snapshot().preferences.hosts,
+        migrated.preferences.hosts
+    );
+}
