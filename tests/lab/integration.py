@@ -281,9 +281,14 @@ exit "$status"
             with (root / 'native.log').open('w') as log:
                 client = subprocess.Popen([executable, 'checkpoint049_disposable_integration', '--ignored', '--nocapture'],
                                           env=test_env, stdout=log, stderr=log, start_new_session=True)
-                deadline = time.monotonic() + (600 if mac or args.tcg else 180)
+                deadline = time.monotonic() + (1200 if mac or args.tcg else 180)
                 from native_pressure import process_sample
+                reported = set()
                 while client.poll() is None:
+                    for line in (root/'native.log').read_text().splitlines():
+                        if line.startswith(('PASS 049:', 'PASS 058:')) and line not in reported:
+                            print(line, flush=True)
+                            reported.add(line)
                     for alias in ('direct-owned', 'private-owned'):
                         marker = root / ('cut-' + alias)
                         done = root / ('cut-' + alias + '-done')

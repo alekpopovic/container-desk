@@ -8,6 +8,7 @@ import platform
 import subprocess
 import sys
 import tempfile
+import time
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(REPO/'tests/lab'))
@@ -34,8 +35,17 @@ def main():
     artifacts.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='cd058-image-',dir='/tmp') as folder:
         image=Path(folder)/name
-        subprocess.run(['/usr/bin/curl','--fail','--location','--silent','--show-error','--max-time','240',
-            '--output',str(image),'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/cloud/'+name],check=True,timeout=250)
+        # Only an idempotent pinned-image download is retried; app actions never are.
+        for attempt in range(3):
+            try:
+                subprocess.run(['/usr/bin/curl','--fail','--location','--silent','--show-error','--max-time','120',
+                    '--output',str(image),'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/cloud/'+name],check=True,timeout=130)
+                break
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                if attempt == 2: raise RuntimeError('Pinned guest image download failed after three bounded attempts') from None
+                image.unlink(missing_ok=True)
+                print('Retrying the pinned guest image download after a transient network failure.',flush=True)
+                time.sleep(3)
         with image.open('rb') as stream: actual=hashlib.file_digest(stream,'sha512').hexdigest()
         if actual != expected: raise RuntimeError('Official pinned VM image hash mismatch')
         command=['python3',str(REPO/'tests/lab/integration.py'),'--qemu-root',str(tools),'--image',str(image),

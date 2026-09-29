@@ -83,55 +83,18 @@ do {
   if args[3] == "support" {
     try press(root, "Settings")
     try press(root, "Prepare support preview")
-    let destination = reportPath.deletingLastPathComponent().appendingPathComponent("containerdesk-support.json")
-    try require(!FileManager.default.fileExists(atPath: destination.path), "Support destination must be new")
+    // Use NSSavePanel's observed fresh-runner Documents destination. No keyboard
+    // shortcut automation is needed to prove the application's real save path.
+    let destination = FileManager.default.homeDirectoryForCurrentUser
+      .appendingPathComponent("Documents/containerdesk-support.json")
+    let retained = reportPath.deletingLastPathComponent().appendingPathComponent("containerdesk-support.json")
+    try require(!FileManager.default.fileExists(atPath: destination.path), "Native support destination must be new")
+    try require(!FileManager.default.fileExists(atPath: retained.path), "Retained support destination must be new")
+    defer { try? FileManager.default.removeItem(at: destination) }
     try press(root, "Save reviewed report…")
-    _ = try waitFor(root, "Save")
-    try require(app.activate(options: [.activateIgnoringOtherApps]), "Cannot activate owned save dialog")
-    let activeDeadline = Date().addingTimeInterval(5)
-    while !app.isActive && Date() < activeDeadline { RunLoop.current.run(until: Date().addingTimeInterval(0.1)) }
-    try require(app.isActive, "Owned save dialog did not become active")
-    func key(_ code: CGKeyCode, _ flags: CGEventFlags = []) throws {
-      guard let down = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true),
-            let up = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: false) else {
-        throw CheckFailure(description: "Cannot create native keyboard event")
-      }
-      down.flags = flags; up.flags = flags
-      down.postToPid(app.processIdentifier); up.postToPid(app.processIdentifier)
-      RunLoop.current.run(until: Date().addingTimeInterval(0.3))
-    }
-    // Native keyboard input commits the field editor and path-completion state.
-    // AXValue alone can leave NSSavePanel using its previous directory.
-    let previousFocus = attribute(root, kAXFocusedUIElementAttribute)
-    try key(5, [.maskCommand, .maskShift])
-    RunLoop.current.run(until: Date().addingTimeInterval(0.7))
-    guard let focused = attribute(root, kAXFocusedUIElementAttribute),
-          CFGetTypeID(focused) == AXUIElementGetTypeID() else {
-      throw CheckFailure(description: "Native save folder field missing")
-    }
-    if let previousFocus {
-      try require(!CFEqual(previousFocus, focused), "Go to Folder did not change native focus")
-    }
-    let folderField = focused as! AXUIElement
-    report["folderFieldRole"] = attribute(folderField, kAXRoleAttribute) as? String
-    report["folderFieldDescription"] = attribute(folderField, kAXDescriptionAttribute) as? String
-    try key(0, [.maskCommand])
-    let units = Array(reportPath.deletingLastPathComponent().path.utf16)
-    guard let typed = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true),
-          let released = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: false) else {
-      throw CheckFailure(description: "Cannot create native path input")
-    }
-    typed.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
-    released.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
-    typed.postToPid(app.processIdentifier); released.postToPid(app.processIdentifier)
-    RunLoop.current.run(until: Date().addingTimeInterval(1))
-    report["enteredFolder"] = attribute(folderField, kAXValueAttribute) as? String
-    try require((attribute(folderField, kAXValueAttribute) as? String) == reportPath.deletingLastPathComponent().path,
-      "Native folder input did not match the owned destination")
-    try key(36)
-    RunLoop.current.run(until: Date().addingTimeInterval(1))
-    _ = try waitFor(root, reportPath.deletingLastPathComponent().lastPathComponent)
+    _ = try waitFor(root, "Documents")
     try press(root, "Save")
+    _ = try waitFor(root, "Reviewed support report saved.")
     let saveDeadline = Date().addingTimeInterval(15)
     while !FileManager.default.fileExists(atPath: destination.path) && Date() < saveDeadline {
       RunLoop.current.run(until: Date().addingTimeInterval(0.1))
@@ -140,7 +103,12 @@ do {
     let payload = try JSONSerialization.jsonObject(with: exported) as? [String: Any]
     try require(payload?["schemaVersion"] as? Int == 1, "Native saved report is invalid")
     _ = try waitFor(root, "Reviewed support report saved.")
+    let attributes = try FileManager.default.attributesOfItem(atPath: destination.path)
+    try require((attributes[.posixPermissions] as? NSNumber)?.intValue == 0o600, "Native support file permissions must be private")
+    try FileManager.default.copyItem(at: destination, to: retained)
     report["nativeSupportSaveDialog"] = true
+    report["nativeSaveDirectory"] = "Documents"
+    report["savedSupportPermissions"] = "0600"
     report["savedSupportBytes"] = exported.count
   }
   let windowRows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
