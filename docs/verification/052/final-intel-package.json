@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.0",
+  "sourceCommit": "bc6078f70e6c7fd9c570c1398cf7f488e31982ba",
+  "sourceDirty": false,
+  "target": "x86_64-apple-darwin",
+  "os": "macOS-15.7.9-x86_64-i386-64bit-Mach-O",
+  "toolchains": {
+    "node": "24.21.0",
+    "npm": "11.19.0",
+    "rustc": "1.98.1",
+    "cargo": "1.98.1"
+  },
+  "runId": "36560379638",
+  "runAttempt": "1",
+  "event": "push",
+  "verificationReportSha256": "9caea9405ba7b571f2310123f94dc14eed5d33ef313166303226d2b47695d295",
+  "package": {
+    "file": "containerdesk-0.1.0-x86_64-apple-darwin.app.tar.gz",
+    "bytes": 4683737,
+    "sha256": "efad8d91081f810f99b52a8f8ef75c12c2fcda1c59facdeaa4d250fee4059f91"
+  },
+  "executableSha256BeforeBundle": "f8d65af8906582ed268e3f51dbe7c7d5bee1543dbbe843892c9009a58c0261be",
+  "executableSha256AfterBundle": "f8d65af8906582ed268e3f51dbe7c7d5bee1543dbbe843892c9009a58c0261be",
+  "signing": "disabled",
+  "notarization": "not_requested",
+  "runtimeAcceptance": "not_run",
+  "releaseApproved": false,
+  "locks": {
+    "package-lock.json": "c97594c24a111f62f30564654859db0a0ba74f38e3e132e105c083edadf2e534",
+    "src-tauri/Cargo.lock": "3923711cb33de8a5e3b8df4a690b966cf37d6a02519fad168bc2ed8e608088ef"
+  }
+}

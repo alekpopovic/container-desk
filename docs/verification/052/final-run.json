@@ -1,0 +1,36 @@
+{
+  "databaseId": 36560379638,
+  "status": "completed",
+  "conclusion": "success",
+  "headSha": "bc6078f70e6c7fd9c570c1398cf7f488e31982ba",
+  "url": "https://github.com/alekpopovic/container-desk/actions/runs/36560379638",
+  "jobs": [
+    {
+      "databaseId": 109379554776,
+      "name": "x86_64-unknown-linux-gnu",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-09-29T11:13:15Z",
+      "completedAt": "2026-09-29T11:25:40Z",
+      "url": "https://github.com/alekpopovic/container-desk/actions/runs/36560379638/job/109379554776"
+    },
+    {
+      "databaseId": 109379554871,
+      "name": "x86_64-apple-darwin",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-09-29T11:13:17Z",
+      "completedAt": "2026-09-29T11:42:12Z",
+      "url": "https://github.com/alekpopovic/container-desk/actions/runs/36560379638/job/109379554871"
+    },
+    {
+      "databaseId": 109379555052,
+      "name": "aarch64-apple-darwin",
+      "status": "completed",
+      "conclusion": "success",
+      "startedAt": "2026-09-29T11:13:20Z",
+      "completedAt": "2026-09-29T11:26:16Z",
+      "url": "https://github.com/alekpopovic/container-desk/actions/runs/36560379638/job/109379555052"
+    }
+  ]
+}

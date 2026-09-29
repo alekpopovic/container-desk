@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T10:37:24+00:00",
+  "updated_at": "2026-09-29T11:44:26+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1769,6 +1769,23 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T11:44:26+00:00",
+      "id": "052",
+      "action": "block",
+      "note": "CI and unsigned packages passed on Ubuntu 24.04 and macOS arm64/x86_64 (run 36560379638). Automatic approval review rejected adding the required separate manual public-publisher workflow with contents: write. User authorization or explicit scope change is pending; publisher absent. See codex/tracking/evidence/052.md.",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T10:37:24+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2412,14 +2429,14 @@
       "note": ""
     },
     "052": {
-      "status": "in_progress",
+      "status": "blocked",
       "started_at": "2026-09-29T10:37:24+00:00",
       "finished_at": null,
       "evidence": null,
       "evidence_sha256": null,
       "checks": [],
       "commit": "",
-      "note": ""
+      "note": "CI and unsigned packages passed on Ubuntu 24.04 and macOS arm64/x86_64 (run 36560379638). Automatic approval review rejected adding the required separate manual public-publisher workflow with contents: write. User authorization or explicit scope change is pending; publisher absent. See codex/tracking/evidence/052.md."
     },
     "053": {
       "status": "pending",

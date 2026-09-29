@@ -1,0 +1,12 @@
+{
+  "archiveChecksumVerified": true,
+  "reportChecksumVerified": true,
+  "sourceCommit": "bc6078f70e6c7fd9c570c1398cf7f488e31982ba",
+  "machO": "x86_64",
+  "executableMode": "0o755",
+  "bundleIdentifier": "dev.containerdesk.app",
+  "version": "0.1.0",
+  "minimumSystemVersion": "15.0",
+  "nativeRuntime": "not_run",
+  "publicSigning": "not_run"
+}
