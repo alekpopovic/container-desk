@@ -50,3 +50,9 @@ References: [xterm security guidance](https://xtermjs.org/docs/guides/security/)
 The native implementation is tested on Ubuntu 26.04.1 x86_64. The crate supports Unix PTYs, including macOS, but this is not macOS runtime, package-install, Wayland or signing evidence. Production compilation and native backend execution are recorded separately. The selected UID can be unsuitable for an image, and other operators can stop/replace the container after preflight; failures remain visible and are never replayed.
 
 References checked for this increment: [portable-pty 0.9.0 source/API](https://docs.rs/crate/portable-pty/0.9.0/source/src/lib.rs), [OpenSSH terminal and escape options](https://man.openbsd.org/ssh.1), [Docker exec options](https://docs.docker.com/reference/cli/docker/container/exec/).
+
+## Production renderer styles (046)
+
+The pinned xterm 6 DOM renderer generates two local `<style>` elements for theme/ANSI colors and character layout (`DomRenderer._injectCss` / `_updateDimensions`). Production `style-src 'self'` blocked these and left inherited dark proportional text on the terminal's dark background. `style-src-elem 'self' 'unsafe-inline'` permits those generated style elements; script execution, network origins and style attributes are not broadened. No remote CSS/font dependency is added. Injected CSS would still be a rendering risk, so untrusted data remains text and no HTML/CSS authoring IPC exists. The native checkpoint now asserts computed foreground `rgb(227, 237, 242)`, monospace font and rejection of an inline script, in addition to actual PTY input/output.
+
+This is an explicit compatibility decision, reviewed against [Tauri CSP guidance](https://v2.tauri.app/security/csp/) and [xterm security guidance](https://xtermjs.org/docs/guides/security/), plus the installed pinned renderer source. A future nonce-aware xterm integration could tighten style-element policy; no script `unsafe-inline` or `unsafe-eval` is enabled.

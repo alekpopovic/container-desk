@@ -3130,7 +3130,18 @@ async fn checkpoint039_owned_terminal_echo_interrupt_resize_exit_and_permissions
         })
         .await
         .unwrap();
-    assert_eq!(listed.containers.len(), 4);
+    let expected: std::collections::HashSet<&str> = lab["ownedIds"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|id| id.as_str().unwrap())
+        .collect();
+    let actual: std::collections::HashSet<&str> = listed
+        .containers
+        .iter()
+        .map(|row| row.id.0.as_str())
+        .collect();
+    assert_eq!(actual, expected);
     input(&backend, &key, 7, b"exit 7\r");
     let exited = receive(&backend, &key, None).await;
     assert_eq!(exited.exit_code, Some(7));

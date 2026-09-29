@@ -1,52 +1,17 @@
 # ContainerDesk project status
 
-Updated 2026-09-29 after prompt 017. ContainerDesk is a working native Tauri v2 shell with React, TypeScript, Vite, Tailwind and Rust/Tokio. Foundations, remote command preparation and transient SSH connection state through 017 are implemented; live remote Docker management is not available yet.
+Updated 2026-09-29 for prompt 046. The native Linux application implements SSH discovery and saved hosts, live Docker read views, explicitly enabled lifecycle/Compose actions, container terminals and bounded recovery. The current feature and platform evidence is maintained in [046 checkpoint](checkpoints/046-feature-complete.md). Earlier checkpoint and tracker evidence describes the implementation at that historical stage.
 
-## Current implementation
+The application uses the local native OpenSSH executable and the selected trusted SSH configuration. One saved host can be connected at a time. New/recovered sessions start read-only; management and terminal grants are explicit and transient. Images, volumes and networks remain read-only. Compose actions operate only on verified existing projects; deployment, prune, arbitrary scripts and Kubernetes are outside v1.
 
-- Responsive host/resource workspace, six routes, empty/error/offline presentation, keyboard navigation and light/dark/system themes.
-- Rust-owned generated IPC models with typed errors, validated IDs and host/selection/session/daemon scopes. Late success and error responses are rejected by renderer adapters.
-- Private versioned JSON settings, atomic replacement, recoverable previous files, corrupt-original retention, migration, revision checks and owner-only permissions. Theme save/restart and recovery were exercised in the real Linux app.
-- Native dependency diagnostics and validated absolute OpenSSH override. Real SSH -V and agent socket presence/accessibility checks have output/time/concurrency limits; keys and identities are not read. The native view works with PATH=/nonexistent.
-- Backend operation registry, default read-only access and short-lived one-use confirmation intents bound to exact operations/targets/scopes. Mutation/terminal handlers reject read-only requests directly in Rust and have no production window grant yet. Remote execution remains unavailable.
-
-- Explicit offline demo with persistent labeling, deterministic failure scenarios, bounded synthetic parsing and replaceable read transport; no live-to-fixture fallback or SSH probing in demo.
-
-- SSH config candidate discovery with explicit browse/selection, bounded includes and manual aliases; no automatic resolution or connections.
-
-- Explicit native ssh -G resolution with bounded output/deadline, original-alias/config-policy preservation, trusted-code explanation and safe effective-host/user/port/jump display.
-
-- Shared cancellable process runner with four slots, separate bounded pipes, typed failures, partial-output preservation and cleanup/reaping before acknowledgment. Native structured SSH option policy is prepared; no remote command dispatcher is exposed yet.
-
-- Centralized POSIX remote quoting and validated Docker command preparation, including absolute binary overrides, named contexts and fixed optional sudo -n; hostile arguments checked through an inert shell harness.
-
-- Explicit SSH access/trust flow with no password collection; strict native ProxyJump policy and 15 real disposable-lab cases verified on Linux.
-
-- Backend-owned connection stages, generation-scoped cancellation/switching and static diagnostics with monotonic durations; no automatic connections. Native Docker capability probing now reports Linux readiness or a specific degraded diagnosis; actual Engine workflow verification remains 018.
-
-- Private app-owned multiplex masters, independent channel cancellation, visible direct fallback, bounded idle lifetime and conservative abandoned-resource recovery; native Linux SSH lab verified.
-
-- Remote Docker context/endpoint/version/daemon/rootless/Compose diagnostics, explicit sudo -n mode and pinned command configuration; actual remote CLI verified with a synthetic API, not a live Engine.
-
-- Saved host inventory with stable IDs, labels/groups/favorites, versioned per-host config/Docker references, explicit connection controls and owner-scoped live status; demo metadata remains in memory.
-
-Design: [host inventory](host-inventory.md), [Docker capabilities](docker-capabilities.md), [SSH multiplexing](ssh-multiplexing.md), [connection state](connection-state.md), [SSH authentication](ssh-authentication.md), [remote commands](remote-commands.md), [SSH runner](ssh-runner.md), [SSH resolution](ssh-resolution.md), [SSH discovery](ssh-discovery.md), [demo mode](demo-mode.md), [IPC](ipc-contract.md), [settings](settings.md), [native dependencies](native-dependencies.md), [operation policy](operation-policy.md), [design system](design-system.md). Commands/pins: [development](development.md), [toolchains](toolchains.md).
-
-Evidence: [001](../codex/tracking/evidence/001.md), [002](../codex/tracking/evidence/002.md), [003](../codex/tracking/evidence/003.md), [004](../codex/tracking/evidence/004.md), [005](../codex/tracking/evidence/005.md), [006](../codex/tracking/evidence/006.md), [007](../codex/tracking/evidence/007.md), [008](../codex/tracking/evidence/008.md), [009](../codex/tracking/evidence/009.md), [010](../codex/tracking/evidence/010.md), [011](../codex/tracking/evidence/011.md), [012](../codex/tracking/evidence/012.md), [013](../codex/tracking/evidence/013.md), [014](../codex/tracking/evidence/014.md), [015](../codex/tracking/evidence/015.md), [016](../codex/tracking/evidence/016.md), [017](../codex/tracking/evidence/017.md).
-
-## Actual platform status
-
-| Area | Status |
+| Platform / release area | Actual state |
 |---|---|
-| Linux runtime | Verified on Ubuntu 26.04.1 x86_64, GTK 3.24.52, WebKitGTK 2.52.6, X11/XWayland |
-| Native settings/diagnostics | Verified in isolated app-data profiles; unrelated app windows retained |
-| Launch environment | Process-local removal of incompatible Snap library/module variables required on this host; no global configuration changed |
-| Ubuntu 24.04 baseline / native Wayland | Not verified |
-| macOS arm64 / Intel | Not built or executed |
-| Installers, signing, notarization | Not performed; native unbundled Linux builds only |
-| SSH authentication | Real native direct/ProxyJump lab and saved-host metadata lifecycle verified; connection state is transient |
-| Docker resource reads / mutations / terminal | Not implemented or exercised live yet |
+| Ubuntu 26.04.1 x86_64, WebKitGTK 2.52.6, X11 | Native unbundled release application exercised against disposable Docker/strict ProxyJump resources |
+| GUI launch, minimal PATH, encrypted agent keys | Native Linux verification in 042 |
+| Support Save dialogs / keyboard / screen-reader labels | Native Linux verification in 043–044; audible speech quality not assessed |
+| Ubuntu 24.04 baseline and native Wayland | Pending native execution |
+| macOS Apple Silicon and Intel | Pending native build and execution |
+| deb / AppImage / app / DMG installation | Pending release engineering and actual package smoke checks |
+| Signing / notarization / public distribution | No credentials used or release published; separate release gates |
 
-No browser fixture, mock runtime or build is counted as native server-operation proof. Existing bundle-identifier warning and GitHub moderate dependency alert remain open for the relevant later review. [Checkpoints](checkpoints.md) still require actual lab/platform evidence.
-
-Next prompt: **018 — SSH vertical slice checkpoint**. Continue sequentially under the user's [execution authorization](execution.md).
+Commands and pinned toolchains: [development](development.md), [toolchains](toolchains.md). Runtime bounds: [resource limits](resource-limits.md). Security model: [operation policy](operation-policy.md), [remote commands](remote-commands.md), [SSH authentication](ssh-authentication.md). Feature evidence is distinct from packaging and release readiness. Continue sequentially under the user's [execution authorization](execution.md).

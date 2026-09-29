@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T08:52:27+00:00",
+  "updated_at": "2026-09-29T09:14:45+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1548,6 +1548,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T08:54:17+00:00",
+      "id": "046",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T09:14:45+00:00",
+      "id": "046",
+      "action": "done",
+      "note": "PASS native 046 release journey over strict ProxyJump including styled PTY, log/terminal cleanup, two backend checkpoints and Docker oracle; 148 Rust, 86 Node, 18 browser tests; build, clippy and diff checks passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T08:54:17+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2119,12 +2153,14 @@
       "note": ""
     },
     "046": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T08:54:17+00:00",
+      "finished_at": "2026-09-29T09:14:45+00:00",
+      "evidence": "codex/tracking/evidence/046.md",
+      "evidence_sha256": "3edf90d406bb006dcc8539df353a8d93bf125dd8e488ccf5b3b5bd675d4ebaeb",
+      "checks": [
+        "PASS native 046 release journey over strict ProxyJump including styled PTY, log/terminal cleanup, two backend checkpoints and Docker oracle; 148 Rust, 86 Node, 18 browser tests; build, clippy and diff checks passed"
+      ],
       "commit": "",
       "note": ""
     },

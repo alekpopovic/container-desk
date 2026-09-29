@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False, recovery=False, keyboard=False, pressure=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False, recovery=False, keyboard=False, pressure=False, checkpoint=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -92,6 +92,9 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                         owned_windows.append(window)
                 assert len(owned_windows) == 1
                 subprocess.run([str(xdotool), 'windowfocus', '--sync', owned_windows[0]], env=env, check=True, timeout=10)
+            if checkpoint:
+                from native_checkpoint import discover
+                discover(root,artifacts,script,command,click,button,wait,element,config)
             button('Add host')
             button('New host')
             fill('Host SSH config path', str(config))
@@ -99,6 +102,16 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             fill('Display name', 'Owned live log checkpoint')
             fill('Saved Docker executable', '/usr/bin/docker')
             button('Save host')
+            if checkpoint:
+                from native_checkpoint import verify as verify_checkpoint
+                verify_checkpoint(root,artifacts,script,command,click,button,fill,wait,element,live_id,owned_windows[0],xdotool,env)
+                command('DELETE', '')
+                session = None
+                for file in (root/'native-data').rglob('*'):
+                    if file.is_file(): assert b'CD046_' not in file.read_bytes(), 'Terminal transcript persisted'
+                assert b'CD046_' not in (root/'native-driver.log').read_bytes(), 'Terminal transcript in diagnostics'
+                print('PASS integrated native app storage/diagnostics contain no terminal transcript markers.',flush=True)
+                return
             if pressure:
                 from native_pressure import verify as verify_pressure
                 verify_pressure(root,artifacts,script,command,click,button,fill,wait,live_id,owned_windows[0],xdotool,env)

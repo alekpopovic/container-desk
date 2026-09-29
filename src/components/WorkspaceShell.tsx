@@ -94,7 +94,7 @@ const connectionLabels = {
   offline: "Offline",
   error: "Connection error",
   ready: "Data available",
-  connected: "Connected · read-only",
+  connected: "Connected",
 };
 
 export interface WorkspacePreferences {
@@ -335,7 +335,6 @@ export function WorkspaceShell({
               <span className="status-dot" aria-hidden="true" />
               {connectionLabels[state.kind]}
             </span>
-            <span className="mode-label">Management unavailable</span>
           </div>
         </header>
         <nav className="resource-nav" aria-label="Resources">

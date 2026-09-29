@@ -3,7 +3,7 @@ import base64
 import json
 from native_ssh import ELEMENT
 
-def verify(root,artifacts,script,command,click,button,fill,wait,element):
+def verify(root,artifacts,script,command,click,button,fill,wait,element,keep_connection=False):
     metadata=json.loads((root/'compose-project.json').read_text())
     config=metadata['configuration']
     click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Compose"]')
@@ -50,7 +50,8 @@ def verify(root,artifacts,script,command,click,button,fill,wait,element):
     assert script('return window.__revokeClick.some(e=>e.trusted && e.label==="Disable Compose management")')
     wait('return Array.from(document.querySelectorAll("button")).some(b=>b.textContent==="Enable Compose management")')
     assert script('return Array.from(document.querySelectorAll(".compose-management .management-actions button")).every(b=>b.disabled)')
-    click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
-    button('Disconnect saved host')
-    wait('return document.body.innerText.includes("Disconnected · SSH session")')
-    print('PASS native Compose UI: explicit quoted remote files/name, verification, management opt-in, full host/daemon/service/ID confirmation, cancel dispatched nothing, exactly one restart, both services observed running, explicit return to read-only and disconnect.',flush=True)
+    if not keep_connection:
+        click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
+        button('Disconnect saved host')
+        wait('return document.body.innerText.includes("Disconnected · SSH session")')
+    print('PASS native Compose UI: explicit quoted remote files/name, verification, management opt-in, full host/daemon/service/ID confirmation, cancel dispatched nothing, exactly one restart, both services observed running, explicit return to read-only.',flush=True)

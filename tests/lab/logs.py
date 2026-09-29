@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--jump', action='store_true', help='Use a second owned loopback sshd as an actual ProxyJump')
     parser.add_argument('--mvp', action='store_true', help='Integrated 030 native journey; requires --stream --stats --jump')
     parser.add_argument('--stream', action='store_true')
+    parser.add_argument('--checkpoint', action='store_true', help='046 one native discovery/logs/management/Compose/terminal journey')
     parser.add_argument('--pressure', action='store_true', help='045 synthetic inventory/inspect/events plus actual log pressure')
     parser.add_argument('--keyboard', action='store_true', help='044 native keyboard and Orca journey; requires stream, jump and drivers')
     parser.add_argument('--recovery', action='store_true', help='041 native connection interruption and shutdown; requires terminal/native drivers')
@@ -58,6 +59,10 @@ def main():
     if args.reads and (not args.stream or args.stats or args.events): parser.error('--reads requires --stream and excludes --stats/--events')
     if args.events and (not args.stream or args.stats): parser.error('--events requires --stream and excludes --stats')
     if args.stats and not args.stream: parser.error('--stats requires --stream')
+    if args.checkpoint:
+        if not (args.stream and args.jump and args.native_driver and args.focus_xdotool): parser.error('--checkpoint requires stream, jump, native drivers and focus tool')
+        if any([args.pressure,args.keyboard,args.recovery,args.terminal,args.compose_actions,args.networks,args.batch,args.management,args.reads,args.events,args.stats,args.mvp,args.export_xdotool]): parser.error('--checkpoint is a separate integrated journey')
+        args.terminal = args.compose_actions = args.management = True
     with tempfile.TemporaryDirectory(prefix='containerdesk-logs-lab-') as directory:
         root = Path(directory)
         config = root / 'docker-config'
@@ -133,7 +138,7 @@ def main():
             # This fixture-only gate prevents tests from reading unrelated host resources or changing state.
             gate = REPO / 'tests/lab/logs_gate.py'
             server_config = root / 'sshd_config'
-            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY {"yes" if args.terminal else "no"}\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} {('--pressure ' if args.pressure else '')}{('--terminal ' if args.terminal else '')}{('--mvp ' if args.mvp else '')}{('--management ' if args.management else '')}{('--batch ' if args.batch else '')}{('--networks ' if args.networks else '')}{('--compose-actions ' if args.compose_actions else '')}--owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
+            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY {"yes" if args.terminal else "no"}\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} {('--checkpoint ' if args.checkpoint else '')}{('--pressure ' if args.pressure else '')}{('--terminal ' if args.terminal else '')}{('--mvp ' if args.mvp else '')}{('--management ' if args.management else '')}{('--batch ' if args.batch else '')}{('--networks ' if args.networks else '')}{('--compose-actions ' if args.compose_actions else '')}--owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
             public = (root / 'host.pub').read_text().split()
             known = root / 'known_hosts'
             known.write_text(f'[127.0.0.1]:{port} {public[0]} {public[1]}\n')
@@ -216,7 +221,7 @@ def main():
                 if args.stream and args.native_driver:
                     from native_logs import verify
                     try:
-                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[2] if args.terminal else owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions, args.terminal, args.recovery, args.keyboard, args.pressure)
+                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[2] if args.terminal else owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions, args.terminal, args.recovery, args.keyboard, args.pressure, args.checkpoint)
                     except Exception:
                         # Only bounded state fields from owned fixtures; no logs, env or generic inspect dump.
                         if args.management:
@@ -237,6 +242,12 @@ def main():
                 if checked.returncode:
                     print(checked.stderr)
                     raise RuntimeError('Native log checkpoint failed')
+                if args.checkpoint:
+                    composed = subprocess.run([executables[0], 'checkpoint037_owned_compose', '--ignored', '--nocapture'], env=test_env, capture_output=True, text=True, timeout=180)
+                    print(composed.stdout, end='')
+                    if composed.returncode:
+                        print(composed.stderr)
+                        raise RuntimeError('Integrated Compose backend checkpoint failed')
                 if args.recovery:
                     fallback = subprocess.run([executables[0], 'checkpoint041_owned_fallback_health', '--ignored', '--nocapture'], env=test_env, capture_output=True, text=True, timeout=40)
                     print(fallback.stdout, end='')
@@ -245,7 +256,7 @@ def main():
                         raise RuntimeError('Native fallback health checkpoint failed')
             if args.terminal:
                 trace=[json.loads(line) for line in (root/'pty-execs.jsonl').read_text().splitlines()]
-                assert (4<=len(trace)<=6 if args.native_driver else 2<=len(trace)<=4) and sum(row['id']==owned[3] for row in trace)==1
+                assert (3<=len(trace)<=5 if args.checkpoint else 4<=len(trace)<=6 if args.native_driver else 2<=len(trace)<=4) and sum(row['id']==owned[3] for row in trace)==1
                 assert all(row['tty'] and row['user']=='1000:1000' and row['shell']=='/bin/sh' and row['id'] in owned[2:] for row in trace)
                 states=subprocess.run(docker+['inspect','--format','{{.State.Running}}','--',owned[2],owned[3]],env=env,check=True,capture_output=True,text=True,timeout=10).stdout.split()
                 assert states==['true','true'], 'Terminal signals must not terminate either container primary process'

@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T08:52:27+00:00
+Updated: 2026-09-29T09:14:45+00:00
 
-blocked: **0** | done: **45** | in_progress: **0** | pending: **15**
+blocked: **0** | done: **46** | in_progress: **0** | pending: **14**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -55,7 +55,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 043 | 05 Terminal and resilience | Support diagnostics and redacted export | high | done | codex/tracking/evidence/043.md |
 | 044 | 05 Terminal and resilience | Accessibility themes and keyboard workflow | medium | done | codex/tracking/evidence/044.md |
 | 045 | 05 Terminal and resilience | Large inventories and stream pressure | high | done | codex/tracking/evidence/045.md |
-| 046 | 05 Terminal and resilience | Feature-complete desktop checkpoint | high | pending | — |
+| 046 | 05 Terminal and resilience | Feature-complete desktop checkpoint | high | done | codex/tracking/evidence/046.md |
 | 047 | 06 Quality and delivery | Focused security review | high | pending | — |
 | 048 | 06 Quality and delivery | Frontend and parser regression coverage | high | pending | — |
 | 049 | 06 Quality and delivery | Disposable direct and bastion integration lab | high | pending | — |
@@ -164,3 +164,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T08:17:35+00:00 — 044: done; npm check: 85 Node tests; 174+36 targeted browser checks plus final 30; native release keyboard/modal/Orca and strict ProxyJump stream checkpoint exit 0
 - 2026-09-29T08:18:34+00:00 — 045: start;
 - 2026-09-29T08:52:27+00:00 — 045: done; 86 Node tests; 148 Rust tests + 3 synthetic pressure benchmarks; clippy; final 19 + 18 browser checks; actual 120s release pressure run with 1000 summaries, large inspect, bounded log/events, memory gate and all 33 SSH identities reaped: exit 0
+- 2026-09-29T08:54:17+00:00 — 046: start;
+- 2026-09-29T09:14:45+00:00 — 046: done; PASS native 046 release journey over strict ProxyJump including styled PTY, log/terminal cleanup, two backend checkpoints and Docker oracle; 148 Rust, 86 Node, 18 browser tests; build, clippy and diff checks passed

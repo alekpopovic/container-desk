@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--checkpoint', action='store_true')
 parser.add_argument('--pressure', action='store_true')
 parser.add_argument('--mvp', action='store_true')
 parser.add_argument('--terminal', action='store_true')
@@ -105,7 +106,7 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
         sys.exit(0)
     if args.management and operation and operation[0] in ('start', 'stop', 'restart', 'rm'):
         target = operation[-1]
-        admitted = target in args.owned if args.batch else target == args.owned[-1]
+        admitted = target in args.owned if args.batch else target == args.owned[2 if args.checkpoint else -1]
         valid = admitted and ((operation == ['start', '--', target]) or (args.batch and operation == ['rm', '--', target]) or (len(operation) == 5 and operation[0] in ('stop', 'restart') and operation[1] == '-t' and operation[2].isdigit() and 1 <= int(operation[2]) <= 120 and operation[3:] == ['--', target]))
         if not valid or not args.control: sys.exit(126)
         with (args.control / 'mutation-count').open('a') as counter: counter.write(operation[0] + '\n')

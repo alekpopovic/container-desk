@@ -1,0 +1,98 @@
+{
+  "platform": "Linux x86_64, actual release WebKitGTK",
+  "ownedContainerCount": 8,
+  "singleSavedAlias": "logs-owned",
+  "jumpAlias": "logs-jump",
+  "cancelledActionsDispatched": 0,
+  "containerActions": [
+    "stop",
+    "start"
+  ],
+  "composeGuiActions": [
+    "restart"
+  ],
+  "terminalGuiDispatches": 1,
+  "terminalRenderedStyles": {
+    "fontSize": "13px",
+    "color": "rgb(227, 237, 242)",
+    "font": "ui-monospace, monospace"
+  },
+  "inlineScriptBlocked": true,
+  "logStreamIdentitiesReaped": 1,
+  "terminalStreamIdentitiesReaped": 1,
+  "observedSshIdentitiesReaped": 9,
+  "stages": {
+    "beforeConnection": {
+      "rssKiB": 707236,
+      "pssKiB": 454424,
+      "pssUnavailable": 0,
+      "processCount": 3,
+      "sshChildren": 0,
+      "zombies": 0
+    },
+    "inventory": {
+      "rssKiB": 762860,
+      "pssKiB": 468383,
+      "pssUnavailable": 1,
+      "processCount": 8,
+      "sshChildren": 5,
+      "zombies": 0
+    },
+    "followingLogs": {
+      "rssKiB": 797504,
+      "pssKiB": 496425,
+      "pssUnavailable": 0,
+      "processCount": 9,
+      "sshChildren": 6,
+      "zombies": 0
+    },
+    "stoppedLogs": {
+      "rssKiB": 793448,
+      "pssKiB": 516670,
+      "pssUnavailable": 0,
+      "processCount": 6,
+      "sshChildren": 3,
+      "zombies": 0
+    },
+    "afterLifecycle": {
+      "rssKiB": 840704,
+      "pssKiB": 555574,
+      "pssUnavailable": 0,
+      "processCount": 7,
+      "sshChildren": 4,
+      "zombies": 0
+    },
+    "afterCompose": {
+      "rssKiB": 847388,
+      "pssKiB": 569827,
+      "pssUnavailable": 0,
+      "processCount": 6,
+      "sshChildren": 3,
+      "zombies": 0
+    },
+    "terminalConnected": {
+      "rssKiB": 871760,
+      "pssKiB": 585629,
+      "pssUnavailable": 0,
+      "processCount": 7,
+      "sshChildren": 4,
+      "zombies": 0
+    },
+    "terminalTabClosed": {
+      "rssKiB": 865224,
+      "pssKiB": 587301,
+      "pssUnavailable": 0,
+      "processCount": 6,
+      "sshChildren": 3,
+      "zombies": 0
+    },
+    "disconnected": {
+      "rssKiB": 844496,
+      "pssKiB": 584557,
+      "pssUnavailable": 0,
+      "processCount": 3,
+      "sshChildren": 0,
+      "zombies": 0
+    }
+  }
+}

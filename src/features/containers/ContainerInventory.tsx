@@ -477,7 +477,7 @@ export function ContainerInventory({
                 key={JSON.stringify([view.scope, chosen.id])}
                 scope={view.scope}
                 row={chosen}
-                host={host?.name ?? "Selected host"}
+                host={host ? `${host.name} · ${host.alias}` : "Selected host"}
                 stale={view.stale && !view.loading}
                 refresh={refresh}
               />
@@ -506,7 +506,7 @@ export function ContainerInventory({
           key={scopeKey}
           scope={view.scope}
           rows={selected}
-          host={host?.name ?? "Selected host"}
+          host={host ? `${host.name} · ${host.alias}` : "Selected host"}
           stale={view.stale && !view.loading}
           refresh={refresh}
           clear={() => setChecked(new Map())}
