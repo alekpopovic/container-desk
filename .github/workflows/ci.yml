@@ -76,6 +76,9 @@ jobs:
         env:
           APPIMAGE_EXTRACT_AND_RUN: '1'
         run: python3 scripts/package_ci.py
+      - name: Native macOS package acceptance
+        if: runner.os == 'macOS'
+        run: python3 tests/lab/macos_package_smoke.py
       - name: Retain unsigned packages and checksums
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -111,6 +114,7 @@ jobs:
         run: |
           mkdir -p test-results
           swiftc tests/lab/macos_desktop_probe.swift -o "$RUNNER_TEMP/desktop-probe"
+          swiftc tests/lab/macos_package_ui.swift -o "$RUNNER_TEMP/package-ui"
           "$RUNNER_TEMP/desktop-probe" > test-results/desktop-probe.json
           cat test-results/desktop-probe.json
       - name: Retain desktop probe
