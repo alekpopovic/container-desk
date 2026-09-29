@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T16:55:12+00:00",
+  "updated_at": "2026-09-29T17:03:28+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -2024,6 +2024,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T16:55:52+00:00",
+      "id": "059",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T17:03:28+00:00",
+      "id": "059",
+      "action": "done",
+      "note": "All 001-058 evidence reviewed; final local 13-check verifier passed; six exact native-tested packages/30 local candidate files passed source/hash/runtime-evidence/archive/credential-pattern checks; release notes/checklist ready; no publication",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T16:55:52+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2751,12 +2785,14 @@
       "note": ""
     },
     "059": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T16:55:52+00:00",
+      "finished_at": "2026-09-29T17:03:28+00:00",
+      "evidence": "codex/tracking/evidence/059.md",
+      "evidence_sha256": "1f11d3acbf2a1e473d390fa79545d0811565cf348113565a55d5d8e53cc0f3f9",
+      "checks": [
+        "All 001-058 evidence reviewed; final local 13-check verifier passed; six exact native-tested packages/30 local candidate files passed source/hash/runtime-evidence/archive/credential-pattern checks; release notes/checklist ready; no publication"
+      ],
       "commit": "",
       "note": ""
     },

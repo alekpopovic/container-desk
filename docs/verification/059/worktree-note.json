@@ -1,0 +1,12 @@
+{
+  "status": "unrelated concurrent working-tree changes preserved outside prompt commits",
+  "deleted": [
+    ".github/workflows/ci.yml"
+  ],
+  "untracked": {
+    ".github/ci.yml": "ac320c5a0aca477411f5ea48125fd1b4b42aaf6f660a37f911c381f28317c147",
+    ".github/workflows/.keep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "movedContentMatchesCommittedWorkflow": true,
+  "approvalOrIntentInferred": false
+}

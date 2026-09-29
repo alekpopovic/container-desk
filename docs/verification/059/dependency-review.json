@@ -1,0 +1,76 @@
+{
+  "date": "2026-09-29",
+  "sourceCommit": "ce33d6cd9bba5823642749a26d3e6d367a9bab73",
+  "npm": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "dependencies": {
+      "prod": 7,
+      "dev": 135,
+      "optional": 95,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 141
+    }
+  },
+  "cargoAuditVersion": "0.22.2",
+  "rustsecDatabase": {
+    "advisory-count": 1277,
+    "last-commit": "f23b768236fe2880e4cfa167da662cad8ca79240",
+    "last-updated": "2026-09-29T09:32:15+02:00"
+  },
+  "rustsecVulnerabilities": {
+    "found": false,
+    "count": 0,
+    "list": []
+  },
+  "rustsecWarnings": [
+    {
+      "kind": "unmaintained",
+      "package": "proc-macro-error",
+      "version": "1.0.4",
+      "advisory": "RUSTSEC-2024-0370",
+      "title": "proc-macro-error is unmaintained",
+      "patched": []
+    },
+    {
+      "kind": "unsound",
+      "package": "glib",
+      "version": "0.18.5",
+      "advisory": "RUSTSEC-2024-0429",
+      "title": "Unsoundness in `Iterator` and `DoubleEndedIterator` impls for `glib::VariantStrIter`",
+      "patched": [
+        ">=0.20.0"
+      ]
+    }
+  ],
+  "githubAlertRead": "Existing 047 attempt HTTP 403; no extra permission requested and no identity inferred",
+  "callSiteReview": {
+    "rustSourceFiles": 1039,
+    "nativeDependencyRoots": [
+      "gdk-0.18.2",
+      "gio-0.18.4",
+      "gtk-0.18.2",
+      "muda-0.20.0",
+      "rfd-0.16.0",
+      "tao-0.37.1",
+      "tauri-2.12.0",
+      "tauri-runtime-wry-2.12.0",
+      "webkit2gtk-2.0.2",
+      "wry-0.57.0"
+    ],
+    "patterns": [
+      "VariantStrIter",
+      "array_iter_str"
+    ],
+    "applicationMatches": 0,
+    "reviewedFrameworkMatches": 0,
+    "universalUnreachabilityProven": false
+  }
+}

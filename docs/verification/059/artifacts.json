@@ -1,0 +1,47 @@
+{
+  "version": "0.1.0",
+  "sourceCommit": "ce33d6cd9bba5823642749a26d3e6d367a9bab73",
+  "ciRun": "https://github.com/alekpopovic/container-desk/actions/runs/36594720178",
+  "status": "local unsigned release candidate",
+  "published": false,
+  "developerIdSigned": false,
+  "notarized": false,
+  "packages": [
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "file": "packages/x86_64-unknown-linux-gnu/containerdesk-0.1.0-x86_64-unknown-linux-gnu.deb",
+      "bytes": 4980694,
+      "sha256": "fb3deee5d2046822c899b99f278b0f500db34fb796b7a13a17625bfb469e82c9"
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "file": "packages/x86_64-unknown-linux-gnu/containerdesk-0.1.0-x86_64-unknown-linux-gnu.AppImage",
+      "bytes": 83364344,
+      "sha256": "c5956e3f1e9b7f9c6de759864a3c7fb6b0ba56353d526356ecc37eb309f5c0ae"
+    },
+    {
+      "target": "aarch64-apple-darwin",
+      "file": "packages/aarch64-apple-darwin/containerdesk-0.1.0-aarch64-apple-darwin.app.tar.gz",
+      "bytes": 4591863,
+      "sha256": "f326b7bc7469de5f1ba93030f798e400a8f3c0d84c8b30a3c92e45deb2f2208c"
+    },
+    {
+      "target": "aarch64-apple-darwin",
+      "file": "packages/aarch64-apple-darwin/containerdesk-0.1.0-aarch64-apple-darwin.dmg",
+      "bytes": 4617228,
+      "sha256": "ad1cc6f09653785b6a1fa647b83c4e3ba9b15be2b2c385e65bf71ef36320a454"
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "file": "packages/x86_64-apple-darwin/containerdesk-0.1.0-x86_64-apple-darwin.app.tar.gz",
+      "bytes": 4683797,
+      "sha256": "c86fdc2f55a65f2b282e33716144918edcedcb557da0b3856152b1b51417adaa"
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "file": "packages/x86_64-apple-darwin/containerdesk-0.1.0-x86_64-apple-darwin.dmg",
+      "bytes": 4711272,
+      "sha256": "85610a2061828fd6fa770aa0d25aa9f2c9db12b847aa48407410de96c05329d5"
+    }
+  ]
+}
