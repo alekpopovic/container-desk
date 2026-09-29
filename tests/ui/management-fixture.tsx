@@ -41,6 +41,12 @@ export function ManagementFixture() {
         scope: received.scope,
         spec: received.spec,
         outcome: unknown ? "unknown" : "succeeded",
+        results: received.spec.containerIds.map((containerId) => ({
+          containerId,
+          outcome: unknown ? ("unknown" as const) : ("succeeded" as const),
+          dispatched: true,
+          error: null,
+        })),
       };
       activity.current.push({
         id: received.intentId,
@@ -50,6 +56,12 @@ export function ManagementFixture() {
         startedAtMs: 100,
         updatedAtMs: 101,
         outcome: unknown ? "unknown" : "succeeded",
+        results: received.spec.containerIds.map((containerId) => ({
+          containerId,
+          outcome: unknown ? ("unknown" as const) : ("succeeded" as const),
+          dispatched: true,
+          error: null,
+        })),
       });
       if (hold)
         return new Promise((resolve) => {

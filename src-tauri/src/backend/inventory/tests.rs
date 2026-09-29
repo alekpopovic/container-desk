@@ -1762,14 +1762,10 @@ async fn checkpoint032_owned_mutations_and_disconnect_never_replay() {
         "controlled probe mismatch, not an Engine change",
     )
     .unwrap();
-    assert_eq!(
-        backend
-            .mutate_container(drift_request)
-            .await
-            .unwrap_err()
-            .code,
-        ErrorCode::StaleSession
-    );
+    let drift_result = backend.mutate_container(drift_request).await.unwrap();
+    assert_eq!(drift_result.outcome, MutationOutcome::Failed);
+    assert_eq!(drift_result.results[0].error, Some(ErrorCode::StaleSession));
+    assert!(!drift_result.results[0].dispatched);
     assert!(backend.require_session(&next).is_err());
     assert_eq!(
         std::fs::read_to_string(control.join("mutation-count"))
@@ -1785,5 +1781,277 @@ async fn checkpoint032_owned_mutations_and_disconnect_never_replay() {
     backend.shutdown().await;
     println!(
         "PASS native lifecycle through ProxyJump: explicit opt-in and owned full IDs, stop/start/restart states, changed StartedAt, health starting then healthy; response loss after real restart recorded Unknown; reconnect stayed read-only and exact mutation count remained four with no replay; client PATH=/nonexistent."
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires explicit owned 033 batch/removal SSH lab"]
+async fn checkpoint033_owned_batch_partial_cancel_and_stopped_removal() {
+    use std::time::Duration;
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let control = std::path::Path::new(&manifest).parent().unwrap();
+    let root = control.join("batch-app-data");
+    let backend = Backend::new(&root, "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let host_id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: host_id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, host_id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id,
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    let live = ContainerId(lab["liveId"].as_str().unwrap().into());
+    let gone = ContainerId(lab["containerId"].as_str().unwrap().into());
+    let denied = ContainerId(lab["unsupportedId"].as_str().unwrap().into());
+    async fn confirm(
+        backend: &Backend,
+        scope: &SessionScope,
+        ids: &[ContainerId],
+        operation: MutationOperation,
+    ) -> Result<MutationRequest, AppError> {
+        let spec = MutationSpec {
+            operation,
+            container_ids: ids.to_vec(),
+            timeout_seconds: 1,
+        };
+        let intent = backend
+            .prepare_confirmation(PrepareConfirmationRequest {
+                scope: scope.clone(),
+                operation: ConfirmationOperation::Mutation(spec.clone()),
+            })
+            .await?;
+        Ok(MutationRequest {
+            scope: scope.clone(),
+            intent_id: intent.id,
+            spec,
+        })
+    }
+    let count = || {
+        std::fs::read_to_string(control.join("mutation-count"))
+            .unwrap_or_default()
+            .lines()
+            .count()
+    };
+    let baseline = count();
+    assert_eq!(
+        confirm(
+            &backend,
+            &scope,
+            std::slice::from_ref(&live),
+            MutationOperation::Remove
+        )
+        .await
+        .unwrap_err()
+        .code,
+        ErrorCode::ContainerNotStopped
+    );
+    assert_eq!(count(), baseline);
+    let partial = confirm(
+        &backend,
+        &scope,
+        &[live.clone(), gone.clone(), denied.clone()],
+        MutationOperation::Stop,
+    )
+    .await
+    .unwrap();
+    let partial_id = partial.intent_id.clone();
+    std::fs::write(control.join("event-delete"), "owned stopped fixture only").unwrap();
+    tokio::time::timeout(Duration::from_secs(10), async {
+        while !control.join("event-delete-done").exists() {
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+    })
+    .await
+    .unwrap();
+    std::fs::write(
+        control.join("deny-batch-target"),
+        "controlled permission denial",
+    )
+    .unwrap();
+    let response = backend.mutate_container(partial.clone()).await.unwrap();
+    assert_eq!(response.outcome, MutationOutcome::Partial);
+    assert_eq!(
+        response.results[0].outcome,
+        MutationTargetOutcome::Succeeded
+    );
+    assert!(response.results[0].dispatched);
+    assert_eq!(
+        response.results[1].error,
+        Some(ErrorCode::ContainerNotFound)
+    );
+    assert!(!response.results[1].dispatched);
+    assert_eq!(response.results[2].error, Some(ErrorCode::PermissionDenied));
+    assert!(response.results[2].dispatched);
+    assert_eq!(count(), baseline + 2);
+    assert!(backend.mutate_container(partial).await.is_err());
+    std::fs::remove_file(control.join("deny-batch-target")).unwrap();
+    {
+        let pending = confirm(
+            &backend,
+            &scope,
+            &[live.clone(), denied.clone()],
+            MutationOperation::Start,
+        )
+        .await
+        .unwrap();
+        let cancel = CancelMutationRequest {
+            scope: scope.clone(),
+            intent_id: pending.intent_id.clone(),
+        };
+        std::fs::write(
+            control.join("hold-mutation"),
+            "hold owned response after action",
+        )
+        .unwrap();
+        let dispatched = backend.mutate_container(pending);
+        tokio::pin!(dispatched);
+        tokio::select! {
+            result = &mut dispatched => panic!("batch completed before controlled cancellation: {result:?}"),
+            result = tokio::time::timeout(Duration::from_secs(20), async {while !control.join("mutation-dispatched").exists() {tokio::time::sleep(Duration::from_millis(25)).await;}}) => result.unwrap(),
+        }
+        let mut foreign = cancel.clone();
+        foreign.scope.session_generation += 1;
+        assert!(
+            !backend
+                .cancel_mutation(foreign)
+                .unwrap()
+                .pending_cancellation_requested
+        );
+        assert!(
+            backend
+                .cancel_mutation(cancel)
+                .unwrap()
+                .pending_cancellation_requested
+        );
+        std::fs::remove_file(control.join("hold-mutation")).unwrap();
+        let response = dispatched.await.unwrap();
+        assert_eq!(
+            response.results[0].outcome,
+            MutationTargetOutcome::Succeeded
+        );
+        assert!(response.results[0].dispatched);
+        assert_eq!(
+            response.results[1].outcome,
+            MutationTargetOutcome::Cancelled
+        );
+        assert!(!response.results[1].dispatched);
+        assert_eq!(count(), baseline + 3);
+    }
+    // The exact target becomes running after removal confirmation: application recheck refuses it.
+    let stop = confirm(
+        &backend,
+        &scope,
+        std::slice::from_ref(&live),
+        MutationOperation::Stop,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        backend.mutate_container(stop).await.unwrap().outcome,
+        MutationOutcome::Succeeded
+    );
+    let removal = confirm(
+        &backend,
+        &scope,
+        std::slice::from_ref(&live),
+        MutationOperation::Remove,
+    )
+    .await
+    .unwrap();
+    let start = confirm(
+        &backend,
+        &scope,
+        std::slice::from_ref(&live),
+        MutationOperation::Start,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        backend.mutate_container(start).await.unwrap().outcome,
+        MutationOutcome::Succeeded
+    );
+    let before_refusal = count();
+    let refused = backend.mutate_container(removal).await.unwrap();
+    assert_eq!(
+        refused.results[0].error,
+        Some(ErrorCode::ContainerNotStopped)
+    );
+    assert!(!refused.results[0].dispatched);
+    assert_eq!(count(), before_refusal);
+    let stop = confirm(
+        &backend,
+        &scope,
+        std::slice::from_ref(&live),
+        MutationOperation::Stop,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        backend.mutate_container(stop).await.unwrap().outcome,
+        MutationOutcome::Succeeded
+    );
+    let removal = confirm(
+        &backend,
+        &scope,
+        &[live.clone(), denied.clone()],
+        MutationOperation::Remove,
+    )
+    .await
+    .unwrap();
+    let removed = backend.mutate_container(removal).await.unwrap();
+    assert_eq!(removed.outcome, MutationOutcome::Succeeded);
+    assert!(removed.results.iter().all(|r| r.dispatched));
+    assert!(
+        backend
+            .list_containers(ListContainersRequest {
+                scope: scope.clone()
+            })
+            .await
+            .unwrap()
+            .containers
+            .is_empty()
+    );
+    let records = backend.activity_records().unwrap();
+    assert_eq!(
+        records.iter().find(|r| r.id == partial_id).unwrap().outcome,
+        crate::activity::ActivityOutcome::Partial
+    );
+    backend.shutdown().await;
+    drop(backend);
+    let reopened = Backend::new(&root, "/unused-lab-home".into());
+    assert_eq!(reopened.activity_records().unwrap(), records);
+    reopened.shutdown().await;
+    assert_eq!(count(), baseline + 8);
+    println!(
+        "PASS native batch over strict ProxyJump: success, actual disappearance, controlled permission denial individually retained; pending cancellation preserved dispatched success and sent no second command; running removal refused at preparation and again after a real state race; two stopped removals succeeded without force/volume flags; durable partial history survived reopen; exact eight commands, no replay, PATH=/nonexistent."
     );
 }

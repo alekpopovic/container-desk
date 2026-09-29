@@ -32,6 +32,7 @@ const messages: Record<ErrorCode, string> = {
   log_driver_unsupported:
     "This container logging driver does not support reading logs.",
   container_not_found: "The container no longer exists. Refresh the inventory.",
+  container_not_stopped: "Only stopped containers can be removed.",
   host_not_found: "Saved host does not exist.",
   session_not_found: "Connection session does not exist.",
   stale_session: "The connection changed. Refresh the selected host.",
@@ -1500,6 +1501,7 @@ import type {
   ManagementState,
   MutationSpec,
   MutationResponse,
+  MutationTargetResult,
 } from "./generated.ts";
 function sameMutation(value: unknown, expected: MutationSpec): boolean {
   return (
@@ -1554,6 +1556,42 @@ export async function prepareMutation(
     throw new IpcError("invalid_response");
   return value as unknown as ConfirmationIntent;
 }
+function targetResults(
+  value: unknown,
+  ids: string[],
+): value is MutationTargetResult[] {
+  return (
+    Array.isArray(value) &&
+    value.length === ids.length &&
+    value.length <= 20 &&
+    value.every(
+      (r, i) =>
+        record(r) &&
+        r.containerId === ids[i] &&
+        typeof r.dispatched === "boolean" &&
+        [
+          "not_dispatched",
+          "succeeded",
+          "failed",
+          "unknown",
+          "cancelled",
+        ].includes(r.outcome as string) &&
+        (r.error === null ||
+          (typeof r.error === "string" && Object.hasOwn(messages, r.error))) &&
+        (["not_dispatched", "cancelled"].includes(r.outcome as string)
+          ? !r.dispatched
+          : ["succeeded", "unknown"].includes(r.outcome as string)
+            ? r.dispatched
+            : true),
+    )
+  );
+}
+function aggregateTargets(results: MutationTargetResult[]): string {
+  if (results.some((r) => r.outcome === "unknown")) return "unknown";
+  for (const outcome of ["succeeded", "failed", "cancelled", "not_dispatched"])
+    if (results.every((r) => r.outcome === outcome)) return outcome;
+  return "partial";
+}
 export async function mutateContainer(
   selected: SessionScope,
   spec: MutationSpec,
@@ -1571,7 +1609,13 @@ export async function mutateContainer(
     !scope(value.scope) ||
     !sameScope(value.scope, selected) ||
     !sameMutation(value.spec, spec) ||
-    !["succeeded", "failed", "unknown"].includes(value.outcome as string)
+    !["succeeded", "failed", "unknown", "partial", "cancelled"].includes(
+      value.outcome as string,
+    ) ||
+    !targetResults(value.results, spec.containerIds) ||
+    (aggregateTargets(value.results) === "not_dispatched"
+      ? "cancelled"
+      : aggregateTargets(value.results)) !== value.outcome
   )
     throw new IpcError("invalid_response");
   return value as unknown as MutationResponse;
@@ -1588,7 +1632,7 @@ export async function getActivity(): Promise<ActivityRecord[]> {
         /^i_[a-f0-9]{32}$/.test(row.id) &&
         typeof row.hostId === "string" &&
         /^h_[a-f0-9]{32}$/.test(row.hostId) &&
-        ["start", "stop", "restart"].includes(row.action as string) &&
+        ["start", "stop", "restart", "remove"].includes(row.action as string) &&
         Array.isArray(row.targets) &&
         row.targets.length > 0 &&
         row.targets.length <= 20 &&
@@ -1601,9 +1645,16 @@ export async function getActivity(): Promise<ActivityRecord[]> {
         Number.isSafeInteger(row.updatedAtMs) &&
         (row.updatedAtMs as number) >= (row.startedAtMs as number) &&
         (row.updatedAtMs as number) <= 253402300799999 &&
-        ["not_dispatched", "unknown", "succeeded", "failed"].includes(
-          row.outcome as string,
-        ),
+        [
+          "not_dispatched",
+          "unknown",
+          "succeeded",
+          "failed",
+          "partial",
+          "cancelled",
+        ].includes(row.outcome as string) &&
+        targetResults(row.results, row.targets as string[]) &&
+        aggregateTargets(row.results) === row.outcome,
     )
   )
     throw new IpcError("invalid_response");
@@ -1625,4 +1676,14 @@ export async function getManagement(
   )
     throw new IpcError("invalid_response");
   return value as unknown as ManagementState;
+}
+
+export async function cancelMutation(
+  selected: SessionScope,
+  intentId: string,
+): Promise<import("./generated.ts").CancelMutationResponse> {
+  const value = await call("cancel_mutation", { scope: selected, intentId });
+  if (!record(value) || typeof value.pendingCancellationRequested !== "boolean")
+    throw new IpcError("invalid_response");
+  return value as unknown as import("./generated.ts").CancelMutationResponse;
 }

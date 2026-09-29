@@ -29,6 +29,7 @@ pub fn run() {
             commands::get_activity,
             commands::set_management,
             commands::get_management,
+            commands::cancel_mutation,
             commands::get_host_inventory,
             commands::save_host,
             commands::remove_host,

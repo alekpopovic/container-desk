@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -43,7 +43,12 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             # Settle WebKit's viewport after transient clipboard fields/virtualized rows.
             script('arguments[0].scrollIntoView({block: "center", behavior: "instant"})', {ELEMENT: node})
             time.sleep(.15)
-            command('POST', f'/element/{node}/click', {})
+            try:
+                command('POST', f'/element/{node}/click', {})
+            except urllib.error.HTTPError as error:
+                details = error.read().decode()
+                (artifacts / 'native-click-failure.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
+                raise AssertionError('Native click failed: ' + xpath + ': ' + details) from error
         def button(name): click(f'//button[normalize-space(.)="{name}"]')
         def fill(label, value):
             node = element(f'//label[normalize-space(text())="{label}"]/input')
@@ -90,6 +95,35 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
             wait('return document.querySelectorAll("[data-container-id]").length === 3')
             click(f'//tr[@data-container-id="{live_id}"]//button')
+            if batch:
+                ids = script('return Array.from(document.querySelectorAll("[data-container-id]"), row => row.dataset.containerId)')
+                stopped = [ident for ident in ids if ident != live_id]
+                for ident in [live_id, stopped[0]]: click(f'//tr[@data-container-id="{ident}"]//input[@type="checkbox"]')
+                button('Enable batch management')
+                wait('return Array.from(document.querySelectorAll(".batch-management button")).some(b=>b.textContent === "Stop selected" && !b.disabled)')
+                fill('Batch stop timeout (seconds)', '1')
+                assert script('return Array.from(document.querySelectorAll(".batch-management button")).find(b=>b.textContent === "Remove selected stopped containers").disabled')
+                button('Stop selected')
+                wait('return document.querySelector(".mutation-confirmation")?.innerText.includes("' + live_id + '")')
+                assert script('return document.querySelector(".mutation-confirmation").innerText.includes(arguments[0])', stopped[0])
+                (artifacts / 'native-batch-confirmation.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                button('Confirm selected action')
+                wait('return document.querySelectorAll(".batch-results [data-outcome=succeeded]").length === 2', 30)
+                script('document.querySelector(".batch-results").scrollIntoView({block:"center",behavior:"instant"})')
+                (artifacts / 'native-batch-results.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                wait('return Array.from(document.querySelectorAll(".batch-management button")).some(b=>b.textContent === "Remove selected stopped containers" && !b.disabled)')
+                button('Remove selected stopped containers')
+                wait('return document.querySelector(".mutation-confirmation")?.getAttribute("aria-label") === "Confirm stopped-container removal"')
+                assert script('return Array.from(document.querySelectorAll(".batch-management button")).find(b=>b.textContent === "Confirm selected action").disabled')
+                button('Cancel batch confirmation')
+                button('Clear batch selection')
+                click(f'//tr[@data-container-id="{live_id}"]//input[@type="checkbox"]')
+                wait('return Array.from(document.querySelectorAll(".batch-management button")).some(b=>b.textContent === "Start selected" && !b.disabled)')
+                button('Start selected')
+                button('Confirm selected action')
+                wait('return document.querySelectorAll(".batch-results [data-outcome=succeeded]").length === 1', 30)
+                button('Clear batch selection')
+                print('PASS native batch UI: two explicit full IDs and host, sequential stop results retained, running removal disabled, stopped removal separate acknowledgement and cancellation sent nothing, selected live fixture restored.', flush=True)
             if management:
                 wait('return document.querySelector(".inspect-detail")?.getAttribute("aria-busy") === "false"')
                 button('Enable management')

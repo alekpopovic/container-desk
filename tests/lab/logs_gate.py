@@ -11,6 +11,7 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mvp', action='store_true')
+parser.add_argument('--batch', action='store_true')
 parser.add_argument('--management', action='store_true')
 parser.add_argument('--config', required=True)
 parser.add_argument('--control', type=Path)
@@ -36,10 +37,15 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
     if args.management and args.control and (args.control / 'mutation-identity-drift').exists() and len(operation) == 3 and operation[:2] == ['info', '--format']:
         print('{"id":"controlled-drift-032","os":"linux","security":[]}')
         sys.exit(0)
-    if args.management and operation and operation[0] in ('start', 'stop', 'restart'):
-        valid = (operation == ['start', '--', args.owned[-1]]) or (len(operation) == 5 and operation[0] in ('stop', 'restart') and operation[1] == '-t' and operation[2].isdigit() and 1 <= int(operation[2]) <= 120 and operation[3:] == ['--', args.owned[-1]])
+    if args.management and operation and operation[0] in ('start', 'stop', 'restart', 'rm'):
+        target = operation[-1]
+        admitted = target in args.owned if args.batch else target == args.owned[-1]
+        valid = admitted and ((operation == ['start', '--', target]) or (args.batch and operation == ['rm', '--', target]) or (len(operation) == 5 and operation[0] in ('stop', 'restart') and operation[1] == '-t' and operation[2].isdigit() and 1 <= int(operation[2]) <= 120 and operation[3:] == ['--', target]))
         if not valid or not args.control: sys.exit(126)
         with (args.control / 'mutation-count').open('a') as counter: counter.write(operation[0] + '\n')
+        if args.batch and target == args.owned[1] and (args.control / 'deny-batch-target').exists():
+            print('Permission denied by owned test gate', file=sys.stderr)
+            sys.exit(1)
         completed = subprocess.run(['/bin/sh', '-c', original], env=env, timeout=140)
         if (args.control / 'hold-mutation').exists():
             (args.control / 'mutation-dispatched').write_text(operation[0])
@@ -54,6 +60,8 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
             while not (args.control / 'stats-removed').exists() and time.monotonic() < deadline:
                 time.sleep(.02)
             if not (args.control / 'stats-removed').exists(): sys.exit(124)
+    if len(operation) == 7 and operation[:4] == ['inspect', '--type', 'container', '--format'] and operation[4] == '{"state":{{json .State.Status}},"running":{{json .State.Running}}}' and operation[5] == '--' and operation[6] in args.owned:
+        allowed = True
     if len(operation) == 7 and operation[:4] == ['inspect', '--type', 'container', '--format'] and operation[4] == '{"running":{{json .State.Running}},"startedAt":{{json .State.StartedAt}}}' and operation[5] == '--' and operation[6] in args.owned:
         allowed = True
     if operation[:3] == ['logs', '--follow', '--timestamps']:

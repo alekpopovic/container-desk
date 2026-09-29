@@ -14,7 +14,7 @@ export type SessionScope = { selection: HostSelection, sessionId: SessionId,
  * Backend-issued epoch; changes after reconnect or daemon/context changes.
  */
 sessionGeneration: number, daemonId: string, };
-export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "container_not_found" | "log_driver_unsupported" | "export_failed" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
+export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "container_not_found" | "container_not_stopped" | "log_driver_unsupported" | "export_failed" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
 export type AppError = { code: ErrorCode, message: string, scope: SessionScope | null, };
 export type ConnectionState = "disconnected" | "resolving" | "connecting" | "probing" | "ready" | "degraded" | "error";
 export type HostCapabilities = { docker: boolean, compose: boolean, management: boolean, terminal: boolean, };
@@ -81,9 +81,9 @@ export type IntentId = string;
 export type HostAccess = "read_only" | "manage" | "manage_and_terminal";
 export type SetManagementRequest = { scope: SessionScope, enabled: boolean, };
 export type ManagementState = { scope: SessionScope, enabled: boolean, };
-export type ActivityRecord = { id: IntentId, hostId: HostId, action: MutationOperation, targets: Array<ContainerId>, startedAtMs: number, updatedAtMs: number, outcome: ActivityOutcome, };
-export type ActivityOutcome = "not_dispatched" | "unknown" | "succeeded" | "failed";
-export type MutationOperation = "start" | "stop" | "restart";
+export type ActivityRecord = { id: IntentId, hostId: HostId, action: MutationOperation, targets: Array<ContainerId>, startedAtMs: number, updatedAtMs: number, outcome: ActivityOutcome, results: Array<MutationTargetResult>, };
+export type ActivityOutcome = "not_dispatched" | "unknown" | "succeeded" | "failed" | "partial" | "cancelled";
+export type MutationOperation = "start" | "stop" | "restart" | "remove";
 export type MutationSpec = { operation: MutationOperation, containerIds: Array<ContainerId>, timeoutSeconds: number, };
 export type TerminalShell = "sh" | "bash";
 export type TerminalSpec = { containerId: ContainerId, shell: TerminalShell, columns: number, rows: number, };
@@ -91,8 +91,12 @@ export type ConfirmationOperation = { "category": "mutation", "spec": MutationSp
 export type PrepareConfirmationRequest = { scope: SessionScope, operation: ConfirmationOperation, };
 export type ConfirmationIntent = { id: IntentId, scope: SessionScope, operation: ConfirmationOperation, expiresInMs: number, };
 export type MutationRequest = { scope: SessionScope, intentId: IntentId, spec: MutationSpec, };
-export type MutationOutcome = "succeeded" | "failed" | "unknown";
-export type MutationResponse = { scope: SessionScope, spec: MutationSpec, outcome: MutationOutcome, };
+export type MutationOutcome = "succeeded" | "failed" | "unknown" | "partial" | "cancelled";
+export type MutationTargetOutcome = "not_dispatched" | "succeeded" | "failed" | "unknown" | "cancelled";
+export type MutationTargetResult = { containerId: ContainerId, outcome: MutationTargetOutcome, dispatched: boolean, error: ErrorCode | null, };
+export type CancelMutationRequest = { scope: SessionScope, intentId: IntentId, };
+export type CancelMutationResponse = { pendingCancellationRequested: boolean, };
+export type MutationResponse = { scope: SessionScope, spec: MutationSpec, outcome: MutationOutcome, results: Array<MutationTargetResult>, };
 export type TerminalRequest = { scope: SessionScope, intentId: IntentId, spec: TerminalSpec, };
 export type TerminalResponse = { scope: SessionScope, terminalId: SubscriptionId, };
 export type InspectContainerRequest = { scope: SessionScope, containerId: ContainerId,

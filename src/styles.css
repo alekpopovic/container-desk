@@ -1251,3 +1251,50 @@ legend {
   background: var(--surface);
   color: var(--foreground);
 }
+.batch-management {
+  grid-column: 1 / -1;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.batch-management .mutation-confirmation li {
+  margin-top: 0.5rem;
+  overflow-wrap: anywhere;
+}
+.batch-management .mutation-confirmation code,
+.batch-results code {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.batch-results li {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.batch-results [data-outcome="unknown"],
+.batch-results [data-outcome="failed"] {
+  color: var(--danger);
+}
+.container-table input[type="checkbox"],
+.batch-management .removal-ack input {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+}
+
+.container-name-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.container-name-controls .container-select {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.container-name-controls input[type="checkbox"] {
+  flex: none;
+  margin: 0;
+}

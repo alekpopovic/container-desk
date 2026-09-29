@@ -1,0 +1,15 @@
+033 release UI and native backend
+PASS native batch UI: two explicit full IDs and host, sequential stop results retained, running removal disabled, stopped removal separate acknowledgement and cancellation sent nothing, selected live fixture restored.
+PASS native release Tauri channel: actual follow batches, event-loop stall/drop marker, bounded preview, stop, timestamp resume, route unmount; app storage/diagnostics clean.
+PASS native batch over strict ProxyJump: success, actual disappearance, controlled permission denial individually retained; pending cancellation preserved dispatched success and sent no second command; running removal refused at preparation and again after a real state race; two stopped removals succeeded without force/volume flags; durable partial history survived reopen; exact eight commands, no replay, PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 138 filtered out; finished in 20.17s
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: batch partial outcomes, cancellation, stopped removal and native state race checks.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
+032 interruption regression
+PASS controlled daemon identity drift after confirmation: native SSH probe mismatch invalidated the session before mutation dispatch; command count unchanged.
+PASS native lifecycle through ProxyJump: explicit opt-in and owned full IDs, stop/start/restart states, changed StartedAt, health starting then healthy; response loss after real restart recorded Unknown; reconnect stayed read-only and exact mutation count remained four with no replay; client PATH=/nonexistent.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 138 filtered out; finished in 34.93s
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: explicitly enabled owned lifecycle actions and post-dispatch loss had no replay; strict client trust unchanged.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.

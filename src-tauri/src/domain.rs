@@ -118,6 +118,7 @@ pub enum ErrorCode {
     InvalidGeneration,
     HostNotFound,
     ContainerNotFound,
+    ContainerNotStopped,
     LogDriverUnsupported,
     ExportFailed,
     SessionNotFound,
@@ -164,6 +165,7 @@ impl AppError {
             ErrorCode::LogDriverUnsupported => {
                 "This container logging driver does not support reading logs."
             }
+            ErrorCode::ContainerNotStopped => "Only stopped containers can be removed.",
             ErrorCode::ContainerNotFound => {
                 "The container no longer exists. Refresh the inventory."
             }
@@ -602,6 +604,7 @@ pub enum MutationOperation {
     Start,
     Stop,
     Restart,
+    Remove,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -670,6 +673,40 @@ pub enum MutationOutcome {
     Succeeded,
     Failed,
     Unknown,
+    Partial,
+    Cancelled,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum MutationTargetOutcome {
+    NotDispatched,
+    Succeeded,
+    Failed,
+    Unknown,
+    Cancelled,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct MutationTargetResult {
+    pub container_id: ContainerId,
+    pub outcome: MutationTargetOutcome,
+    pub dispatched: bool,
+    pub error: Option<ErrorCode>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct CancelMutationRequest {
+    pub scope: SessionScope,
+    pub intent_id: IntentId,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct CancelMutationResponse {
+    pub pending_cancellation_requested: bool,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -678,6 +715,7 @@ pub struct MutationResponse {
     pub scope: SessionScope,
     pub spec: MutationSpec,
     pub outcome: MutationOutcome,
+    pub results: Vec<MutationTargetResult>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

@@ -1,4 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BatchManagement } from "../management/BatchManagement";
+import { sameScope } from "../../lib/ipc/client";
 import { ContainerManagement } from "../management/ContainerManagement";
 import { ContainerStats } from "../stats/ContainerStats";
 import { StatsHistory } from "../stats/sampling";
@@ -73,6 +75,20 @@ export function ContainerInventory({
   inspectEnabled?: boolean;
   eventStatus?: string;
 }) {
+  const [checked, setChecked] = useState<Map<string, ContainerSummary>>(
+    () => new Map(),
+  );
+  const [batchBusy, setBatchBusy] = useState(false);
+  const scopeKey = JSON.stringify(view.scope);
+  useEffect(() => {
+    if (scopeKey) {
+      setChecked(new Map());
+      setBatchBusy(false);
+    }
+  }, [scopeKey]);
+  const selected = Array.from(checked.values())
+    .filter((row) => sameScope(row.scope, view.scope))
+    .map((row) => view.rows.find((current) => current.id === row.id) ?? row);
   const [statsHistory] = useState(() => new StatsHistory());
   const [search, setSearch] = useState("");
   const [state, setState] = useState("all");
@@ -266,15 +282,38 @@ export function ContainerInventory({
                   aria-rowindex={start + offset + 2}
                 >
                   <td>
-                    <button
-                      className="container-select"
-                      type="button"
-                      aria-pressed={row.id === view.selectedId}
-                      title={row.name}
-                      onClick={() => select(row.id)}
-                    >
-                      {row.name}
-                    </button>
+                    <div className="container-name-controls">
+                      {inspectEnabled && (
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${row.name} (${row.id.slice(0, 12)}) for batch`}
+                          checked={selected.some((item) => item.id === row.id)}
+                          disabled={
+                            batchBusy ||
+                            (!checked.has(row.id) && selected.length >= 20)
+                          }
+                          onChange={(event) => {
+                            const include = event.target.checked;
+                            setChecked((previous) => {
+                              const next = new Map(previous);
+                              if (include && next.size < 20)
+                                next.set(row.id, row);
+                              else if (!include) next.delete(row.id);
+                              return next;
+                            });
+                          }}
+                        />
+                      )}
+                      <button
+                        className="container-select"
+                        type="button"
+                        aria-pressed={row.id === view.selectedId}
+                        title={row.name}
+                        onClick={() => select(row.id)}
+                      >
+                        {row.name}
+                      </button>
+                    </div>
                     {row.compose && (
                       <small className="container-compose">
                         {row.compose.project}
@@ -373,7 +412,7 @@ export function ContainerInventory({
               <dt>Health</dt>
               <dd>{chosen.health ?? "Unknown"}</dd>
             </dl>
-            {inspectEnabled && view.scope && (
+            {inspectEnabled && view.scope && selected.length === 0 && (
               <ContainerManagement
                 key={JSON.stringify([view.scope, chosen.id])}
                 scope={view.scope}
@@ -401,6 +440,18 @@ export function ContainerInventory({
           </div>
         )}
       </aside>
+      {inspectEnabled && view.scope && selected.length > 0 && (
+        <BatchManagement
+          key={scopeKey}
+          scope={view.scope}
+          rows={selected}
+          host={host?.name ?? "Selected host"}
+          stale={view.stale && !view.loading}
+          refresh={refresh}
+          clear={() => setChecked(new Map())}
+          onBusy={setBatchBusy}
+        />
+      )}
       {chosen &&
         inspectEnabled &&
         (!view.stale || view.loading) &&

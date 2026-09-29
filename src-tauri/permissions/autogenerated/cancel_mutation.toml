@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-cancel-mutation"
+description = "Enables the cancel_mutation command without any pre-configured scope."
+commands.allow = ["cancel_mutation"]
+
+[[permission]]
+identifier = "deny-cancel-mutation"
+description = "Denies the cancel_mutation command without any pre-configured scope."
+commands.deny = ["cancel_mutation"]

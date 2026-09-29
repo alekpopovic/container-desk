@@ -5,6 +5,7 @@ fn main() {
             "get_activity",
             "set_management",
             "get_management",
+            "cancel_mutation",
             "get_host_inventory",
             "save_host",
             "remove_host",

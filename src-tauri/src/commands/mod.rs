@@ -554,3 +554,11 @@ pub fn get_management(
 ) -> Result<ManagementState, AppError> {
     backend.management_state(request.scope)
 }
+
+#[tauri::command]
+pub fn cancel_mutation(
+    backend: tauri::State<'_, Backend>,
+    request: CancelMutationRequest,
+) -> Result<CancelMutationResponse, AppError> {
+    backend.cancel_mutation(request)
+}

@@ -1,14 +1,20 @@
 //! Bounded local activity, not a tamper-proof audit log or a replay queue.
 use crate::{
     domain::*,
-    policy::{PolicyEngine, registry::CommandPlan},
+    policy::{
+        PolicyEngine,
+        registry::{self, CommandPlan},
+    },
     storage::{FileStorage, Storage},
 };
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     path::Path,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc, Mutex,
+        atomic::{AtomicBool, Ordering},
+    },
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -24,6 +30,8 @@ pub enum ActivityOutcome {
     Unknown,
     Succeeded,
     Failed,
+    Partial,
+    Cancelled,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -38,6 +46,8 @@ pub struct ActivityRecord {
     #[cfg_attr(test, ts(type = "number"))]
     pub updated_at_ms: u64,
     pub outcome: ActivityOutcome,
+    #[serde(default)]
+    pub results: Vec<MutationTargetResult>,
 }
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -45,10 +55,15 @@ struct History {
     schema_version: u32,
     records: Vec<ActivityRecord>,
 }
+struct Active {
+    scope: SessionScope,
+    id: IntentId,
+    cancelled: Arc<AtomicBool>,
+}
 struct State {
     adapter: Box<dyn Storage>,
     history: History,
-    active: HashSet<HostId>,
+    active: HashMap<HostId, Active>,
     persistence_failed: bool,
 }
 #[derive(Clone)]
@@ -61,7 +76,10 @@ pub struct Operation {
     state: Arc<Mutex<State>>,
     host: HostId,
     id: IntentId,
-    plan: Option<CommandPlan>,
+    spec: MutationSpec,
+    cursor: usize,
+    inflight: Option<ContainerId>,
+    cancelled: Arc<AtomicBool>,
 }
 fn storage_error() -> AppError {
     AppError::new(ErrorCode::StorageUnavailable)
@@ -73,12 +91,64 @@ fn now_ms() -> Result<u64, AppError> {
         .and_then(|d| d.as_millis().try_into().ok())
         .ok_or_else(|| AppError::new(ErrorCode::Internal))
 }
+pub(crate) fn aggregate(results: &[MutationTargetResult]) -> ActivityOutcome {
+    if results
+        .iter()
+        .any(|r| r.outcome == MutationTargetOutcome::Unknown)
+    {
+        ActivityOutcome::Unknown
+    } else if results
+        .iter()
+        .all(|r| r.outcome == MutationTargetOutcome::Succeeded)
+    {
+        ActivityOutcome::Succeeded
+    } else if results
+        .iter()
+        .all(|r| r.outcome == MutationTargetOutcome::Failed)
+    {
+        ActivityOutcome::Failed
+    } else if results
+        .iter()
+        .all(|r| r.outcome == MutationTargetOutcome::Cancelled)
+    {
+        ActivityOutcome::Cancelled
+    } else if results
+        .iter()
+        .all(|r| r.outcome == MutationTargetOutcome::NotDispatched)
+    {
+        ActivityOutcome::NotDispatched
+    } else {
+        ActivityOutcome::Partial
+    }
+}
+pub(crate) fn response_outcome(results: &[MutationTargetResult]) -> MutationOutcome {
+    match aggregate(results) {
+        ActivityOutcome::Unknown => MutationOutcome::Unknown,
+        ActivityOutcome::Succeeded => MutationOutcome::Succeeded,
+        ActivityOutcome::Failed => MutationOutcome::Failed,
+        ActivityOutcome::Partial => MutationOutcome::Partial,
+        ActivityOutcome::Cancelled | ActivityOutcome::NotDispatched => MutationOutcome::Cancelled,
+    }
+}
 impl State {
-    fn persist(&mut self, next: History) -> Result<(), AppError> {
-        let bytes = serde_json::to_vec(&next).map_err(|_| storage_error())?;
-        if bytes.len() > MAX_BYTES || self.adapter.commit(&bytes, None).is_err() {
-            // A rename may already have succeeded before a directory fsync error.
-            // Never authorize another dispatch after an uncertain persistence failure.
+    fn persist(&mut self, mut next: History) -> Result<(), AppError> {
+        let bytes = loop {
+            let bytes = serde_json::to_vec(&next).map_err(|_| storage_error())?;
+            if bytes.len() <= MAX_BYTES && next.records.len() <= MAX_RECORDS {
+                break bytes;
+            }
+            let index = next
+                .records
+                .iter()
+                .enumerate()
+                .position(|(i, r)| {
+                    i + 1 < next.records.len()
+                        && !self.active.values().any(|active| active.id == r.id)
+                })
+                .ok_or_else(|| AppError::new(ErrorCode::ResourceLimit))?;
+            next.records.remove(index);
+        };
+        if self.adapter.commit(&bytes, None).is_err() {
             self.persistence_failed = true;
             return Err(storage_error());
         }
@@ -94,21 +164,21 @@ impl Activities {
     }
     pub(crate) fn load(adapter: Box<dyn Storage>) -> Result<Self, AppError> {
         let bytes = adapter.read(false).map_err(|_| storage_error())?;
-        let history: History = match bytes {
+        let mut history: History = match bytes {
             Some(bytes) if bytes.len() <= MAX_BYTES => {
                 serde_json::from_slice(&bytes).map_err(|_| storage_error())?
             }
             Some(_) => return Err(storage_error()),
             None => History {
-                schema_version: 1,
+                schema_version: 2,
                 records: vec![],
             },
         };
-        if history.schema_version != 1 || history.records.len() > MAX_RECORDS {
+        if ![1, 2].contains(&history.schema_version) || history.records.len() > MAX_RECORDS {
             return Err(storage_error());
         }
         let mut seen = HashSet::new();
-        for record in &history.records {
+        for record in &mut history.records {
             record.id.validate().map_err(|_| storage_error())?;
             record.host_id.validate().map_err(|_| storage_error())?;
             if !seen.insert(&record.id)
@@ -116,6 +186,44 @@ impl Activities {
                 || record.targets.len() > 20
                 || record.updated_at_ms > 253_402_300_799_999
                 || record.updated_at_ms < record.started_at_ms
+            {
+                return Err(storage_error());
+            }
+            if history.schema_version == 1 {
+                record.results = record
+                    .targets
+                    .iter()
+                    .map(|id| MutationTargetResult {
+                        container_id: id.clone(),
+                        outcome: match record.outcome {
+                            ActivityOutcome::NotDispatched => MutationTargetOutcome::NotDispatched,
+                            ActivityOutcome::Succeeded if record.targets.len() == 1 => {
+                                MutationTargetOutcome::Succeeded
+                            }
+                            ActivityOutcome::Failed if record.targets.len() == 1 => {
+                                MutationTargetOutcome::Failed
+                            }
+                            _ => MutationTargetOutcome::Unknown,
+                        },
+                        dispatched: record.outcome != ActivityOutcome::NotDispatched,
+                        error: None,
+                    })
+                    .collect();
+                record.outcome = aggregate(&record.results);
+            }
+            if record.results.len() != record.targets.len()
+                || record.outcome != aggregate(&record.results)
+                || record.results.iter().zip(&record.targets).any(|(r, id)| {
+                    &r.container_id != id
+                        || match r.outcome {
+                            MutationTargetOutcome::NotDispatched
+                            | MutationTargetOutcome::Cancelled => r.dispatched,
+                            MutationTargetOutcome::Succeeded | MutationTargetOutcome::Unknown => {
+                                !r.dispatched
+                            }
+                            MutationTargetOutcome::Failed => false,
+                        }
+                })
             {
                 return Err(storage_error());
             }
@@ -127,12 +235,13 @@ impl Activities {
                 }
             }
         }
+        history.schema_version = 2;
         // Unknown records are displayed as stored, never submitted or automatically reconciled.
         Ok(Self {
             state: Arc::new(Mutex::new(State {
                 adapter,
                 history,
-                active: HashSet::new(),
+                active: HashMap::new(),
                 persistence_failed: false,
             })),
         })
@@ -151,7 +260,7 @@ impl Activities {
         policy: &mut PolicyEngine,
         request: MutationRequest,
     ) -> Result<Operation, AppError> {
-        let authorized = policy.consume(
+        let _authorized = policy.consume(
             &request.scope,
             &request.intent_id,
             &ConfirmationOperation::Mutation(request.spec.clone()),
@@ -160,51 +269,120 @@ impl Activities {
         if state.persistence_failed {
             return Err(storage_error());
         }
-        let host = request.scope.selection.host_id;
-        if state.active.contains(&host) || state.active.len() >= MAX_ACTIVE {
+        let host = request.scope.selection.host_id.clone();
+        if state.active.contains_key(&host) || state.active.len() >= MAX_ACTIVE {
             return Err(AppError::new(ErrorCode::ResourceLimit));
+        }
+        if state
+            .history
+            .records
+            .iter()
+            .any(|r| r.id == request.intent_id)
+        {
+            return Err(AppError::new(ErrorCode::InvalidIntent));
         }
         let now = now_ms()?;
         let mut next = state.history.clone();
-        if next.records.len() == MAX_RECORDS {
-            // A running operation's record must survive unrelated completed activity.
-            let index = next
-                .records
-                .iter()
-                .position(|r| !state.active.contains(&r.host_id))
-                .ok_or_else(|| AppError::new(ErrorCode::ResourceLimit))?;
-            next.records.remove(index);
-        }
+        let results = request
+            .spec
+            .container_ids
+            .iter()
+            .map(|id| MutationTargetResult {
+                container_id: id.clone(),
+                outcome: MutationTargetOutcome::NotDispatched,
+                dispatched: false,
+                error: None,
+            })
+            .collect();
         next.records.push(ActivityRecord {
             id: request.intent_id.clone(),
             host_id: host.clone(),
-            action: request.spec.operation,
-            targets: request.spec.container_ids,
+            action: request.spec.operation.clone(),
+            targets: request.spec.container_ids.clone(),
             started_at_ms: now,
             updated_at_ms: now,
             outcome: ActivityOutcome::NotDispatched,
+            results,
         });
         state.persist(next)?;
-        state.active.insert(host.clone());
+        let cancelled = Arc::new(AtomicBool::new(false));
+        state.active.insert(
+            host.clone(),
+            Active {
+                scope: request.scope,
+                id: request.intent_id.clone(),
+                cancelled: cancelled.clone(),
+            },
+        );
         Ok(Operation {
             state: self.state.clone(),
             host,
             id: request.intent_id,
-            plan: Some(authorized.into_plan()),
+            spec: request.spec,
+            cursor: 0,
+            inflight: None,
+            cancelled,
+        })
+    }
+    pub fn cancel(
+        &self,
+        request: &CancelMutationRequest,
+    ) -> Result<CancelMutationResponse, AppError> {
+        request.scope.validate()?;
+        request.intent_id.validate()?;
+        let state = self.state.lock().map_err(|_| storage_error())?;
+        let accepted = state
+            .active
+            .get(&request.scope.selection.host_id)
+            .is_some_and(|active| {
+                if active.scope == request.scope && active.id == request.intent_id {
+                    active.cancelled.store(true, Ordering::SeqCst);
+                    true
+                } else {
+                    false
+                }
+            });
+        Ok(CancelMutationResponse {
+            pending_cancellation_requested: accepted,
         })
     }
 }
 impl Operation {
-    /// Persist Unknown BEFORE allowing the one-use command to leave this owner.
-    /// A crash between this write and spawn is conservatively unknown, never a retry signal.
-    pub fn dispatch(&mut self) -> Result<CommandPlan, AppError> {
-        if self.plan.is_none() {
+    pub fn cancelled(&self) -> bool {
+        self.cancelled.load(Ordering::SeqCst)
+    }
+    fn require_next(&self, id: &ContainerId) -> Result<(), AppError> {
+        if self.inflight.is_some() || self.spec.container_ids.get(self.cursor) != Some(id) {
             return Err(AppError::new(ErrorCode::InvalidIntent));
         }
-        self.update(ActivityOutcome::Unknown)?;
-        Ok(self.plan.take().expect("checked one-use plan"))
+        Ok(())
     }
-    fn update(&self, outcome: ActivityOutcome) -> Result<(), AppError> {
+    pub fn dispatch_target(&mut self, id: &ContainerId) -> Result<CommandPlan, AppError> {
+        self.require_next(id)?;
+        if self.cancelled() {
+            return Err(AppError::new(ErrorCode::OperationCancelled));
+        }
+        let plan = registry::confirmation(&ConfirmationOperation::Mutation(MutationSpec {
+            operation: self.spec.operation.clone(),
+            container_ids: vec![id.clone()],
+            timeout_seconds: self.spec.timeout_seconds,
+        }))?;
+        self.update_target(MutationTargetResult {
+            container_id: id.clone(),
+            outcome: MutationTargetOutcome::Unknown,
+            dispatched: true,
+            error: None,
+        })?;
+        self.inflight = Some(id.clone());
+        Ok(plan)
+    }
+    pub fn dispatch(&mut self) -> Result<CommandPlan, AppError> {
+        if self.spec.container_ids.len() != 1 {
+            return Err(AppError::new(ErrorCode::InvalidLimits));
+        }
+        self.dispatch_target(&self.spec.container_ids[0].clone())
+    }
+    fn update_target(&self, result: MutationTargetResult) -> Result<(), AppError> {
         let mut state = self.state.lock().map_err(|_| storage_error())?;
         if state.persistence_failed {
             return Err(storage_error());
@@ -215,20 +393,67 @@ impl Operation {
             .iter_mut()
             .find(|r| r.id == self.id)
             .ok_or_else(storage_error)?;
+        let target = record
+            .results
+            .iter_mut()
+            .find(|r| r.container_id == result.container_id)
+            .ok_or_else(storage_error)?;
+        *target = result;
         record.updated_at_ms = now_ms()?.max(record.started_at_ms);
-        record.outcome = outcome;
+        record.outcome = aggregate(&record.results);
         state.persist(next)
     }
-    /// Called only after the owning transport has completed and reaped its child.
-    /// Transport loss/cancellation/timeout must pass Unknown, never be retried.
-    pub fn finish(self, outcome: MutationOutcome) -> Result<(), AppError> {
-        if self.plan.is_some() {
-            return Err(AppError::new(ErrorCode::InvalidIntent));
+    /// Called only after the dispatched child's result/reaping, never on a renderer timer.
+    pub fn complete_target(&mut self, result: MutationTargetResult) -> Result<(), AppError> {
+        if result.dispatched {
+            if self.inflight.as_ref() != Some(&result.container_id)
+                || matches!(
+                    result.outcome,
+                    MutationTargetOutcome::NotDispatched | MutationTargetOutcome::Cancelled
+                )
+            {
+                return Err(AppError::new(ErrorCode::InvalidIntent));
+            }
+        } else {
+            self.require_next(&result.container_id)?;
+            if matches!(
+                result.outcome,
+                MutationTargetOutcome::Succeeded | MutationTargetOutcome::Unknown
+            ) {
+                return Err(AppError::new(ErrorCode::InvalidIntent));
+            }
         }
-        self.update(match outcome {
-            MutationOutcome::Succeeded => ActivityOutcome::Succeeded,
-            MutationOutcome::Failed => ActivityOutcome::Failed,
-            MutationOutcome::Unknown => ActivityOutcome::Unknown,
+        self.update_target(result)?;
+        self.inflight = None;
+        self.cursor += 1;
+        Ok(())
+    }
+    pub fn results(&self) -> Result<Vec<MutationTargetResult>, AppError> {
+        let state = self.state.lock().map_err(|_| storage_error())?;
+        state
+            .history
+            .records
+            .iter()
+            .find(|r| r.id == self.id)
+            .map(|r| r.results.clone())
+            .ok_or_else(storage_error)
+    }
+    pub fn finish(mut self, outcome: MutationOutcome) -> Result<(), AppError> {
+        let id = self
+            .inflight
+            .clone()
+            .ok_or_else(|| AppError::new(ErrorCode::InvalidIntent))?;
+        let outcome = match outcome {
+            MutationOutcome::Succeeded => MutationTargetOutcome::Succeeded,
+            MutationOutcome::Failed => MutationTargetOutcome::Failed,
+            MutationOutcome::Unknown => MutationTargetOutcome::Unknown,
+            _ => return Err(AppError::new(ErrorCode::InvalidIntent)),
+        };
+        self.complete_target(MutationTargetResult {
+            container_id: id,
+            outcome,
+            dispatched: true,
+            error: None,
         })
     }
 }

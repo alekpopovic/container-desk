@@ -761,11 +761,30 @@ impl Backend {
             {
                 return Err(AppError::new(ErrorCode::ContainerNotFound));
             }
+            if spec.operation == MutationOperation::Remove
+                && inventory
+                    .containers
+                    .iter()
+                    .filter(|row| spec.container_ids.contains(&row.id))
+                    .any(|row| !["created", "exited"].contains(&row.state.as_str()))
+            {
+                return Err(AppError::new(ErrorCode::ContainerNotStopped));
+            }
         }
         self.policy
             .lock()
             .map_err(|_| AppError::new(ErrorCode::Internal))?
             .prepare(request)
+    }
+    pub fn cancel_mutation(
+        &self,
+        request: CancelMutationRequest,
+    ) -> Result<CancelMutationResponse, AppError> {
+        self.require_live_mode()?;
+        self.activities
+            .as_ref()
+            .map_err(Clone::clone)?
+            .cancel(&request)
     }
     pub fn activity_records(&self) -> Result<Vec<crate::activity::ActivityRecord>, AppError> {
         self.require_live_mode()?;

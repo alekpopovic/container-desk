@@ -19,6 +19,70 @@ fn outcome(result: &Result<Captured, RunError>) -> MutationOutcome {
         _ => MutationOutcome::Unknown,
     }
 }
+fn diagnostic(output: &Captured) -> Option<ErrorCode> {
+    let text = String::from_utf8_lossy(&output.stderr).to_ascii_lowercase();
+    if text.contains("no such container") || text.contains("no such object") {
+        Some(ErrorCode::ContainerNotFound)
+    } else if text.contains("permission denied") || text.contains("access denied") {
+        Some(ErrorCode::PermissionDenied)
+    } else {
+        None
+    }
+}
+async fn preflight(
+    client: &Client,
+    options: &DockerOptions,
+    binding: &super::probe::VerifiedDocker,
+    request: &MutationRequest,
+    id: &ContainerId,
+    current: &Current,
+) -> Result<DockerProbeReport, AppError> {
+    current()?;
+    let (fresh, _) = super::probe::run(client, options).await;
+    if fresh.daemon_id.as_deref() != Some(request.scope.daemon_id.as_str()) {
+        return Err(AppError::new(ErrorCode::StaleSession));
+    }
+    let state = binding.prepare(
+        registry::read(&registry::ReadOperation::RemovalState {
+            container_id: id.clone(),
+        })?,
+        &fresh,
+    )?;
+    let output = client
+        .start_fixed(
+            state.encoded().to_string(),
+            Limits {
+                deadline: Duration::from_secs(10),
+                stdout_bytes: 4096,
+                stderr_bytes: 8192,
+            },
+        )?
+        .wait()
+        .await
+        .map_err(|_| AppError::new(ErrorCode::TransportUnavailable))?;
+    if !output.status.success() {
+        return Err(AppError::new(
+            diagnostic(&output).unwrap_or(ErrorCode::TransportUnavailable),
+        ));
+    }
+    #[derive(serde::Deserialize)]
+    struct State {
+        state: String,
+        running: bool,
+    }
+    let state: State = serde_json::from_slice(&output.stdout)
+        .map_err(|_| AppError::new(ErrorCode::InvalidResponse))?;
+    if state.state.len() > 32 || state.state.chars().any(char::is_control) {
+        return Err(AppError::new(ErrorCode::InvalidResponse));
+    }
+    if request.spec.operation == MutationOperation::Remove
+        && (state.running || !["exited", "created"].contains(&state.state.as_str()))
+    {
+        return Err(AppError::new(ErrorCode::ContainerNotStopped));
+    }
+    current()?;
+    Ok(fresh)
+}
 pub(crate) async fn run(
     client: &Client,
     options: &DockerOptions,
@@ -27,58 +91,104 @@ pub(crate) async fn run(
     mut owner: Operation,
     current: Current,
 ) -> Result<MutationResponse, AppError> {
-    let fresh = tokio::time::timeout(Duration::from_secs(30), async {
-        current()?;
-        let inventory = super::listing::read(client, options, binding, &request.scope).await?;
-        if !request
-            .spec
-            .container_ids
-            .iter()
-            .all(|id| inventory.containers.iter().any(|row| &row.id == id))
-        {
-            return Err(AppError::new(ErrorCode::ContainerNotFound).in_scope(&request.scope));
+    let mut halted = None;
+    for id in &request.spec.container_ids {
+        if owner.cancelled() || halted.is_some() {
+            owner.complete_target(MutationTargetResult {
+                container_id: id.clone(),
+                outcome: MutationTargetOutcome::Cancelled,
+                dispatched: false,
+                error: halted.clone().or(Some(ErrorCode::OperationCancelled)),
+            })?;
+            continue;
         }
-        let (fresh, _) = super::probe::run(client, options).await;
-        if fresh.daemon_id.as_deref() != Some(request.scope.daemon_id.as_str()) {
-            return Err(AppError::new(ErrorCode::StaleSession));
+        let fresh = tokio::time::timeout(
+            Duration::from_secs(30),
+            preflight(client, options, binding, &request, id, &current),
+        )
+        .await
+        .map_err(|_| AppError::new(ErrorCode::OperationTimedOut))
+        .and_then(|result| result);
+        let fresh = match fresh {
+            Ok(fresh) => fresh,
+            Err(error) => {
+                if matches!(
+                    error.code,
+                    ErrorCode::StaleSession
+                        | ErrorCode::Disconnected
+                        | ErrorCode::SessionNotFound
+                        | ErrorCode::TransportUnavailable
+                        | ErrorCode::OperationTimedOut
+                ) {
+                    halted = Some(error.code.clone());
+                }
+                owner.complete_target(MutationTargetResult {
+                    container_id: id.clone(),
+                    outcome: MutationTargetOutcome::Failed,
+                    dispatched: false,
+                    error: Some(error.code),
+                })?;
+                continue;
+            }
+        };
+        // Pending cancellation never interrupts the child for a target already dispatched.
+        if owner.cancelled() {
+            owner.complete_target(MutationTargetResult {
+                container_id: id.clone(),
+                outcome: MutationTargetOutcome::Cancelled,
+                dispatched: false,
+                error: Some(ErrorCode::OperationCancelled),
+            })?;
+            continue;
         }
-        // Reject changed endpoint/context before recording dispatch intent.
-        binding.prepare(
-            registry::confirmation(&ConfirmationOperation::Mutation(request.spec.clone()))?,
-            &fresh,
-        )?;
-        current()?;
-        Ok(fresh)
-    })
-    .await
-    .map_err(|_| AppError::new(ErrorCode::OperationTimedOut))??;
-    let command = binding.prepare(owner.dispatch()?, &fresh)?;
-    let result = match client.start_fixed(
-        command.encoded().to_owned(),
-        Limits {
-            deadline: Duration::from_secs(command.timeout_seconds().into()),
-            stdout_bytes: 64 * 1024,
-            stderr_bytes: 64 * 1024,
-        },
-    ) {
-        Ok(job) => job.wait().await,
-        // Dispatch ownership was committed; remain conservative even if local startup failed.
-        Err(_) => {
-            owner.finish(MutationOutcome::Unknown)?;
-            return Ok(MutationResponse {
-                scope: request.scope,
-                spec: request.spec,
-                outcome: MutationOutcome::Unknown,
-            });
-        }
-    };
-    let observed = outcome(&result);
-    // The job's owner has already reaped its process; discard command output without logging it.
-    owner.finish(observed.clone())?;
+        let plan = match owner.dispatch_target(id) {
+            Ok(plan) => plan,
+            Err(error) if error.code == ErrorCode::OperationCancelled => {
+                owner.complete_target(MutationTargetResult {
+                    container_id: id.clone(),
+                    outcome: MutationTargetOutcome::Cancelled,
+                    dispatched: false,
+                    error: Some(error.code),
+                })?;
+                continue;
+            }
+            Err(error) => return Err(error),
+        };
+        let command = binding.prepare(plan, &fresh)?;
+        let result = match client.start_fixed(
+            command.encoded().to_owned(),
+            Limits {
+                deadline: Duration::from_secs(command.timeout_seconds().into()),
+                stdout_bytes: 64 * 1024,
+                stderr_bytes: 64 * 1024,
+            },
+        ) {
+            Ok(job) => job.wait().await,
+            Err(_) => Err(RunError::Unavailable),
+        };
+        let observed = outcome(&result);
+        let error = result.as_ref().ok().and_then(diagnostic);
+        let target_outcome = match observed {
+            MutationOutcome::Succeeded => MutationTargetOutcome::Succeeded,
+            MutationOutcome::Failed => MutationTargetOutcome::Failed,
+            _ => {
+                halted = Some(ErrorCode::TransportUnavailable);
+                MutationTargetOutcome::Unknown
+            }
+        };
+        owner.complete_target(MutationTargetResult {
+            container_id: id.clone(),
+            outcome: target_outcome,
+            dispatched: true,
+            error: error.or_else(|| halted.clone()),
+        })?;
+    }
+    let results = owner.results()?;
     Ok(MutationResponse {
         scope: request.scope,
         spec: request.spec,
-        outcome: observed,
+        outcome: crate::activity::response_outcome(&results),
+        results,
     })
 }
 #[cfg(test)]

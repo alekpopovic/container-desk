@@ -38,6 +38,9 @@ pub enum ReadOperation {
     ContainerStats {
         container_id: ContainerId,
     },
+    RemovalState {
+        container_id: ContainerId,
+    },
     StatsState {
         container_id: ContainerId,
     },
@@ -205,6 +208,24 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
                 30,
             )
         }
+        ReadOperation::RemovalState { container_id } => {
+            container_id.validate()?;
+            plan(
+                &[
+                    "docker",
+                    "inspect",
+                    "--type",
+                    "container",
+                    "--format",
+                    r#"{"state":{{json .State.Status}},"running":{{json .State.Running}}}"#,
+                    "--",
+                    &container_id.0,
+                ],
+                OperationCategory::Read,
+                ResponseKind::StatsState,
+                30,
+            )
+        }
         ReadOperation::StatsState { container_id } => {
             container_id.validate()?;
             plan(
@@ -348,6 +369,12 @@ pub fn confirmation(operation: &ConfirmationOperation) -> Result<CommandPlan, Ap
             }
             let timeout = limits(spec.timeout_seconds, 1, 120)?;
             let mut command = match spec.operation {
+                MutationOperation::Remove => plan(
+                    &["docker", "rm"],
+                    OperationCategory::Mutation,
+                    ResponseKind::Mutation,
+                    30,
+                ),
                 MutationOperation::Start => plan(
                     &["docker", "start"],
                     OperationCategory::Mutation,
@@ -405,6 +432,7 @@ mod tests {
     #[test]
     fn lifecycle_plans_validate_timeouts_and_keep_exact_targets_after_separator() {
         for operation in [
+            MutationOperation::Remove,
             MutationOperation::Start,
             MutationOperation::Stop,
             MutationOperation::Restart,
@@ -432,6 +460,12 @@ mod tests {
                 &["--".to_string(), "a".repeat(64)]
             );
             assert!(plan.timeout_seconds() <= 130);
+            assert!(
+                !plan
+                    .args()
+                    .iter()
+                    .any(|arg| ["-f", "--force", "-v", "--volumes"].contains(&arg.as_str()))
+            );
             assert!(
                 !plan
                     .args()

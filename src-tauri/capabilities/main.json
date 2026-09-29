@@ -8,6 +8,7 @@
     "allow-get-activity",
     "allow-set-management",
     "allow-get-management",
+    "allow-cancel-mutation",
     "allow-prepare-confirmation",
     "allow-mutate-container",
     "allow-list-hosts",

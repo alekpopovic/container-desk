@@ -619,6 +619,12 @@ impl Sessions {
         if result
             .as_ref()
             .is_err_and(|error| error.code == ErrorCode::StaleSession)
+            || result.as_ref().is_ok_and(|response| {
+                response
+                    .results
+                    .iter()
+                    .any(|r| r.error == Some(ErrorCode::StaleSession))
+            })
         {
             drop(driver);
             let _ = self

@@ -140,7 +140,7 @@ fn history_is_bounded_sanitized_and_reload_validates_untrusted_local_records() {
     assert!(bytes.len() < MAX_BYTES);
     let mut value: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     let keys = value["records"][0].as_object().unwrap();
-    assert_eq!(keys.len(), 7);
+    assert_eq!(keys.len(), 8);
     for forbidden in [
         "environment",
         "command",
@@ -298,4 +298,205 @@ async fn cancelled_dispatch_owner_retains_unknown_and_requires_a_fresh_confirmat
         ErrorCode::InvalidIntent
     );
     assert_eq!(dispatches.load(Ordering::SeqCst), 1);
+}
+
+fn batch_request(policy: &mut PolicyEngine) -> MutationRequest {
+    let spec = MutationSpec {
+        operation: MutationOperation::Stop,
+        container_ids: ['a', 'b', 'c']
+            .into_iter()
+            .map(|c| ContainerId(c.to_string().repeat(64)))
+            .collect(),
+        timeout_seconds: 10,
+    };
+    let intent = policy
+        .prepare(PrepareConfirmationRequest {
+            scope: scope(),
+            operation: ConfirmationOperation::Mutation(spec.clone()),
+        })
+        .unwrap();
+    MutationRequest {
+        scope: scope(),
+        intent_id: intent.id,
+        spec,
+    }
+}
+#[test]
+fn batch_targets_are_sequential_one_use_and_partial_results_survive_reload() {
+    let (activity, disk) = memory();
+    let mut policy = managed();
+    let req = batch_request(&mut policy);
+    let ids = req.spec.container_ids.clone();
+    let mut owner = activity.begin(&mut policy, req).unwrap();
+    let plan = owner.dispatch_target(&ids[0]).unwrap();
+    assert_eq!(plan.args().last(), Some(&ids[0].0));
+    assert!(!plan.args().contains(&ids[1].0));
+    assert_eq!(
+        owner.dispatch_target(&ids[1]).unwrap_err().code,
+        ErrorCode::InvalidIntent
+    );
+    owner
+        .complete_target(MutationTargetResult {
+            container_id: ids[0].clone(),
+            outcome: MutationTargetOutcome::Succeeded,
+            dispatched: true,
+            error: None,
+        })
+        .unwrap();
+    owner
+        .complete_target(MutationTargetResult {
+            container_id: ids[1].clone(),
+            outcome: MutationTargetOutcome::Failed,
+            dispatched: false,
+            error: Some(ErrorCode::ContainerNotFound),
+        })
+        .unwrap();
+    owner.dispatch_target(&ids[2]).unwrap();
+    owner
+        .complete_target(MutationTargetResult {
+            container_id: ids[2].clone(),
+            outcome: MutationTargetOutcome::Failed,
+            dispatched: true,
+            error: Some(ErrorCode::PermissionDenied),
+        })
+        .unwrap();
+    assert_eq!(
+        owner.dispatch_target(&ids[0]).unwrap_err().code,
+        ErrorCode::InvalidIntent
+    );
+    let before = owner.results().unwrap();
+    drop(owner);
+    let restored = Activities::load(Box::new(disk)).unwrap();
+    assert_eq!(restored.records().unwrap()[0].results, before);
+    assert_eq!(
+        restored.records().unwrap()[0].outcome,
+        ActivityOutcome::Partial
+    );
+}
+#[test]
+fn cancellation_is_scoped_and_only_prevents_targets_not_yet_dispatched() {
+    let (activity, _) = memory();
+    let mut policy = managed();
+    let req = batch_request(&mut policy);
+    let cancel = CancelMutationRequest {
+        scope: req.scope.clone(),
+        intent_id: req.intent_id.clone(),
+    };
+    let ids = req.spec.container_ids.clone();
+    let mut owner = activity.begin(&mut policy, req).unwrap();
+    owner.dispatch_target(&ids[0]).unwrap();
+    let mut foreign = cancel.clone();
+    foreign.scope.session_generation += 1;
+    assert!(
+        !activity
+            .cancel(&foreign)
+            .unwrap()
+            .pending_cancellation_requested
+    );
+    assert!(!owner.cancelled());
+    assert!(
+        activity
+            .cancel(&cancel)
+            .unwrap()
+            .pending_cancellation_requested
+    );
+    owner
+        .complete_target(MutationTargetResult {
+            container_id: ids[0].clone(),
+            outcome: MutationTargetOutcome::Succeeded,
+            dispatched: true,
+            error: None,
+        })
+        .unwrap();
+    for id in &ids[1..] {
+        assert_eq!(
+            owner.dispatch_target(id).unwrap_err().code,
+            ErrorCode::OperationCancelled
+        );
+        owner
+            .complete_target(MutationTargetResult {
+                container_id: id.clone(),
+                outcome: MutationTargetOutcome::Cancelled,
+                dispatched: false,
+                error: Some(ErrorCode::OperationCancelled),
+            })
+            .unwrap();
+    }
+    assert_eq!(
+        response_outcome(&owner.results().unwrap()),
+        MutationOutcome::Partial
+    );
+    drop(owner);
+    assert!(
+        !activity
+            .cancel(&cancel)
+            .unwrap()
+            .pending_cancellation_requested
+    );
+}
+#[test]
+fn legacy_aggregate_history_migrates_without_claiming_individual_bulk_successes() {
+    let disk = MemoryStorage::default();
+    let value = serde_json::json!({"schemaVersion":1,"records":[{"id":format!("i_{}","1".repeat(32)),"hostId":scope().selection.host_id,"action":"stop","targets":["a".repeat(64),"b".repeat(64)],"startedAtMs":100,"updatedAtMs":101,"outcome":"failed"}]});
+    disk.commit(&serde_json::to_vec(&value).unwrap(), None)
+        .unwrap();
+    let migrated = Activities::load(Box::new(disk)).unwrap();
+    let records = migrated.records().unwrap();
+    assert_eq!(records[0].outcome, ActivityOutcome::Unknown);
+    assert!(
+        records[0]
+            .results
+            .iter()
+            .all(|r| r.outcome == MutationTargetOutcome::Unknown && r.dispatched)
+    );
+}
+
+#[test]
+fn full_batches_trim_history_by_bytes_and_keep_an_active_record() {
+    let (activity, disk) = memory();
+    let mut policy = managed();
+    for _ in 0..150 {
+        let spec = MutationSpec {
+            operation: MutationOperation::Stop,
+            container_ids: (1..=20).map(|n| ContainerId(format!("{n:064x}"))).collect(),
+            timeout_seconds: 1,
+        };
+        let intent = policy
+            .prepare(PrepareConfirmationRequest {
+                scope: scope(),
+                operation: ConfirmationOperation::Mutation(spec.clone()),
+            })
+            .unwrap();
+        let mut owner = activity
+            .begin(
+                &mut policy,
+                MutationRequest {
+                    scope: scope(),
+                    spec: spec.clone(),
+                    intent_id: intent.id,
+                },
+            )
+            .unwrap();
+        // The write that grows an active record may evict only older records, including the same host's history.
+        owner.dispatch_target(&spec.container_ids[0]).unwrap();
+        owner
+            .complete_target(MutationTargetResult {
+                container_id: spec.container_ids[0].clone(),
+                outcome: MutationTargetOutcome::Failed,
+                dispatched: true,
+                error: Some(ErrorCode::PermissionDenied),
+            })
+            .unwrap();
+        assert_eq!(owner.results().unwrap().len(), 20);
+    }
+    let bytes = disk.read(false).unwrap().unwrap();
+    assert!(bytes.len() <= MAX_BYTES);
+    assert!(
+        activity.records().unwrap().len() < 150,
+        "byte cap must trim before count cap"
+    );
+    assert_eq!(
+        Activities::load(Box::new(disk)).unwrap().records().unwrap(),
+        activity.records().unwrap()
+    );
 }
