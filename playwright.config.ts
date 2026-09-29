@@ -39,7 +39,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev -- --port 1431",
+    command: "npm run dev -- --mode browser-test --port 1431",
     url: "http://127.0.0.1:1431",
     reuseExistingServer: false,
     timeout: 30000,

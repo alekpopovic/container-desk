@@ -1,0 +1,9 @@
+{
+  "cargoTargetDirectory": "/tmp/containerdesk-051-target",
+  "initiallyEmpty": true,
+  "cargoBuildJobs": 2,
+  "productionSha256": "fd08f54ac11194ce11b74dd8d69ac2b5cfdac178b88170a2c3d80fa967dfcecc",
+  "packageLockSha256": "c97594c24a111f62f30564654859db0a0ba74f38e3e132e105c083edadf2e534",
+  "cargoLockSha256": "3923711cb33de8a5e3b8df4a690b966cf37d6a02519fad168bc2ed8e608088ef",
+  "nativeExecutionInThisRun": false
+}

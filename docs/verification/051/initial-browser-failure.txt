@@ -1,0 +1,9 @@
+  3 failed
+    [minimum-light] › tests/ui/containers.spec.ts:70:1 › live host switch cannot publish a late snapshot with identical container names and IDs
+    [minimum-light] › tests/ui/demo.spec.ts:73:1 › fixture errors clear rows and remain labeled DEMO until explicit exit
+    [minimum-dark] › tests/ui/logs.spec.ts:94:1 › selected export and copy use exactly the sanitized visible order
+  345 passed (2.6m)
+FAIL browser fixture tests: exit 1
+SKIP Disposable VM integration: opt in separately with tests/lab/integration.py
+SKIP Other native OS/architecture runners, package installation and signing: separate platform gates
+SKIP Native desktop/SSH/Docker tests: not requested; use --native-tools PATH

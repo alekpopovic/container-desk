@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T10:12:55+00:00",
+  "updated_at": "2026-09-29T10:36:33+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1718,6 +1718,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T10:13:52+00:00",
+      "id": "051",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T10:36:33+00:00",
+      "id": "051",
+      "action": "done",
+      "note": "Clean npm ci and empty CARGO_TARGET_DIR: npm run verify exit 0, all 13 checks passed (87 Node, 348 browser, 151 Rust, 14 tracker); forced formatter failure exit 1 with source restored; wrong pin/deadline probes passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T10:13:52+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2349,12 +2383,14 @@
       "note": ""
     },
     "051": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T10:13:52+00:00",
+      "finished_at": "2026-09-29T10:36:33+00:00",
+      "evidence": "codex/tracking/evidence/051.md",
+      "evidence_sha256": "1ab343adfd77f0fe48908a60648ded5b735facf66f463c6e76b1d9c57f24ec88",
+      "checks": [
+        "Clean npm ci and empty CARGO_TARGET_DIR: npm run verify exit 0, all 13 checks passed (87 Node, 348 browser, 151 Rust, 14 tracker); forced formatter failure exit 1 with source restored; wrong pin/deadline probes passed"
+      ],
       "commit": "",
       "note": ""
     },

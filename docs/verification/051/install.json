@@ -1,0 +1,54 @@
+{
+  "platform": "Linux",
+  "architecture": "x86_64",
+  "mode": "install",
+  "checks": [
+    {
+      "name": "locked frontend install",
+      "command": [
+        "npm",
+        "ci"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 3.77
+    },
+    {
+      "name": "pinned browser install",
+      "command": [
+        "npm",
+        "exec",
+        "playwright",
+        "--",
+        "install",
+        "chromium"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.72
+    },
+    {
+      "name": "locked Rust fetch",
+      "command": [
+        "cargo",
+        "fetch",
+        "--manifest-path",
+        "src-tauri/Cargo.toml",
+        "--locked"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.26
+    }
+  ],
+  "skipped": [
+    "Verification not requested: installation only"
+  ],
+  "passed": true,
+  "toolchains": {
+    "node": "24.21.0",
+    "npm": "11.19.0",
+    "rustc": "1.98.1",
+    "cargo": "1.98.1"
+  }
+}

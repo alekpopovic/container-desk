@@ -1,0 +1,159 @@
+{
+  "platform": "Linux",
+  "architecture": "x86_64",
+  "mode": "verify",
+  "checks": [
+    {
+      "name": "frontend formatting",
+      "command": [
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "status": "failed",
+      "seconds": 0.32,
+      "exitCode": 1
+    },
+    {
+      "name": "Rust formatting",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "src-tauri/Cargo.toml",
+        "--check"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "TypeScript",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "frontend lint",
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "frontend unit tests",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "browser fixture tests",
+      "command": [
+        "npm",
+        "run",
+        "test:ui"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "frontend production build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "Rust lint",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "src-tauri/Cargo.toml",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "Rust automation feature lint",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "src-tauri/Cargo.toml",
+        "--locked",
+        "--all-targets",
+        "--features",
+        "native-automation",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "Rust tests",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "src-tauri/Cargo.toml",
+        "--locked"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "native production build",
+      "command": [
+        "npm",
+        "run",
+        "desktop:build"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "tracker tests",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "codex/tests",
+        "-v"
+      ],
+      "status": "not_run"
+    },
+    {
+      "name": "tracker validation",
+      "command": [
+        "python3",
+        "codex/scripts/track.py",
+        "validate"
+      ],
+      "status": "not_run"
+    }
+  ],
+  "skipped": [
+    "Disposable VM integration: opt in separately with tests/lab/integration.py",
+    "Other native OS/architecture runners, package installation and signing: separate platform gates",
+    "Native desktop/SSH/Docker tests: not requested; use --native-tools PATH"
+  ],
+  "passed": false,
+  "toolchains": {
+    "node": "24.21.0",
+    "npm": "11.19.0",
+    "rustc": "1.98.1",
+    "cargo": "1.98.1"
+  }
+}

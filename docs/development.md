@@ -2,6 +2,8 @@
 
 Run from the repository root. Use the pinned Node 24.21.0/npm 11.19.0 (`.nvmrc`) and Rust/Cargo 1.98.1 (`rust-toolchain.toml`). Make sure rustup's bin directory is on PATH. See [toolchains](toolchains.md) for native platform prerequisites. Install dependencies with `npm ci`; only npm is used. Keep both `package-lock.json` and `src-tauri/Cargo.lock` committed.
 
+Use `npm run verify:install` for locked dependencies, then `npm run verify` for the fail-fast required checks. Native tests remain explicit opt-in. See [contributor verification](verification-command.md) for clean output directories, reports and system prerequisites.
+
 ## Commands
 
 | Command | Purpose |

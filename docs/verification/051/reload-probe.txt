@@ -1,0 +1,3 @@
+12:22:21 PM [vite] (client) page reload tests/ui/fixture.html
+PASS: actual file-touch reloads development; browser-test page retains state; fixture bytes unchanged.
+12:22:22 PM [vite] (client) page reload tests/ui/fixture.html

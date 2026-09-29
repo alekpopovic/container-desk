@@ -30,6 +30,8 @@
     "@playwright/test": "1.63.0"
   },
   "scripts": {
+    "verify": "python3 scripts/verify.py",
+    "verify:install": "python3 scripts/verify.py --install",
     "dev": "vite",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview --host 127.0.0.1",

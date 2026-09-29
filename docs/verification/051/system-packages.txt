@@ -1,0 +1,15 @@
+build-essential	12.12ubuntu2.26.04.2	installed
+curl	8.18.0-1ubuntu2.7	installed
+file	1:5.46-5build2	installed
+libayatana-appindicator3-dev	0.5.94-1build1	installed
+libgtk-3-0t64	3.24.52-0ubuntu1	installed
+libgtk-3-dev	3.24.52-0ubuntu1	installed
+librsvg2-dev	2.61.3+dfsg-3	installed
+libssl-dev	3.5.5-1ubuntu3.5	installed
+libwebkit2gtk-4.1-0	2.52.6-0ubuntu0.26.04.1	installed
+libwebkit2gtk-4.1-dev	2.52.6-0ubuntu0.26.04.1	installed
+libxdo-dev	1:3.20160805.1-5.1build1	installed
+openssh-client	1:10.2p1-2ubuntu3.6	installed
+pkg-config	2.5.1-4	installed
+python3	3.14.3-0ubuntu2	installed
+wget	1.25.0-2ubuntu4.4	installed

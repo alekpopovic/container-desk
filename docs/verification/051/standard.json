@@ -1,0 +1,183 @@
+{
+  "platform": "Linux",
+  "architecture": "x86_64",
+  "mode": "verify",
+  "checks": [
+    {
+      "name": "frontend formatting",
+      "command": [
+        "npm",
+        "run",
+        "format:check"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.26
+    },
+    {
+      "name": "Rust formatting",
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "src-tauri/Cargo.toml",
+        "--check"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.31
+    },
+    {
+      "name": "TypeScript",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.47
+    },
+    {
+      "name": "frontend lint",
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.42
+    },
+    {
+      "name": "frontend unit tests",
+      "command": [
+        "npm",
+        "test"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 1.18
+    },
+    {
+      "name": "browser fixture tests",
+      "command": [
+        "npm",
+        "run",
+        "test:ui"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 132.27
+    },
+    {
+      "name": "frontend production build",
+      "command": [
+        "npm",
+        "run",
+        "build"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 1.12
+    },
+    {
+      "name": "Rust lint",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "src-tauri/Cargo.toml",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 95.23
+    },
+    {
+      "name": "Rust automation feature lint",
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "src-tauri/Cargo.toml",
+        "--locked",
+        "--all-targets",
+        "--features",
+        "native-automation",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 11.24
+    },
+    {
+      "name": "Rust tests",
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "src-tauri/Cargo.toml",
+        "--locked"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 145.96
+    },
+    {
+      "name": "native production build",
+      "command": [
+        "npm",
+        "run",
+        "desktop:build"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 228.99
+    },
+    {
+      "name": "tracker tests",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "codex/tests",
+        "-v"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 2.77
+    },
+    {
+      "name": "tracker validation",
+      "command": [
+        "python3",
+        "codex/scripts/track.py",
+        "validate"
+      ],
+      "status": "passed",
+      "exitCode": 0,
+      "seconds": 0.06
+    }
+  ],
+  "skipped": [
+    "Disposable VM integration: opt in separately with tests/lab/integration.py",
+    "Other native OS/architecture runners, package installation and signing: separate platform gates",
+    "Native desktop/SSH/Docker tests: not requested; use --native-tools PATH"
+  ],
+  "passed": true,
+  "toolchains": {
+    "node": "24.21.0",
+    "npm": "11.19.0",
+    "rustc": "1.98.1",
+    "cargo": "1.98.1"
+  }
+}

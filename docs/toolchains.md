@@ -72,3 +72,7 @@ On macOS, install Xcode Command Line Tools for desktop development (`xcode-selec
 Tailwind 4's documented browser floor includes Safari 16.4, Chrome 111 and Firefox 128: [compatibility](https://tailwindcss.com/docs/compatibility). The project Mac baseline exceeds that WebKit generation. Verify the installed Linux WebKitGTK and both native WebViews at runtime; configuring a JavaScript build target cannot polyfill missing CSS features. Vite's Node requirements are documented in its [getting-started guide](https://vite.dev/guide/).
 
 Native OpenSSH is an application runtime dependency. Node, npm, Rust, Python and local Docker/jq are development tools only. OpenSSH and OS security patches follow the supported OS updates rather than a vendored SSH binary. Release packaging, GTK/WebKit execution and macOS signing are not exercised by dependency resolution.
+
+## Current contributor gate
+
+Prompt 051 adds `npm run verify:install` and `npm run verify`, with exact toolchain enforcement and explicit native/platform skips. Use [contributor verification](verification-command.md) for the current full check sequence; the original 001 dependency-resolution commands above are historical.

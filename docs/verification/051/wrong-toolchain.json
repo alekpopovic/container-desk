@@ -1,0 +1,9 @@
+{
+  "platform": "Linux",
+  "architecture": "x86_64",
+  "mode": "verify",
+  "checks": [],
+  "skipped": [],
+  "passed": false,
+  "error": "node 26.4.0; required 24.21.0. Select the pinned toolchain before verification."
+}
