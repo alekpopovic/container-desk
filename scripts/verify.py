@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Pinned dependency installation or fail-fast verification; never cleans source/build caches."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -102,6 +103,10 @@ def main():
             finally:
                 record['seconds'] = round(time.monotonic()-began, 2)
             record.update(status='passed' if code == 0 else 'failed', exitCode=code, seconds=round(time.monotonic()-began, 2))
+            if name == 'native production build' and code == 0:
+                binary = Path(os.environ.get('CARGO_TARGET_DIR', str(REPO/'src-tauri/target')))/'release/containerdesk'
+                report['productionBuild'] = {'sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
+                    'sourceCommit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=REPO, text=True, timeout=10).strip()}
             if code: break
         report['passed'] = all(record['status'] == 'passed' for record in report['checks'])
         code = 0 if report['passed'] else max(1, code)

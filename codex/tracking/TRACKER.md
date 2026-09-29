@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T10:36:33+00:00
+Updated: 2026-09-29T10:37:24+00:00
 
-blocked: **0** | done: **51** | in_progress: **0** | pending: **9**
+blocked: **0** | done: **51** | in_progress: **1** | pending: **8**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -61,7 +61,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 049 | 06 Quality and delivery | Disposable direct and bastion integration lab | high | done | codex/tracking/evidence/049.md |
 | 050 | 06 Quality and delivery | Native desktop integration tests | high | done | codex/tracking/evidence/050.md |
 | 051 | 06 Quality and delivery | Local verification command and clean builds | medium | done | codex/tracking/evidence/051.md |
-| 052 | 06 Quality and delivery | Linux and macOS CI build matrix | high | pending | — |
+| 052 | 06 Quality and delivery | Linux and macOS CI build matrix | high | in_progress | — |
 | 053 | 06 Quality and delivery | Linux package builds | high | pending | — |
 | 054 | 06 Quality and delivery | macOS application and DMG builds | high | pending | — |
 | 055 | 06 Quality and delivery | Signing and notarization integration | high | pending | — |
@@ -176,3 +176,4 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T10:12:55+00:00 — 050: done; Actual Linux desktop suite passed: production automation refusal, native host/error/IPC/log/PTY journeys; separate feature-gated build; 151 Rust and 87 Node tests; macOS explicitly pending unavailable native runner
 - 2026-09-29T10:13:52+00:00 — 051: start;
 - 2026-09-29T10:36:33+00:00 — 051: done; Clean npm ci and empty CARGO_TARGET_DIR: npm run verify exit 0, all 13 checks passed (87 Node, 348 browser, 151 Rust, 14 tracker); forced formatter failure exit 1 with source restored; wrong pin/deadline probes passed
+- 2026-09-29T10:37:24+00:00 — 052: start;
