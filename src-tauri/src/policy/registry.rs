@@ -18,6 +18,8 @@ pub enum ResponseKind {
     StatsState,
     ContainerDetail,
     ImageDetail,
+    ImageList,
+    ImageReferences,
     LogSnapshot,
     LogStream,
     EventStream,
@@ -27,6 +29,15 @@ pub enum ResponseKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReadOperation {
     ListContainers,
+    ListImages {
+        dangling_only: bool,
+    },
+    ImageContainerIds {
+        image_id: ImageId,
+    },
+    InspectImageReferences {
+        container_ids: Vec<ContainerId>,
+    },
     ListCompose,
     ComposeContainerIds,
     InspectComposeLabels {
@@ -243,6 +254,76 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
                 ResponseKind::StatsState,
                 30,
             )
+        }
+        ReadOperation::ListImages { dangling_only } => {
+            let mut command = plan(
+                &[
+                    "docker",
+                    "image",
+                    "ls",
+                    "--all",
+                    "--no-trunc",
+                    "--digests",
+                    "--format",
+                    "{{json .}}",
+                ],
+                OperationCategory::Read,
+                ResponseKind::ImageList,
+                30,
+            );
+            if *dangling_only {
+                command
+                    .args
+                    .extend(["--filter".into(), "dangling=true".into()]);
+            }
+            command
+        }
+        ReadOperation::ImageContainerIds { image_id } => {
+            image_id.validate()?;
+            plan(
+                &[
+                    "docker",
+                    "ps",
+                    "--all",
+                    "--quiet",
+                    "--no-trunc",
+                    "--filter",
+                    &format!("ancestor={}", image_id.0),
+                ],
+                OperationCategory::Read,
+                ResponseKind::ImageReferences,
+                30,
+            )
+        }
+        ReadOperation::InspectImageReferences { container_ids } => {
+            if container_ids.is_empty() || container_ids.len() > 64 {
+                return Err(AppError::new(ErrorCode::InvalidLimits));
+            }
+            let mut seen = HashSet::new();
+            for id in container_ids {
+                id.validate()?;
+                if !seen.insert(id) {
+                    return Err(AppError::new(ErrorCode::InvalidId));
+                }
+            }
+            let mut command = plan(
+                &[
+                    "docker",
+                    "inspect",
+                    "--type",
+                    "container",
+                    "--format",
+                    crate::docker::images::REFERENCE_TEMPLATE,
+                    "--",
+                ],
+                OperationCategory::Read,
+                ResponseKind::ImageReferences,
+                30,
+            );
+            command
+                .args
+                .extend(container_ids.iter().map(|id| id.0.clone()));
+            command
         }
         ReadOperation::InspectImage { image_id } => {
             image_id.validate()?;

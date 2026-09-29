@@ -119,6 +119,7 @@ pub enum ErrorCode {
     HostNotFound,
     ContainerNotFound,
     ContainerNotStopped,
+    ImageNotFound,
     LogDriverUnsupported,
     ExportFailed,
     SessionNotFound,
@@ -165,6 +166,7 @@ impl AppError {
             ErrorCode::LogDriverUnsupported => {
                 "This container logging driver does not support reading logs."
             }
+            ErrorCode::ImageNotFound => "The image no longer exists. Refresh the image inventory.",
             ErrorCode::ContainerNotStopped => "Only stopped containers can be removed.",
             ErrorCode::ContainerNotFound => {
                 "The container no longer exists. Refresh the inventory."
@@ -1377,4 +1379,63 @@ pub struct ListComposeResponse {
     pub plugin: ComposeAvailability,
     pub listing_error: Option<ErrorCode>,
     pub projects: Vec<ComposeProject>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ListImagesRequest {
+    pub scope: SessionScope,
+    pub dangling_only: bool,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ImageSummary {
+    pub scope: SessionScope,
+    pub id: ImageId,
+    pub tags: Vec<String>,
+    pub digests: Vec<String>,
+    pub size_reported: Option<String>,
+    pub created_at_reported: Option<String>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ListImagesResponse {
+    pub scope: SessionScope,
+    pub dangling_only: bool,
+    pub images: Vec<ImageSummary>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct InspectImageRequest {
+    pub scope: SessionScope,
+    pub image_id: ImageId,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ImageContainerReference {
+    pub container_id: ContainerId,
+    pub name: String,
+    pub state: String,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ImageDetail {
+    pub scope: SessionScope,
+    pub id: ImageId,
+    pub tags: Vec<String>,
+    pub digests: Vec<String>,
+    #[cfg_attr(test, ts(type = "number | null"))]
+    pub size_bytes: Option<u64>,
+    pub created_at: Option<String>,
+    pub os: Option<String>,
+    pub architecture: Option<String>,
+    pub variant: Option<String>,
+    pub labels: Vec<DetailValue>,
+    pub containers: Vec<ImageContainerReference>,
 }

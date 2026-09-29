@@ -22,7 +22,7 @@ def unused_port():
         return sock.getsockname()[1]
 
 
-def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, inventory=False, inspect=False, compose=False):
+def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, inventory=False, inspect=False, compose=False, images=False):
     env = os.environ.copy()
     for key in ("LD_LIBRARY_PATH", "LD_PRELOAD", "GTK_PATH", "GIO_MODULE_DIR", "SSH_AUTH_SOCK"):
         env.pop(key, None)
@@ -231,6 +231,68 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                             raise AssertionError('Compose instance did not open existing container detail view')
                         assert script('return !!document.querySelector(".live-logs")')
                         print(f'PASS native Compose {alias}: two projects/same web service, plugin/fallback status, unverified missing remote path and shared container detail/log navigation.', flush=True)
+                    if images:
+                        node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Images"]')
+                        command("POST", f"/element/{node}/click", {})
+                        deadline=time.monotonic()+20
+                        while time.monotonic()<deadline:
+                            if script('return document.querySelectorAll(".image-choice").length')==2:break
+                            time.sleep(.1)
+                        else:raise AssertionError('Native images did not load two identities')
+                        node=element('//button[contains(@class,"image-choice") and contains(.,"containerdesk-empty:019")]')
+                        command("POST",f"/element/{node}/click",{})
+                        deadline=time.monotonic()+20
+                        while time.monotonic()<deadline:
+                            if script('return document.querySelector(".image-detail")?.innerText.includes("listing-second")'):break
+                            time.sleep(.1)
+                        else:raise AssertionError('Native exact image references did not load')
+                        text=script('return document.querySelector(".image-detail").innerText')
+                        assert 'containerdesk-shared:latest' in text and 'values masked' in text and 'Masked' in text
+                        assert 'synthetic-image-034-secret' not in text and 'synthetic-label-034-secret' not in text
+                        script('document.querySelector(".image-detail").scrollIntoView({block:"center",behavior:"instant"})')
+                        (artifacts/f'native-images-{alias}.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                        script('document.querySelector(".image-detail li:last-child").scrollIntoView({block:"center",behavior:"instant"})')
+                        (artifacts/f'native-image-references-{alias}.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                        node=element('//label[contains(.,"Dangling images only")]/input')
+                        script('arguments[0].scrollIntoView({block:"center",behavior:"instant"})',{ELEMENT:node})
+                        command("POST",f"/element/{node}/click",{})
+                        deadline=time.monotonic()+20
+                        while time.monotonic()<deadline:
+                            if script('return document.querySelectorAll(".image-choice").length === 1 && document.querySelector(".image-detail")?.innerText.includes("No container references")'):break
+                            time.sleep(.1)
+                        else:raise AssertionError('Native dangling filter did not resolve')
+                        assert script('return document.querySelector(".image-choice").innerText.includes("No tags")')
+                        (artifacts/f'native-images-dangling-{alias}.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                        node=element('//label[contains(.,"Dangling images only")]/input')
+                        command("POST",f"/element/{node}/click",{})
+                        deadline=time.monotonic()+20
+                        while time.monotonic()<deadline:
+                            if script('return Array.from(document.querySelectorAll(".image-detail button")).some(b=>b.textContent==="listing-second" && !b.disabled)'):break
+                            time.sleep(.1)
+                            # Selecting by immutable identity does not depend on image ordering.
+                            if script('return document.querySelectorAll(".image-choice").length')==2:
+                                node=element('//button[contains(@class,"image-choice") and contains(.,"containerdesk-empty:019")]')
+                                command("POST",f"/element/{node}/click",{})
+                        else:raise AssertionError('Native image reference did not become available')
+                        script('window.__imageClicks=[]; document.addEventListener("click",event=>window.__imageClicks.push({target:event.target.textContent, trusted:event.isTrusted, disabled:event.target.disabled}),{capture:true,once:true})')
+                        # WebKit may acknowledge an element click without delivering a DOM click
+                        # immediately after the preceding layout/scroll change. This is read-only
+                        # navigation; retry only a demonstrably undelivered click, never a mutation.
+                        for _ in range(3):
+                            command("POST", "/execute/async", {"script":"const done=arguments[arguments.length-1]; requestAnimationFrame(()=>requestAnimationFrame(()=>done(true)));", "args":[]})
+                            button('listing-second')
+                            time.sleep(.25)
+                            if script('return window.__imageClicks.length > 0'):break
+                        assert script('return window.__imageClicks.some(event=>event.trusted && event.target==="listing-second")'), 'Native driver did not deliver the reference click'
+                        deadline=time.monotonic()+15
+                        while time.monotonic()<deadline:
+                            if script('return location.hash==="#/containers" && document.querySelector(".detail-panel")?.innerText.includes("listing-second")'):break
+                            time.sleep(.1)
+                        else:
+                            print('Image navigation state:',script('return {clicks:window.__imageClicks,hash:location.hash,details:document.querySelector(".detail-panel")?.innerText,image:document.querySelector(".image-detail")?.innerText,buttons:Array.from(document.querySelectorAll(".image-detail button"),b=>({name:b.textContent,disabled:b.disabled}))}'),flush=True)
+                            (artifacts/'native-image-navigation-failure.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                            raise AssertionError('Image reference did not open native container detail')
+                        print(f'PASS native images {alias}: two deduplicated identities, shared tags, masked labels, actual dangling filter with no tags, exact container reference opens existing detail view.',flush=True)
                     node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
                     command("POST", f"/element/{node}/click", {})
                 else:

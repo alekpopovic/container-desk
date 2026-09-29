@@ -39,6 +39,8 @@ pub fn run() {
             commands::connect_host,
             commands::list_containers,
             commands::list_compose,
+            commands::list_images,
+            commands::inspect_image,
             commands::cancel_subscription,
             commands::get_preferences,
             commands::set_theme,

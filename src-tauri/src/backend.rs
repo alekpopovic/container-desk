@@ -567,6 +567,79 @@ impl Backend {
         Ok(response)
     }
 
+    pub async fn list_images(
+        &self,
+        request: ListImagesRequest,
+    ) -> Result<ListImagesResponse, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(
+                &request.scope,
+                &ReadOperation::ListImages {
+                    dangling_only: request.dangling_only,
+                },
+            )?;
+        self.require_session(&request.scope)?;
+        let _host = self.read_hosts.acquire(&request.scope.selection.host_id)?;
+        let _read = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let response = self.sessions.images(&request).await;
+        self.require_session(&request.scope)?;
+        let response = response?;
+        if response.scope != request.scope
+            || response.dangling_only != request.dangling_only
+            || response
+                .images
+                .iter()
+                .any(|image| image.scope != request.scope)
+        {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(response)
+    }
+    pub async fn inspect_image(
+        &self,
+        request: InspectImageRequest,
+    ) -> Result<ImageDetail, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(
+                &request.scope,
+                &ReadOperation::InspectImage {
+                    image_id: request.image_id.clone(),
+                },
+            )?;
+        self.require_session(&request.scope)?;
+        let _host = self.read_hosts.acquire(&request.scope.selection.host_id)?;
+        let _read = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let response = self.sessions.inspect_image(&request).await;
+        self.require_session(&request.scope)?;
+        let response = response?;
+        if response.scope != request.scope
+            || response
+                .id
+                .0
+                .strip_prefix("sha256:")
+                .unwrap_or(&response.id.0)
+                != request
+                    .image_id
+                    .0
+                    .strip_prefix("sha256:")
+                    .unwrap_or(&request.image_id.0)
+        {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(response)
+    }
     pub async fn list_compose(
         &self,
         request: ListComposeRequest,

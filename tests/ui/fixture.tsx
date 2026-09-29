@@ -1,3 +1,4 @@
+import { ImagesFixture } from "./images-fixture";
 import { BatchFixture } from "./batch-fixture";
 import { ManagementFixture } from "./management-fixture";
 import { ComposeFixture } from "./compose-fixture";
@@ -32,7 +33,9 @@ if (kind === "error")
 const root = document.getElementById("root");
 if (!root) throw new Error("Fixture root missing");
 createRoot(root).render(
-  kind === "batch" ? (
+  kind === "images" ? (
+    <ImagesFixture />
+  ) : kind === "batch" ? (
     <BatchFixture />
   ) : kind === "management" ? (
     <ManagementFixture />

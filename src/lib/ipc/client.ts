@@ -32,6 +32,7 @@ const messages: Record<ErrorCode, string> = {
   log_driver_unsupported:
     "This container logging driver does not support reading logs.",
   container_not_found: "The container no longer exists. Refresh the inventory.",
+  image_not_found: "The image no longer exists. Refresh the image inventory.",
   container_not_stopped: "Only stopped containers can be removed.",
   host_not_found: "Saved host does not exist.",
   session_not_found: "Connection session does not exist.",
@@ -1686,4 +1687,88 @@ export async function cancelMutation(
   if (!record(value) || typeof value.pendingCancellationRequested !== "boolean")
     throw new IpcError("invalid_response");
   return value as unknown as import("./generated.ts").CancelMutationResponse;
+}
+
+const fullImageId = (v: unknown): v is string =>
+  typeof v === "string" && /^sha256:[a-f0-9]{64}$/.test(v);
+const imageStrings = (v: unknown): v is string[] =>
+  Array.isArray(v) &&
+  v.length <= 128 &&
+  v.every((x) => text(x)) &&
+  new Set(v).size === v.length;
+export async function listImages(
+  request: import("./generated.ts").ListImagesRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").ListImagesResponse> {
+  const value = await scheduledRead("list_images", request, current);
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, request.scope) ||
+    value.danglingOnly !== request.danglingOnly ||
+    !Array.isArray(value.images) ||
+    value.images.length > 5000
+  )
+    throw new IpcError("invalid_response");
+  const ids = new Set<string>();
+  for (const row of value.images) {
+    if (
+      !record(row) ||
+      !scope(row.scope) ||
+      !sameScope(row.scope, request.scope) ||
+      !fullImageId(row.id) ||
+      ids.has(row.id) ||
+      !imageStrings(row.tags) ||
+      !imageStrings(row.digests) ||
+      !(row.sizeReported === null || text(row.sizeReported)) ||
+      !(row.createdAtReported === null || text(row.createdAtReported))
+    )
+      throw new IpcError("invalid_response");
+    ids.add(row.id);
+  }
+  return value as unknown as import("./generated.ts").ListImagesResponse;
+}
+export async function inspectImage(
+  request: import("./generated.ts").InspectImageRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").ImageDetail> {
+  const value = await scheduledRead("inspect_image", request, current);
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, request.scope) ||
+    !fullImageId(value.id) ||
+    value.id !== request.imageId ||
+    !imageStrings(value.tags) ||
+    !imageStrings(value.digests) ||
+    !(
+      value.sizeBytes === null ||
+      (Number.isSafeInteger(value.sizeBytes) && Number(value.sizeBytes) >= 0)
+    ) ||
+    ![value.createdAt, value.os, value.architecture, value.variant].every(
+      (v) => v === null || text(v),
+    ) ||
+    !Array.isArray(value.labels) ||
+    value.labels.length > 256 ||
+    !value.labels.every(
+      (v) => record(v) && text(v.name) && v.value === null && v.masked === true,
+    ) ||
+    !Array.isArray(value.containers) ||
+    value.containers.length > 5000
+  )
+    throw new IpcError("invalid_response");
+  const ids = new Set<string>();
+  for (const row of value.containers) {
+    if (
+      !record(row) ||
+      typeof row.containerId !== "string" ||
+      !/^[a-f0-9]{64}$/.test(row.containerId) ||
+      ids.has(row.containerId) ||
+      !text(row.name) ||
+      !text(row.state)
+    )
+      throw new IpcError("invalid_response");
+    ids.add(row.containerId);
+  }
+  return value as unknown as import("./generated.ts").ImageDetail;
 }

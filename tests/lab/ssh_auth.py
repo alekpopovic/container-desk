@@ -35,6 +35,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", action="store_true", help="Run a real isolated empty Docker Engine in the SSH target")
     parser.add_argument("--listing", action="store_true", help="Seed two metadata-only containers in the private Engine for listing checks")
+    parser.add_argument("--images", action="store_true", help="034 read-only image inventory on isolated Engine; requires --inventory")
     parser.add_argument("--compose", action="store_true", help="Native Compose project reads on isolated Engine; requires --inventory")
     parser.add_argument("--inspect", action="store_true", help="Check native inspect and secret redaction; requires --inventory")
     parser.add_argument("--inventory", action="store_true", help="Check live resource sessions and cancellation; requires --listing")
@@ -42,6 +43,8 @@ def main():
     parser.add_argument("--native-driver", type=Path, help="Optional external tauri-driver executable for the real native UI journey")
     parser.add_argument("--webkit-driver", type=Path, help="WebKitWebDriver executable, required with --native-driver")
     args = parser.parse_args()
+    if args.images and not args.inventory:
+        parser.error("--images requires --inventory")
     if args.compose and not args.inventory:
         parser.error("--compose requires --inventory")
     if args.inspect and not args.inventory:
@@ -234,7 +237,7 @@ def main():
                 # and an AppArmor exception. Default seccomp and all host-resource boundaries stay.
                 # These containers are metadata only; running/exited states use parser fixtures.
                 image_config = json.dumps({"architecture": "amd64", "os": "linux", "rootfs": {"type": "layers", "diff_ids": []},
-                                           "config": {"Cmd": ["/bin/true"]}}).encode()
+                                           "config": {"Cmd": ["/bin/true"], **({"Env":["IMAGE_TOKEN=synthetic-image-034-secret"], "Labels":{"token":"synthetic-image-034-secret", "innocent":"synthetic-label-034-secret"}} if args.images else {})}}).encode()
                 config_name = hashlib.sha256(image_config).hexdigest() + ".json"
                 archive = io.BytesIO()
                 with tarfile.open(fileobj=archive, mode="w") as tar:
@@ -256,15 +259,34 @@ def main():
                 current["expectedContainerIds"] = expected
                 manifest.write_text(json.dumps(current))
                 native_test(executable, "checkpoint019_real_listing", {**test_env, "PATH": "/nonexistent"})
+            if args.images:
+                dc("exec", names[-1], "docker", "tag", "containerdesk-empty:019", "containerdesk-shared:latest")
+                dangling_config = json.dumps({"architecture":"amd64","os":"linux","created":"2026-09-29T00:00:00Z","rootfs":{"type":"layers","diff_ids":[]},"config":{"Cmd":["/bin/false"]}}).encode()
+                dangling_name = hashlib.sha256(dangling_config).hexdigest()+".json"
+                archive = io.BytesIO()
+                with tarfile.open(fileobj=archive, mode="w") as tar:
+                    for name,data in ((dangling_name,dangling_config),("manifest.json",json.dumps([{"Config":dangling_name,"RepoTags":[],"Layers":[]}]).encode())):
+                        info=tarfile.TarInfo(name);info.size=len(data);tar.addfile(info,io.BytesIO(data))
+                subprocess.run(docker+["exec","-i",names[-1],"docker","load"],input=archive.getvalue(),env=env,check=True,timeout=30,stdout=subprocess.DEVNULL)
+                oracle=json.loads(dc("exec",names[-1],"docker","image","inspect","containerdesk-empty:019",capture_output=True).stdout)[0]
+                dangling=dc("exec",names[-1],"docker","image","ls","--all","--no-trunc","--quiet","--filter","dangling=true",capture_output=True).stdout.split()
+                assert len(set(dangling))==1
+                references=json.loads(dc("exec",names[-1],"docker","inspect","--type","container",*expected,capture_output=True).stdout)
+                assert all(row["Image"]==oracle["Id"] for row in references)
+                current=json.loads(manifest.read_text())
+                current["imageOracle"]={"id":oracle["Id"],"tags":sorted(oracle["RepoTags"]),"size":oracle["Size"],"danglingId":dangling[0],"references":sorted(row["Id"] for row in references)}
+                manifest.write_text(json.dumps(current))
             if args.inventory:
                 native_test(executable, "checkpoint020_live_inventory", {**test_env, "PATH": "/nonexistent"})
             if args.inspect:
                 native_test(executable, "checkpoint021_live_inspect", {**test_env, "PATH": "/nonexistent"})
             if args.compose:
                 native_test(executable, "checkpoint029_owned_compose", {**test_env, "PATH": "/nonexistent"})
+            if args.images:
+                native_test(executable, "checkpoint034_owned_images", {**test_env, "PATH": "/nonexistent"})
             if args.native_driver:
                 from native_ssh import verify
-                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect, args.compose)
+                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect, args.compose, args.images)
             assert not marker.exists()
             assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
             print(f"PASS: {len(cases)} native SSH cases; config/trust hashes unchanged; no askpass invoked", flush=True)

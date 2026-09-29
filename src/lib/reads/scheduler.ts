@@ -2,6 +2,8 @@ import type { ErrorCode } from "../ipc/generated.ts";
 export type ReadCommand =
   | "list_containers"
   | "list_compose"
+  | "list_images"
+  | "inspect_image"
   | "inspect_container"
   | "container_logs"
   | "container_stats";

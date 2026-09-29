@@ -2055,3 +2055,151 @@ async fn checkpoint033_owned_batch_partial_cancel_and_stopped_removal() {
         "PASS native batch over strict ProxyJump: success, actual disappearance, controlled permission denial individually retained; pending cancellation preserved dispatched success and sent no second command; running removal refused at preparation and again after a real state race; two stopped removals succeeded without force/volume flags; durable partial history survived reopen; exact eight commands, no replay, PATH=/nonexistent."
     );
 }
+
+#[tokio::test]
+#[ignore = "requires explicitly owned isolated Engine with image fixtures and SSH manifest"]
+async fn checkpoint034_owned_images_dangling_tags_metadata_and_exact_references() {
+    let manifest = std::env::var("CONTAINERDESK_SSH_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest).parent().unwrap();
+    let oracle = &lab["imageOracle"];
+    let mut previous_scope = None;
+    for (index, alias) in ["direct-known", "via-known"].into_iter().enumerate() {
+        let data = root.join(format!("images-{index}"));
+        let backend = Backend::new(&data, "/unused-lab-home".into());
+        let mut host = draft(alias, lab["config"].as_str().unwrap());
+        host.docker.executable = Some("/usr/bin/docker".into());
+        let saved = backend
+            .save_host(SaveHostRequest {
+                mode: WorkspaceMode::Live,
+                expected_revision: 0,
+                id: None,
+                draft: host,
+            })
+            .await
+            .unwrap();
+        let id = saved.saved.preferences.hosts[0].id.clone();
+        backend
+            .connect_inventory_host(InventoryConnectRequest {
+                mode: WorkspaceMode::Live,
+                host_id: id.clone(),
+            })
+            .await
+            .unwrap();
+        ready(&backend, WorkspaceMode::Live, id.clone()).await;
+        let scope = backend
+            .connect_host(ConnectHostRequest {
+                selection: HostSelection {
+                    host_id: id,
+                    selection_generation: 1,
+                },
+            })
+            .unwrap()
+            .scope;
+        if let Some(foreign) = previous_scope.take() {
+            assert!(
+                backend
+                    .list_images(ListImagesRequest {
+                        scope: foreign,
+                        dangling_only: false
+                    })
+                    .await
+                    .is_err()
+            );
+        }
+        let inventory = backend
+            .list_images(ListImagesRequest {
+                scope: scope.clone(),
+                dangling_only: false,
+            })
+            .await
+            .unwrap();
+        assert_eq!(inventory.images.len(), 2);
+        let image = inventory
+            .images
+            .iter()
+            .find(|image| image.id.0 == oracle["id"].as_str().unwrap())
+            .unwrap();
+        assert_eq!(serde_json::to_value(&image.tags).unwrap(), oracle["tags"]);
+        let dangling = backend
+            .list_images(ListImagesRequest {
+                scope: scope.clone(),
+                dangling_only: true,
+            })
+            .await
+            .unwrap();
+        assert_eq!(dangling.images.len(), 1);
+        assert!(dangling.images[0].tags.is_empty());
+        assert_eq!(
+            dangling.images[0].id.0,
+            oracle["danglingId"].as_str().unwrap()
+        );
+        let detail = backend
+            .inspect_image(InspectImageRequest {
+                scope: scope.clone(),
+                image_id: image.id.clone(),
+            })
+            .await
+            .unwrap();
+        assert_eq!(detail.size_bytes, oracle["size"].as_u64());
+        assert_eq!(detail.labels.len(), 2);
+        assert!(
+            detail
+                .labels
+                .iter()
+                .all(|label| label.value.is_none() && label.masked)
+        );
+        assert_eq!(
+            detail
+                .containers
+                .iter()
+                .map(|row| row.container_id.0.clone())
+                .collect::<Vec<_>>(),
+            oracle["references"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|v| v.as_str().unwrap().to_string())
+                .collect::<Vec<_>>()
+        );
+        let encoded = serde_json::to_string(&detail).unwrap();
+        assert!(
+            !encoded.contains("synthetic-image-034-secret")
+                && !encoded.contains("synthetic-label-034-secret")
+        );
+        assert_eq!(
+            backend
+                .inspect_image(InspectImageRequest {
+                    scope: scope.clone(),
+                    image_id: ImageId(format!("sha256:{}", "f".repeat(64)))
+                })
+                .await
+                .unwrap_err()
+                .code,
+            ErrorCode::ImageNotFound
+        );
+        let untagged = backend
+            .inspect_image(InspectImageRequest {
+                scope: scope.clone(),
+                image_id: dangling.images[0].id.clone(),
+            })
+            .await
+            .unwrap();
+        assert!(untagged.tags.is_empty() && untagged.containers.is_empty());
+        assert!(!backend.management_state(scope.clone()).unwrap().enabled);
+        previous_scope = Some(scope);
+        backend.shutdown().await;
+        for file in [
+            data.join("activity/history.json"),
+            data.join("preferences/settings.json"),
+        ] {
+            if let Ok(bytes) = std::fs::read(file) {
+                assert!(!String::from_utf8_lossy(&bytes).contains("synthetic-image-034-secret"));
+            }
+        }
+    }
+    println!(
+        "PASS native images direct and ProxyJump: isolated Engine oracle matched two immutable identities, multiple tags deduplicated, real dangling filter, metadata size and exact two container references; all label values masked, missing image typed, foreign host scope rejected, read-only permission unchanged; PATH=/nonexistent."
+    );
+}

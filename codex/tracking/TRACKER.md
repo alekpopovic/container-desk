@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T03:55:57+00:00
+Updated: 2026-09-29T04:20:58+00:00
 
-blocked: **0** | done: **33** | in_progress: **0** | pending: **27**
+blocked: **0** | done: **34** | in_progress: **0** | pending: **26**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -43,7 +43,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 031 | 04 Management | Mutation intents and local activity records | high | done | codex/tracking/evidence/031.md |
 | 032 | 04 Management | Container start stop and restart | high | done | codex/tracking/evidence/032.md |
 | 033 | 04 Management | Multi-container actions and stopped-container removal | high | done | codex/tracking/evidence/033.md |
-| 034 | 04 Management | Image inventory and inspection | medium | pending | — |
+| 034 | 04 Management | Image inventory and inspection | medium | done | codex/tracking/evidence/034.md |
 | 035 | 04 Management | Volume inventory and mount relationships | medium | pending | — |
 | 036 | 04 Management | Network inventory and container attachments | medium | pending | — |
 | 037 | 04 Management | Verified remote Compose project actions | high | pending | — |
@@ -140,3 +140,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T03:24:12+00:00 — 032: done; Native release lifecycle/health and post-dispatch loss through ProxyJump passed with exact no-replay counts; controlled drift blocked dispatch; 116 Rust, 59 IPC and affected browser tests passed
 - 2026-09-29T03:26:48+00:00 — 033: start;
 - 2026-09-29T03:55:57+00:00 — 033: done; PASS: 119 Rust suite tests plus 10 final activity tests; 60 Node tests; 54 browser tests; native release batch UI and real strict ProxyJump batch/removal/cancellation plus 032 loss/no-replay regression; build, clippy and diff checks.
+- 2026-09-29T03:56:42+00:00 — 034: start;
+- 2026-09-29T04:20:58+00:00 — 034: done; PASS: 124 Rust tests, 63 Node tests, 18 image UI + 36 route/demo browser tests; isolated Engine direct/ProxyJump CLI oracle and actual release image UI/reference navigation; build, clippy, formatting and tracker validation.

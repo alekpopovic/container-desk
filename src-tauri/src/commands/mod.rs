@@ -562,3 +562,19 @@ pub fn cancel_mutation(
 ) -> Result<CancelMutationResponse, AppError> {
     backend.cancel_mutation(request)
 }
+
+#[tauri::command]
+pub async fn list_images(
+    backend: tauri::State<'_, Backend>,
+    request: ListImagesRequest,
+) -> Result<ListImagesResponse, AppError> {
+    backend.list_images(request).await
+}
+
+#[tauri::command]
+pub async fn inspect_image(
+    backend: tauri::State<'_, Backend>,
+    request: InspectImageRequest,
+) -> Result<ImageDetail, AppError> {
+    backend.inspect_image(request).await
+}

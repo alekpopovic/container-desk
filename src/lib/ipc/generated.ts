@@ -3,6 +3,12 @@ export type HostId = string;
 export type SessionId = string;
 export type ContainerId = string;
 export type ImageId = string;
+export type ListImagesRequest = { scope: SessionScope, danglingOnly: boolean, };
+export type ListImagesResponse = { scope: SessionScope, danglingOnly: boolean, images: Array<ImageSummary>, };
+export type ImageSummary = { scope: SessionScope, id: ImageId, tags: Array<string>, digests: Array<string>, sizeReported: string | null, createdAtReported: string | null, };
+export type InspectImageRequest = { scope: SessionScope, imageId: ImageId, };
+export type ImageDetail = { scope: SessionScope, id: ImageId, tags: Array<string>, digests: Array<string>, sizeBytes: number | null, createdAt: string | null, os: string | null, architecture: string | null, variant: string | null, labels: Array<DetailValue>, containers: Array<ImageContainerReference>, };
+export type ImageContainerReference = { containerId: ContainerId, name: string, state: string, };
 export type SubscriptionId = string;
 export type HostSelection = { hostId: HostId,
 /**
@@ -14,7 +20,7 @@ export type SessionScope = { selection: HostSelection, sessionId: SessionId,
  * Backend-issued epoch; changes after reconnect or daemon/context changes.
  */
 sessionGeneration: number, daemonId: string, };
-export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "container_not_found" | "container_not_stopped" | "log_driver_unsupported" | "export_failed" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
+export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "container_not_found" | "container_not_stopped" | "image_not_found" | "log_driver_unsupported" | "export_failed" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
 export type AppError = { code: ErrorCode, message: string, scope: SessionScope | null, };
 export type ConnectionState = "disconnected" | "resolving" | "connecting" | "probing" | "ready" | "degraded" | "error";
 export type HostCapabilities = { docker: boolean, compose: boolean, management: boolean, terminal: boolean, };

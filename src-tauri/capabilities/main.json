@@ -15,6 +15,8 @@
     "allow-connect-host",
     "allow-list-containers",
     "allow-list-compose",
+    "allow-list-images",
+    "allow-inspect-image",
     "allow-cancel-subscription",
     "allow-get-preferences",
     "allow-set-theme",

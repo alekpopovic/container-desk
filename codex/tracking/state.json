@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T03:55:57+00:00",
+  "updated_at": "2026-09-29T04:20:58+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1140,6 +1140,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T03:56:42+00:00",
+      "id": "034",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T04:20:58+00:00",
+      "id": "034",
+      "action": "done",
+      "note": "PASS: 124 Rust tests, 63 Node tests, 18 image UI + 36 route/demo browser tests; isolated Engine direct/ProxyJump CLI oracle and actual release image UI/reference navigation; build, clippy, formatting and tracker validation.",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T03:56:42+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1567,12 +1601,14 @@
       "note": ""
     },
     "034": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T03:56:42+00:00",
+      "finished_at": "2026-09-29T04:20:58+00:00",
+      "evidence": "codex/tracking/evidence/034.md",
+      "evidence_sha256": "f04f4f3fa645caaf200cac5a948858b9dcac78be990ccdf0042fab4c151ce1c1",
+      "checks": [
+        "PASS: 124 Rust tests, 63 Node tests, 18 image UI + 36 route/demo browser tests; isolated Engine direct/ProxyJump CLI oracle and actual release image UI/reference navigation; build, clippy, formatting and tracker validation."
+      ],
       "commit": "",
       "note": ""
     },

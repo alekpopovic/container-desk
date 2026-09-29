@@ -15,6 +15,8 @@ fn main() {
             "connect_host",
             "list_containers",
             "list_compose",
+            "list_images",
+            "inspect_image",
             "cancel_subscription",
             "get_preferences",
             "set_theme",
