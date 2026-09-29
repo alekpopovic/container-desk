@@ -4,7 +4,7 @@ Desktop aplikacija za rad sa Docker-om na Linux serverima preko tvog postojećeg
 
 Aplikacija prikazuje kontejnere, inspect detalje, logove, statistiku, Compose projekte, slike, volumene i mreže. Start/stop/restart, ograničeno uklanjanje zaustavljenih kontejnera i terminal traže posebno omogućavanje i potvrdu. Slike, volumeni i mreže su samo za pregled. Nema prune-a, Compose up/down, registry prijavljivanja, Kubernetes-a ili automatskog ažuriranja. Radni naziv je ContainerDesk; nije tvrdnja o registrovanom žigu.
 
-**Status:** funkcije su implementirane; aktuelne provere i ograničenja su u [statusu projekta](docs/project-status.md). Ubuntu 24.04 x86_64 deb i macOS 15.7.9 app/DMG na Apple Silicon/Intel imaju stvarne native dokaze. AppImage pokretanje i konačna matrica platformi još se proveravaju. Nema odobrene javne objave; Mac Developer ID potpis/notarizacija nisu provereni bez vlasnikovih kredencijala. Workflow za javnu objavu je izostavljen po dogovoru.
+**Status:** funkcije su implementirane; aktuelne provere i ograničenja su u [statusu projekta](docs/project-status.md). Ubuntu 24.04 x86_64 deb/AppImage i macOS 15.7.9 app/DMG na Apple Silicon/Intel imaju stvarne dokaze izvršavanja. [Konačna native matrica](docs/platform-matrix.md) potvrđuje SSH/Docker/PTY na sve tri klijentske platforme. Nema odobrene javne objave; Mac Developer ID potpis/notarizacija nisu provereni bez vlasnikovih kredencijala. Workflow za javnu objavu je izostavljen po dogovoru.
 
 ## 1. Instalacija
 

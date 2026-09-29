@@ -1,0 +1,3 @@
+c86fdc2f55a65f2b282e33716144918edcedcb557da0b3856152b1b51417adaa  containerdesk-0.1.0-x86_64-apple-darwin.app.tar.gz
+85610a2061828fd6fa770aa0d25aa9f2c9db12b847aa48407410de96c05329d5  containerdesk-0.1.0-x86_64-apple-darwin.dmg
+c69abfd6c8d3596e03db2a6fb92c89bc1b499ec7f00c5855d96b435591d31ed5  containerdesk-0.1.0-x86_64-apple-darwin.json

@@ -1,0 +1,72 @@
+{
+  "schema": 2,
+  "appVersion": "0.1.0",
+  "sourceCommit": "ce33d6cd9bba5823642749a26d3e6d367a9bab73",
+  "guestAcceleration": "tcg",
+  "baseImageSha512": "d0ddf1faae4d44aee3ad6621f166bd414c2f99b6974fb455408612d59cbb31a5390ca259800ac0c6b60505493880ed6de8beb986f6d0883b26c8e84ce75a266c",
+  "clientOs": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "clientArchitecture": "x86_64",
+  "encryptedAgentRequested": true,
+  "qemu": "QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)",
+  "clientSsh": "OpenSSH_9.6p1 Ubuntu-3ubuntu13.19, OpenSSL 3.0.13 30 Jan 2024",
+  "hostDockerUsed": false,
+  "privilegedContainers": false,
+  "privateAddress": [
+    "127.49.0.2",
+    22222
+  ],
+  "privateDirectTcpClosedBefore": true,
+  "encryptedKeyRejectsEmptyPassphrase": true,
+  "emptyAgentAuthenticationRejected": true,
+  "encryptedKeyLoadedIntoNativeAgent": true,
+  "privateDirectTcpClosedDuring": true,
+  "privateWithoutJumpRejected": true,
+  "privateViaJumpVerified": true,
+  "guest": {
+    "alpine": "3.22.4",
+    "kernel": "6.12.81-0-virt",
+    "dockerServer": "28.3.3",
+    "dockerClient": "28.3.3",
+    "compose": "2.36.2",
+    "ssh": "OpenSSH_10.0p2, OpenSSL 3.5.6 7 Apr 2026"
+  },
+  "nativeTestExecutableSha256": "fbc511f4b8a4c0f264c9ea60cb2fabae9c9e8cbc8e3ff343d32ad2f248c4bcf8",
+  "nativeExit": 0,
+  "checks": [
+    "PASS 049: direct-owned: handshake, exact inventory, masked inspect, logs, stats, cancelled follow, read-only denial, stop/start once, verified Compose restart once, PTY echo/resize/Ctrl-C/close, actual SSH session loss, reconnect/new read-only scope, no stale action/input or persisted payload",
+    "PASS 049: private-owned: handshake, exact inventory, masked inspect, logs, stats, cancelled follow, read-only denial, stop/start once, verified Compose restart once, PTY echo/resize/Ctrl-C/close, actual SSH session loss, reconnect/new read-only scope, no stale action/input or persisted payload",
+    "PASS 058: actual stop with lost SSH response stayed unknown without replay; fresh read reconciled exited state before explicit start; native redacted support file excluded seeded payloads and identities",
+    "PASS 049: direct-bad: native unknown/changed host key rejected before Docker readiness",
+    "PASS 049: private-bad: native unknown/changed host key rejected before Docker readiness",
+    "PASS 049: via-bad-jump: native unknown/changed host key rejected before Docker readiness",
+    "PASS 049: direct-unknown: native unknown/changed host key rejected before Docker readiness",
+    "PASS 049: native slow remote command over ProxyJump timed out and reaped within four seconds"
+  ],
+  "independentDockerEventCounts": {
+    "owned-live": {
+      "start": 3,
+      "die": 3
+    },
+    "untouched": {
+      "start": 0,
+      "die": 0
+    },
+    "owned049-web-1": {
+      "start": 2,
+      "die": 2
+    },
+    "owned049-worker-1": {
+      "start": 2,
+      "die": 2
+    }
+  },
+  "independentDockerStateVerified": true,
+  "untouchedContainerUnchanged": true,
+  "trustAndConfigUnchanged": true,
+  "guestContainersRemoved": 4,
+  "unrelatedSshMasterPreserved": true,
+  "observedSshIdentitiesReaped": 577,
+  "ownedAgentReaped": true,
+  "vmReaped": true,
+  "temporaryKeysSeedAndDiskRemoved": true
+}

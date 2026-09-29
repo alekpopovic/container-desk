@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T14:36:58+00:00",
+  "updated_at": "2026-09-29T16:55:12+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -2007,6 +2007,23 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T16:55:12+00:00",
+      "id": "058",
+      "action": "done",
+      "note": "Native CI 36594720178: all three clients passed 13 standard checks and eight real encrypted-agent SSH/Docker/PTY groups; Mac package GUI/support passed; exact final Linux deb/AppImage passed fresh Ubuntu desktop VMs; manifests/source/executable hashes and cleanup verified",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T14:36:58+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2722,12 +2739,14 @@
       "note": ""
     },
     "058": {
-      "status": "in_progress",
+      "status": "done",
       "started_at": "2026-09-29T14:36:58+00:00",
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "finished_at": "2026-09-29T16:55:12+00:00",
+      "evidence": "codex/tracking/evidence/058.md",
+      "evidence_sha256": "18ae323819d5d13a34b715f3908b0bc0208dc2fd7ac0475176fb534151ab031b",
+      "checks": [
+        "Native CI 36594720178: all three clients passed 13 standard checks and eight real encrypted-agent SSH/Docker/PTY groups; Mac package GUI/support passed; exact final Linux deb/AppImage passed fresh Ubuntu desktop VMs; manifests/source/executable hashes and cleanup verified"
+      ],
       "commit": "",
       "note": ""
     },

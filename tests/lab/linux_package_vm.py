@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""053 disposable Ubuntu 24.04 KVM desktop, ordinary installed packages only."""
+"""053 disposable Ubuntu 24.04 desktop, ordinary installed packages only."""
 import argparse
 import base64
 import hashlib
@@ -29,6 +29,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for key in ('qemu-root', 'image', 'packages', 'artifacts'): parser.add_argument('--'+key, type=Path, required=True)
     parser.add_argument('--format', choices=['deb','appimage'], default='deb')
+    parser.add_argument('--tcg', action='store_true', help='Use a software-emulated guest when KVM is unavailable')
     args = parser.parse_args()
     assert digest(args.image) == IMAGE_SHA256, 'Unexpected Ubuntu image'
     args.artifacts.mkdir(parents=True, exist_ok=True)
@@ -36,7 +37,7 @@ def main():
     env = os.environ.copy()
     for name in ('SSH_AUTH_SOCK', 'SSH_AGENT_PID', 'LD_PRELOAD'): env.pop(name, None)
     qenv = {**env, 'LD_LIBRARY_PATH': str(tools/'usr/lib/x86_64-linux-gnu')}
-    result = {'baseImageSha256': IMAGE_SHA256, 'nativeArchitecture': 'x86_64', 'publicPublishing': False, 'format': args.format}
+    result = {'baseImageSha256': IMAGE_SHA256, 'nativeArchitecture': 'x86_64', 'publicPublishing': False, 'format': args.format, 'guestAcceleration': 'tcg' if args.tcg else 'kvm'}
     with tempfile.TemporaryDirectory(prefix='containerdesk-053-vm-') as area:
         root = Path(area)
         vm = None
@@ -72,17 +73,21 @@ touch /opt/containerdesk/ready
             (root/'known').write_text('owned-package-vm '+public('host')+'\n')
             (root/'config').write_text(f'Host package-vm\n HostName 127.0.0.1\n Port {port}\n User lab\n HostKeyAlias owned-package-vm\n UserKnownHostsFile {root/"known"}\n GlobalKnownHostsFile /dev/null\n IdentityFile {root/"client"}\n IdentitiesOnly yes\n IdentityAgent none\n BatchMode yes\n StrictHostKeyChecking yes\n UpdateHostKeys no\n ForwardAgent no\n ConnectTimeout 3\n')
             (root/'config').chmod(0o600)
-            qemu = [str(tools/'usr/bin/qemu-system-x86_64'), '-enable-kvm', '-cpu', 'host', '-smp', '2', '-m', '3072', '-L', str(tools/'usr/share/qemu'), '-bios', str(tools/'usr/share/seabios/bios-256k.bin'), '-display', 'none', '-vga', 'none', '-global', 'virtio-net-pci.romfile=', '-monitor', 'none', '-serial', 'file:'+str(root/'serial.log'), '-no-reboot', '-drive', f'file={root/"disk.qcow2"},format=qcow2,if=virtio', '-drive', f'file={root/"seed.iso"},format=raw,media=cdrom,readonly=on', '-nic', f'user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:{port}-:22']
+            qemu = [str(tools/'usr/bin/qemu-system-x86_64'), '-accel', 'tcg' if args.tcg else 'kvm', '-cpu', 'max' if args.tcg else 'host', '-smp', '2', '-m', '3072', '-L', str(tools/'usr/share/qemu'), '-bios', str(tools/'usr/share/seabios/bios-256k.bin'), '-display', 'none', '-vga', 'none', '-global', 'virtio-net-pci.romfile=', '-monitor', 'none', '-serial', 'file:'+str(root/'serial.log'), '-no-reboot', '-drive', f'file={root/"disk.qcow2"},format=qcow2,if=virtio', '-drive', f'file={root/"seed.iso"},format=raw,media=cdrom,readonly=on', '-nic', f'user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:{port}-:22']
             with (root/'qemu.log').open('w') as log: vm = subprocess.Popen(qemu, env=qenv, stdout=log, stderr=log, start_new_session=True)
             ssh = ['ssh', '-F', str(root/'config'), '-T', '-n', '--', 'package-vm']
             def remote(command, timeout=30): return run([*ssh, command], env=env, timeout=timeout)
-            deadline = time.monotonic()+900
+            setup_timeout = 1800 if args.tcg else 900
+            deadline = time.monotonic()+setup_timeout
             while True:
-                assert vm.poll() is None, 'VM exited'
+                if vm.poll() is not None:
+                    detail = (root/'qemu.log').read_text(errors='replace')[-2000:].replace(str(root), '<owned-vm>')
+                    result['startupError'] = detail
+                    raise RuntimeError('VM exited before desktop setup: '+detail)
                 try:
                     remote('test -f /opt/containerdesk/ready', 5); break
                 except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-                    if time.monotonic()>deadline: raise RuntimeError('Ubuntu desktop setup exceeded 900 seconds') from None
+                    if time.monotonic()>deadline: raise RuntimeError(f'Ubuntu desktop setup exceeded {setup_timeout} seconds') from None
                     time.sleep(2)
             print('Clean Ubuntu 24.04 desktop ready; waiting for checked CI packages.', flush=True)
             result['osRelease'] = remote('cat /etc/os-release').stdout
@@ -99,7 +104,7 @@ touch /opt/containerdesk/ready
                 deb = next(args.packages.glob('*.deb'))
                 result['debSha256'] = digest(deb)
                 run(['scp','-F',str(root/'config'),str(deb),'package-vm:/tmp/owned-package.deb'],env=env,timeout=120)
-                installation = remote('sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/owned-package.deb',300)
+                installation = remote('sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/owned-package.deb',600 if args.tcg else 300)
                 (args.artifacts/'installation.txt').write_text(installation.stdout)
             else:
                 appimage = next(args.packages.glob('*.AppImage'))
@@ -110,7 +115,7 @@ touch /opt/containerdesk/ready
             session = 'env PATH=/usr/bin:/bin GDK_BACKEND=x11 LIBGL_ALWAYS_SOFTWARE=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 GTK_MODULES=gail:atk-bridge xvfb-run -a -s "-screen 0 1440x1100x24 -nolisten tcp" dbus-run-session -- python3 /opt/containerdesk/smoke.py'
             if args.format == 'appimage': session += ' --appimage /opt/containerdesk/packages/ContainerDesk.AppImage'
             try:
-                completed = remote(session,180)
+                completed = remote(session,360 if args.tcg else 180)
                 (args.artifacts/'desktop-output.txt').write_text(completed.stdout)
             except subprocess.CalledProcessError as error:
                 (args.artifacts/'desktop-error.txt').write_text(error.stdout+'\n'+error.stderr)

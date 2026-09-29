@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T14:36:58+00:00
+Updated: 2026-09-29T16:55:12+00:00
 
-blocked: **0** | done: **57** | in_progress: **1** | pending: **2**
+blocked: **0** | done: **58** | in_progress: **0** | pending: **2**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -67,7 +67,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 055 | 06 Quality and delivery | Signing and notarization integration | high | done | codex/tracking/evidence/055.md |
 | 056 | 06 Quality and delivery | Versioning updates and rollback guidance | medium | done | codex/tracking/evidence/056.md |
 | 057 | 06 Quality and delivery | User and contributor documentation | medium | done | codex/tracking/evidence/057.md |
-| 058 | 06 Quality and delivery | Native platform acceptance matrix | high | in_progress | — |
+| 058 | 06 Quality and delivery | Native platform acceptance matrix | high | done | codex/tracking/evidence/058.md |
 | 059 | 06 Quality and delivery | Release candidate review and defect closure | high | pending | — |
 | 060 | 06 Quality and delivery | Final handover and release gate | high | pending | — |
 
@@ -191,3 +191,4 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T14:24:43+00:00 — 057: start;
 - 2026-09-29T14:36:18+00:00 — 057: done; Fresh native profile direct/ProxyJump walkthrough and real VM backend suite passed; public-only key proved agent auth; 54 doc links, actual controls, SSH config parse, formatting and tracker checks passed
 - 2026-09-29T14:36:58+00:00 — 058: start;
+- 2026-09-29T16:55:12+00:00 — 058: done; Native CI 36594720178: all three clients passed 13 standard checks and eight real encrypted-agent SSH/Docker/PTY groups; Mac package GUI/support passed; exact final Linux deb/AppImage passed fresh Ubuntu desktop VMs; manifests/source/executable hashes and cleanup verified

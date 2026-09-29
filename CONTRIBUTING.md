@@ -4,7 +4,7 @@ Read [AGENTS.md](AGENTS.md), the [architecture contract](codex/docs/ARCHITECTURE
 
 ## Setup and checks
 
-Use the pinned Node 24.21.0/npm 11.19.0 and Rust/Cargo 1.98.1, Python 3.10+ for the tracker/verifier, and the native prerequisites in [toolchains](docs/toolchains.md). Python 3.12+ is required for the optional Mac signing script. Install the current platform's system dependencies, then:
+Use the pinned Node 24.21.0/npm 11.19.0 and Rust/Cargo 1.98.1, Python 3.10+ for the tracker/verifier, and the native prerequisites in [toolchains](docs/toolchains.md). Use Python 3.12+ for optional native CI/package/signing helpers. Install the current platform's system dependencies, then:
 
 ```sh
 npm run verify:install

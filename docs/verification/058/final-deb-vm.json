@@ -1,0 +1,27 @@
+{
+  "baseImageSha256": "6a81c37564db9b1ee84e141922625e1d7c5b389b99bb3c572e0243607d5bb4d2",
+  "nativeArchitecture": "x86_64",
+  "publicPublishing": false,
+  "format": "deb",
+  "guestAcceleration": "tcg",
+  "osRelease": "PRETTY_NAME=\"Ubuntu 24.04.5 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.5 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+  "kernel": "6.8.0-142-generic",
+  "buildToolsAbsent": true,
+  "debSha256": "fb3deee5d2046822c899b99f278b0f500db34fb796b7a13a17625bfb469e82c9",
+  "runtimeVersions": "libfuse2t64 2.9.9-8.1build1\nlibgtk-3-0t64 3.24.41-4ubuntu1.3\nlibwebkit2gtk-4.1-0 2.52.6-0ubuntu0.24.04.1\nopenbox 3.6.1-12build5\nopenssh-client 1:9.6p1-3ubuntu13.19\nxvfb 2:21.1.12-1ubuntu1.8\n",
+  "desktop": {
+    "passed": true,
+    "launch": "gtk-launch installed desktop entry",
+    "automationFeature": false,
+    "desktopEntry": "[Desktop Entry]\nCategories=Development;\nComment=Manage remote Docker through OpenSSH\nExec=containerdesk\nStartupWMClass=containerdesk\nIcon=containerdesk\nName=ContainerDesk\nTerminal=false\nType=Application\n",
+    "installedIconSha256": "14e7ca2c94c3a608cf4a90bcd7937053bd28316db354e9299154675fe6955b47",
+    "installedBinarySha256": "81946e3fe231fcbf6a265ef47a3120bee19e9ac549b6bf82e2a195ea4369253d",
+    "realWindowOpened": true,
+    "defaultSshConfigAndIncludeDiscovered": true,
+    "nativeOpenSshResolution": true,
+    "sshFilesUnchanged": true,
+    "normalWindowClose": true
+  },
+  "passed": true,
+  "vmReaped": true
+}

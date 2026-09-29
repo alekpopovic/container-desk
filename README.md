@@ -6,7 +6,7 @@ Start with the **[Serbian quick start](README_SR.md)** or **[English user guide]
 
 Read views include containers, inspect, logs, statistics, Compose groups, images, volumes and networks. Lifecycle/verified existing Compose actions and container terminals require explicit permissions and confirmation. Images/volumes/networks remain read-only. No prune, Compose deployment, Kubernetes, registry credentials, telemetry or automatic updater is included.
 
-Current installers are development artifacts, not an approved public release. Ubuntu 24.04 x86_64 deb installation and both native Mac app/DMG paths have real evidence. Final native acceptance remains tracked separately; credentials have not been supplied for Apple signing/notarization. The public-publishing workflow is intentionally omitted.
+Current installers are development artifacts, not an approved public release. Ubuntu 24.04 x86_64 deb/AppImage and macOS 15.7.9 Apple Silicon/Intel app/DMG paths have real execution evidence. The [native platform matrix](docs/platform-matrix.md) also passes actual SSH/Docker/PTY on all three client targets; credentials have not been supplied for Apple signing/notarization. The public-publishing workflow is intentionally omitted.
 
 | Need | Documentation |
 |---|---|

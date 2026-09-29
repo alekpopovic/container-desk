@@ -1,6 +1,6 @@
 # Contributor verification
 
-Select the pinned Node/npm from `.nvmrc` and `package.json`, and Rust from `rust-toolchain.toml`. The runner refuses mismatched Node, npm, rustc or Cargo versions. Python 3.10+ is required for contributor scripts, not the application. It runs every command directly with argument arrays and a bounded deadline, stops on the first failure, returns nonzero, and records later checks as `not_run`.
+Select the pinned Node/npm from `.nvmrc` and `package.json`, and Rust from `rust-toolchain.toml`. The runner refuses mismatched Node, npm, rustc or Cargo versions. Python 3.10+ is required for the tracker and standard verifier; use Python 3.12+ for the optional native CI/package/signing helpers. Python is not an application dependency. It runs every command directly with argument arrays and a bounded deadline, stops on the first failure, returns nonzero, and records later checks as `not_run`.
 
 ## Install separately
 
@@ -40,7 +40,7 @@ npm run verify -- \
 
 This adds the explicit automation build and [050 desktop suite](native-testing.md) after standard checks. The existing desktop harness uses repository-local binary paths, so the runner rejects this option when `CARGO_TARGET_DIR` is set; unset it for that run. An explicitly requested unsupported native platform or failed native check is an error, never silently skipped. System tools and the disposable Docker fixtures must be available. Do not supply production aliases/resources.
 
-The stronger dedicated-VM direct/private-bastion transport suite is independently opt-in; use the exact command and verified image in [integration lab](integration-lab.md). Both native suites require their own actual execution evidence. macOS's embedded automation route is evaluated in [native testing](native-testing.md), but the current Linux harness is not a WKWebView substitute.
+The stronger dedicated-VM direct/private-bastion transport suite is independently opt-in; use the exact command and verified image in [integration lab](integration-lab.md). Both native suites require their own actual execution evidence. macOS uses the separate external accessibility package helper and native backend VM suite described in [native testing](native-testing.md); the Linux WebDriver harness does not exercise WKWebView.
 
 ## Native system prerequisites
 
@@ -53,6 +53,6 @@ sudo apt install build-essential pkg-config curl wget file libwebkit2gtk-4.1-dev
 
 This setup command is documentation, not an action performed by `verify`. Prompt 051 used existing system packages, recorded in [051/system-packages.txt](verification/051/system-packages.txt). Main observed versions: WebKitGTK 2.52.6, GTK 3.24.52, OpenSSL 3.5.5, librsvg 2.61.3. Chromium may need additional distro runtime libraries; use [Playwright's official installation guidance](https://playwright.dev/docs/intro#system-requirements) for the installed release. Native desktop labs additionally use external driver/Xvfb/xdotool/sshd tools described in their own docs, and Docker only for disposable development fixtures.
 
-For macOS desktop development, Tauri documents Xcode Command Line Tools (`xcode-select --install`); full Xcode is needed for additional Apple targets. Use a native Apple Silicon or Intel machine meeting this project's macOS 15+ baseline, the pinned Node/Rust versions, and record `xcode-select -p`, `xcrun --show-sdk-version`, `uname -m`, and the OS version. Command-line tools/frameworks and native OpenSSH must be available. No macOS prerequisite installation or execution was performed here. Public signing/notarization and Apple credentials are separate release gates.
+For macOS desktop development, Tauri documents Xcode Command Line Tools (`xcode-select --install`); full Xcode is needed for additional Apple targets. Use a native Apple Silicon or Intel machine meeting this project's macOS 15+ baseline, the pinned Node/Rust versions, and record `xcode-select -p`, `xcrun --show-sdk-version`, `uname -m`, and the OS version. Command-line tools/frameworks and native OpenSSH must be available. Actual native Mac executions and observed SDK/OS versions are linked from the platform matrix; this setup recipe alone proves no runtime behavior. Public signing/notarization and Apple credentials are separate release gates.
 
 The standard verification does not change user SSH configuration, known_hosts, keys, production server state or global package installations. Native opt-in tests clean only their explicitly owned lab resources.

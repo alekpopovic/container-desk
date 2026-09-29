@@ -1,0 +1,3 @@
+fb3deee5d2046822c899b99f278b0f500db34fb796b7a13a17625bfb469e82c9  containerdesk-0.1.0-x86_64-unknown-linux-gnu.deb
+c5956e3f1e9b7f9c6de759864a3c7fb6b0ba56353d526356ecc37eb309f5c0ae  containerdesk-0.1.0-x86_64-unknown-linux-gnu.AppImage
+bf5bce41de40bf67f4d30eee897ff789cfdac888a1bdbe9a0ba99299f1953695  containerdesk-0.1.0-x86_64-unknown-linux-gnu.json

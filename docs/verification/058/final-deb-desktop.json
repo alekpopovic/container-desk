@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "launch": "gtk-launch installed desktop entry",
+  "automationFeature": false,
+  "desktopEntry": "[Desktop Entry]\nCategories=Development;\nComment=Manage remote Docker through OpenSSH\nExec=containerdesk\nStartupWMClass=containerdesk\nIcon=containerdesk\nName=ContainerDesk\nTerminal=false\nType=Application\n",
+  "installedIconSha256": "14e7ca2c94c3a608cf4a90bcd7937053bd28316db354e9299154675fe6955b47",
+  "installedBinarySha256": "81946e3fe231fcbf6a265ef47a3120bee19e9ac549b6bf82e2a195ea4369253d",
+  "realWindowOpened": true,
+  "defaultSshConfigAndIncludeDiscovered": true,
+  "nativeOpenSshResolution": true,
+  "sshFilesUnchanged": true,
+  "normalWindowClose": true
+}

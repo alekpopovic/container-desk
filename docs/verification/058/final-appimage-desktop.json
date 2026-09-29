@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "launch": "ordinary AppImage through native FUSE runtime",
+  "automationFeature": false,
+  "appImageSha256": "c5956e3f1e9b7f9c6de759864a3c7fb6b0ba56353d526356ecc37eb309f5c0ae",
+  "desktopEntry": "[Desktop Entry]\nCategories=Development;\nComment=Manage remote Docker through OpenSSH\nExec=containerdesk\nStartupWMClass=containerdesk\nIcon=containerdesk\nName=ContainerDesk\nTerminal=false\nType=Application\n",
+  "bundledExecutableSha256": "9d38769d44ae3e45d9314a5a292feeafe6664486c2be7ad8651401f3cdbd3b52",
+  "nativeFuseMountObserved": true,
+  "realWindowOpened": true,
+  "defaultSshConfigAndIncludeDiscovered": true,
+  "nativeOpenSshResolution": true,
+  "sshFilesUnchanged": true,
+  "fuseMountRemoved": true,
+  "normalWindowClose": true
+}

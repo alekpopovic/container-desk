@@ -53,7 +53,7 @@ After `npm run desktop:build:automation`, optionally add `--quick-start-tools /p
 
 ## Native CI matrix and encrypted agent
 
-`python3 scripts/native_matrix.py` prepares the platform's QEMU tools and checksum-pinned Alpine image, then runs the full suite with `--encrypted-agent`. On macOS it uses native Homebrew QEMU, hdiutil seed creation and an architecture-matching Linux guest under TCG. ARM uses the pinned aarch64 UEFI cloud image and virtio seed media. Linux CI uses native system packages and KVM if available, otherwise TCG. No local Docker socket or production server is used.
+`python3 scripts/native_matrix.py` (Python 3.12+ on the supported CI hosts) prepares the platform's QEMU tools and checksum-pinned Alpine image, then runs the full suite with `--encrypted-agent`. On macOS it uses native Homebrew QEMU, hdiutil seed creation and an architecture-matching Linux guest under TCG. ARM uses the pinned aarch64 UEFI cloud image and virtio seed media. Linux CI uses native system packages and KVM if available, otherwise TCG. No local Docker socket or production server is used.
 
 The runner generates an encrypted throwaway identity, proves that an empty passphrase cannot read it and an empty native agent cannot authenticate, then loads it through a one-use askpass helper. SSH references only its public identity file and owned agent socket. The passphrase is never printed or placed in application environment/report data; keys, helper and socket are removed. `--provision-only` verifies prerequisites and explicitly reports `backendAcceptance: not_run`; it never satisfies native application acceptance. Do not combine `--encrypted-agent` with the separate quick-start agent mode.
 
