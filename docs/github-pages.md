@@ -10,7 +10,7 @@ The Markdown files in `docs/` are the source for the public [ContainerDesk docum
 
 ## Publishing
 
-Repository **Settings → Pages → Build and deployment** uses **Deploy from a branch**, branch **main**, folder **/docs**. GitHub builds the checked-in Markdown with its supported Jekyll renderer and deploys it through its managed Pages service. No custom publishing workflow is required.
+Repository **Settings → Pages → Build and deployment** uses **Deploy from a branch**, branch **main**, folder **/docs**. GitHub builds the checked-in Markdown with its supported Jekyll renderer and deploys it through its managed Pages service. No custom site-build workflow is required. After a manual app release, its site-update job commits Downloads/Releases and explicitly requests a branch-based Pages rebuild.
 
 The existing native application CI configuration is at `.github/workflows/ci.yml`. It was restored there by owner commit `5636d34`; this documentation change leaves that workflow intact. Pages deployment is separate from native application testing and release publication. A successful docs deployment is not native execution evidence.
 
@@ -44,3 +44,7 @@ DOCS_URL=http://127.0.0.1:4000/container-desk/ node scripts/docs/check_browser.m
 ```
 
 This checks guide discovery, themes, mobile navigation, literal code examples, layout bounds and no-JavaScript access. Screenshots go to ignored `test-results/docs/`. Set `DOCS_URL` to the public site to verify a deployment.
+
+## Release-driven updates
+
+[Manual release](release-workflow.md) generates `downloads.md`, `releases.md` and `_data/current_release.json` from actually published releases. The shared header reads the current tag from that data file. Edit the templates in `scripts/release_site.py` rather than hand-editing the three generated files. A failed publication never updates Downloads; a later docs/Pages failure is visible as a failed workflow job and can be rerun independently.

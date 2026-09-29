@@ -18,6 +18,9 @@
     "title": "Releases & platforms",
     "icon": "📦",
     "pages": [
+      "downloads.md",
+      "releases.md",
+      "release-workflow.md",
       "RELEASE_NOTES.md",
       "releases/v0.1.0.md",
       "linux-packages.md",

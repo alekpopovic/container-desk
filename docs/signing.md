@@ -8,7 +8,7 @@ icon: "📦"
 
 # 📦 Optional package signing and notarization
 
-Current evidence is **configuration-ready without credentials**. No Developer ID certificate or Apple account credentials have been supplied; notarization, signed-app runtime and internet-download Gatekeeper acceptance are **unverified**. Local package/runtime evidence in 053–054 remains separate. The user excluded a public-publishing workflow; none is installed. The optional script creates local output and submits only to Apple's notary service when explicitly invoked with owner-provided credentials. It never creates a GitHub release, tag or signing key.
+Current evidence is **configuration-ready without credentials**. No Developer ID certificate or Apple account credentials have been supplied; notarization, signed-app runtime and internet-download Gatekeeper acceptance are **unverified**. Local package/runtime evidence in 053–054 remains separate. A later owner-authorized [manual release workflow](release-workflow.md) publishes unsigned packages through existing native CI. It receives no Apple credentials and does not invoke this optional signing script. The optional script creates local output and submits only to Apple's notary service when explicitly invoked with owner-provided credentials. It never creates a GitHub release, tag or signing key.
 
 ## macOS preparation
 

@@ -12,7 +12,7 @@ home: true
 
 ![ContainerDesk — native Docker over SSH](assets/brand/banner.svg)
 
-[⬇ Download v0.1.0](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0) · [🚀 Start using ContainerDesk](user-guide.md) · [🇷🇸 Uputstvo na srpskom](https://github.com/alekpopovic/container-desk/blob/main/README_SR.md) · [🎨 Brand kit](branding.md)
+[⬇ Downloads](downloads.md) · [📦 Releases](releases.md) · [🚀 Start using ContainerDesk](user-guide.md) · [🇷🇸 Uputstvo na srpskom](https://github.com/alekpopovic/container-desk/blob/main/README_SR.md) · [🎨 Brand kit](branding.md)
 
 > **Unsigned preview.** Linux x86_64 and macOS Apple Silicon/Intel have recorded native execution evidence. Mac packages are not Developer ID signed or notarized; Gatekeeper may block downloaded apps. See the [platform matrix](platform-matrix.md) and [release receipt](releases/v0.1.0.md).
 
@@ -43,6 +43,10 @@ Implementation notes describe the increment in which a feature was added. Use [p
 - [Explicit offline demo](demo-mode.md)
 
 ### 📦 Releases & platforms
+
+- [Downloads](downloads.md)
+- [Releases](releases.md)
+- [Manual release workflow](release-workflow.md)
 
 - [ContainerDesk 0.1.0 — unsigned preview release](RELEASE_NOTES.md)
 - [v0.1.0 — public unsigned preview](releases/v0.1.0.md)

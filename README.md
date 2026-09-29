@@ -6,7 +6,7 @@
 <p align="center"><strong>A native desktop for Docker over SSH.</strong><br>Linux + macOS · Tauri 2 · React / TypeScript · Rust / Tokio</p>
 <p align="center">
   <a href="https://alekpopovic.github.io/container-desk/">📚 Documentation</a> ·
-  <a href="https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0">⬇ Download v0.1.0</a> ·
+  <a href="https://alekpopovic.github.io/container-desk/downloads.html">⬇ Downloads</a> ·
   <a href="README_SR.md">🇷🇸 Srpski</a> ·
   <a href="CONTRIBUTING.md">🛠️ Contribute</a>
 </p>
@@ -28,6 +28,8 @@ Connect to Docker on Linux servers through your **existing OpenSSH configuration
 Images, volumes and networks are read-only in v1. Prune, Compose deployment/up/down, registry credentials, Kubernetes, telemetry and automatic updates are outside the current scope.
 
 ## 📦 Download and install
+
+[Current downloads](docs/downloads.md) · [All releases](docs/releases.md) · [Publish a new version with existing CI](docs/release-workflow.md)
 
 **v0.1.0 is a public unsigned preview.** Linux x86_64 and macOS Apple Silicon/Intel packages have real native execution evidence. Review the [platform matrix](docs/platform-matrix.md) for tested OS versions and limitations.
 
@@ -61,6 +63,6 @@ Follow the [English user guide](docs/user-guide.md) or [Serbian quick start](REA
 
 Read [CONTRIBUTING](CONTRIBUTING.md) before working on the app. All 60 original implementation prompts are complete under the documented scope; [final handover](docs/FINAL_HANDOVER.md) preserves their evidence. `codex/` retains the original prompt pack and immutable task hashes. Current platform and distribution claims come from executed evidence, not task descriptions.
 
-Native application checks are defined in `.github/workflows/ci.yml`. GitHub Pages publishes documentation from `main/docs`; it does not publish application releases. Application version is defined in `package.json`.
+Native application checks are defined in `.github/workflows/ci.yml`. GitHub Pages publishes documentation from `main/docs`. The manually dispatched [release workflow](docs/release-workflow.md) reuses native CI, publishes complete installer sets, updates Downloads/Releases and explicitly rebuilds Pages. Application version is defined in `package.json`.
 
 ContainerDesk is a working product name, not a trademark or domain-ownership claim.

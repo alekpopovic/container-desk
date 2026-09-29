@@ -1,0 +1,66 @@
+{
+  "date": "2026-09-29",
+  "scope": "Owner-requested manually entered release version, reuse of existing native CI, full commit range and all installers, followed by Releases/Downloads updates and explicit Pages build.",
+  "checks": {
+    "unitTests": {
+      "command": "python3 -m unittest discover -s scripts/tests -v",
+      "passed": 46,
+      "scope": "Isolated Git remotes and mocked GitHub API; includes publication/resume with twelve fake assets, no public release mutation"
+    },
+    "workflowSyntax": {
+      "tool": "actionlint 1.7.12",
+      "command": "actionlint .github/workflows/*.yml",
+      "passed": true
+    },
+    "workflowBoundaries": "Dispatch-only release; exact SHA passed to existing ci.yml; build jobs contents:read; publishing needs whole reusable CI; Pages update needs successful publication and has pages:write.",
+    "version": "Application remains 0.1.0; version change occurs only when manually dispatched.",
+    "tracker": "60 original prompt statuses/hashes/evidence validated; no historical prompt changes.",
+    "docs": {
+      "jekyll": "3.10.0 build passed",
+      "htmlPages": 79,
+      "localLinks": 7226,
+      "brokenLinks": 0,
+      "browser": {
+        "base": "http://127.0.0.1:4179/container-desk/",
+        "results": [
+          {
+            "width": 1440,
+            "themePersistence": true,
+            "search": true,
+            "noOverflow": true,
+            "literalTemplates": true
+          },
+          {
+            "width": 768,
+            "themePersistence": true,
+            "search": true,
+            "noOverflow": true,
+            "literalTemplates": true
+          },
+          {
+            "width": 390,
+            "themePersistence": true,
+            "search": true,
+            "noOverflow": true,
+            "literalTemplates": true
+          }
+        ],
+        "noJavaScript": true,
+        "errors": []
+      }
+    },
+    "format": "npm run format:check passed"
+  },
+  "readOnlyGitHubChecks": {
+    "mainProtected": false,
+    "defaultWorkflowPermissions": "read; job-level permissions are explicitly declared",
+    "existingCIRun": "https://github.com/alekpopovic/container-desk/actions/runs/36610348275",
+    "existingCISource": "162241f3727b4b4baf4ab07b70a8f790cef4bb02",
+    "existingCIConclusion": "success; this is baseline evidence, not a run of the new manual publisher"
+  },
+  "limits": [
+    "No new version chosen or dispatched in this implementation task. First manual run must produce real current native-build, publication and Pages evidence.",
+    "macOS Developer ID signing and notarization remain unavailable; packages remain unsigned/ad-hoc.",
+    "Package metadata is preserved as generated; later CI completion is separately recorded in release provenance."
+  ]
+}

@@ -26,7 +26,7 @@ Candidate: 0.1.0, source `ce33d6cd9bba5823642749a26d3e6d367a9bab73`, [native CI 
 2. Inspect `ARTIFACTS.json` and each `packages/<target>/*.json`: same clean source, version, native target and CI run; verify package bytes against original per-target manifests. Check all three standard and integration reports, two Mac package reports and final deb/AppImage reports against those identities.
 3. Confirm all recorded native cleanup flags, no-replay event/state oracles and successful ordinary window/SSH behavior. The exact artifact set was already launched in 058; replaying those reports is a provenance recheck, not a new native runtime claim.
 4. Run `python3 codex/scripts/track.py validate`, check the final tracker/evidence and review `git status --short`; preserve and separately report unrelated user changes.
-5. Confirm no publisher/write permission, secrets, public tag/release or uploaded candidate was introduced. Keep local unsigned approval separate from the owner steps below.
+5. Confirm ordinary PR/native CI jobs retain read-only permissions and no signing/publisher credentials. Public release is an explicit invocation of the separately authorized [manual release workflow](release-workflow.md); keep local unsigned acceptance distinct from that publication.
 
 ## Optional owner distribution steps — not performed
 
