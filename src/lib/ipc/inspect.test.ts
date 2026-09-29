@@ -106,3 +106,31 @@ test("inspect limits reject malformed precise data and suppress raw remote error
       e.message.includes("no longer exists"),
   );
 });
+
+test("observed Docker created-state fixture retains null limits, no start time and exposed-only ports through public IPC", async () => {
+  const observed: ContainerDetail = JSON.parse(
+    readFileSync(
+      new URL("../../../tests/fixtures/ipc.json", import.meta.url),
+      "utf8",
+    ),
+  ).observedCreated;
+  mockIPC(() => structuredClone(observed));
+  const result = await inspectContainer(request, () => scope);
+  assert.equal(result.summary.state, "created");
+  assert.equal(result.startedAt, null);
+  assert.equal(result.finishedAt, null);
+  assert.equal(result.healthcheckConfigured, false);
+  assert.equal(result.summary.health, null);
+  assert.equal(result.resources.pidsLimit, null);
+  assert.equal(result.resources.memoryBytes, "0");
+  assert.deepEqual(result.summary.ports, []);
+  assert.deepEqual(result.exposedPorts, [
+    { privatePort: 8080, protocol: "tcp" },
+  ]);
+  assert.deepEqual(result.networks[0]?.aliases, []);
+  assert.equal(result.environmentValuesMasked, true);
+  assert.ok(
+    result.environment.every((entry) => entry.value === null && entry.masked),
+  );
+  assert.ok(!JSON.stringify(result).includes("SEEDED_048"));
+});

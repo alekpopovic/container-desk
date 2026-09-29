@@ -15,6 +15,8 @@ export function ManagementFixture() {
   const [unknown, setUnknown] = useState(false);
   const [hold, setHold] = useState(false);
   const [short, setShort] = useState(false);
+  const [holdConfirmation, setHoldConfirmation] = useState(false);
+  const prepared = useRef<(() => void) | null>(null);
   const completion = useRef<(() => void) | null>(null);
   const state = useRef("running");
   const activity = useRef<ActivityRecord[]>([]);
@@ -27,12 +29,18 @@ export function ManagementFixture() {
     if (command === "get_activity") return activity.current;
     if (command === "get_management") return { scope, enabled: false };
     if (command === "set_management") return request;
-    if (command === "prepare_confirmation")
-      return {
+    if (command === "prepare_confirmation") {
+      const result = {
         ...(request as PrepareConfirmationRequest),
         id: `i_${"c".repeat(32)}`,
         expiresInMs: short ? 50 : 30000,
       };
+      if (holdConfirmation)
+        return new Promise((resolve) => {
+          prepared.current = () => resolve(result);
+        });
+      return result;
+    }
     if (command === "mutate_container") {
       const received = request as MutationRequest;
       setCalls((n) => n + 1);
@@ -89,6 +97,12 @@ export function ManagementFixture() {
       </button>
       <button type="button" onClick={() => setShort(true)}>
         Fixture short expiry
+      </button>
+      <button type="button" onClick={() => setHoldConfirmation(true)}>
+        Fixture hold confirmation
+      </button>
+      <button type="button" onClick={() => prepared.current?.()}>
+        Fixture release confirmation
       </button>
       <button type="button" onClick={() => setEpoch((n) => n + 1)}>
         Fixture reconnect

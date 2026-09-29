@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T09:29:19+00:00
+Updated: 2026-09-29T09:40:16+00:00
 
-blocked: **0** | done: **47** | in_progress: **0** | pending: **13**
+blocked: **0** | done: **48** | in_progress: **0** | pending: **12**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -57,7 +57,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 045 | 05 Terminal and resilience | Large inventories and stream pressure | high | done | codex/tracking/evidence/045.md |
 | 046 | 05 Terminal and resilience | Feature-complete desktop checkpoint | high | done | codex/tracking/evidence/046.md |
 | 047 | 06 Quality and delivery | Focused security review | high | done | codex/tracking/evidence/047.md |
-| 048 | 06 Quality and delivery | Frontend and parser regression coverage | high | pending | — |
+| 048 | 06 Quality and delivery | Frontend and parser regression coverage | high | done | codex/tracking/evidence/048.md |
 | 049 | 06 Quality and delivery | Disposable direct and bastion integration lab | high | pending | — |
 | 050 | 06 Quality and delivery | Native desktop integration tests | high | pending | — |
 | 051 | 06 Quality and delivery | Local verification command and clean builds | medium | pending | — |
@@ -168,3 +168,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T09:14:45+00:00 — 046: done; PASS native 046 release journey over strict ProxyJump including styled PTY, log/terminal cleanup, two backend checkpoints and Docker oracle; 148 Rust, 86 Node, 18 browser tests; build, clippy and diff checks passed
 - 2026-09-29T09:15:21+00:00 — 047: start;
 - 2026-09-29T09:29:19+00:00 — 047: done; PASS real native external-UI baseline reproduced and fixed with zero HTTP probes; strict IPC/CSP and seeded support redaction; normal binary no TCP listener; 150 Rust, 86 Node, 21 browser tests; release build, clippy, audit triage passed
+- 2026-09-29T09:29:45+00:00 — 048: start;
+- 2026-09-29T09:40:16+00:00 — 048: done; PASS 87 Node, 151 Rust, 348 browser matrix tests plus 12 artifact-routing checks; controlled parser fault failed as expected then restored byte-for-byte; strict SSH inspect fixture matched independent Docker CLI; lint and contracts passed

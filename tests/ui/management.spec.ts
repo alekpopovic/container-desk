@@ -72,3 +72,33 @@ test("expired confirmation cannot submit", async ({ page }) => {
   await expect(page.getByRole("dialog")).toContainText("Confirmation expired");
   await expect(page.getByLabel("Mutation count")).toHaveText("0");
 });
+
+test("late prepared confirmation from a replaced session cannot open or dispatch", async ({
+  page,
+}) => {
+  await page.goto("/tests/ui/fixture.html?state=management");
+  await page.getByRole("button", { name: "Fixture hold confirmation" }).click();
+  await page
+    .getByRole("button", { name: "Enable management", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Stop container", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Stop container", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("button", { name: "Fixture reconnect", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Enable management", exact: true }),
+  ).toBeEnabled();
+  await page
+    .getByRole("button", { name: "Fixture release confirmation", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Stop container", exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByLabel("Mutation count")).toHaveText("0");
+});

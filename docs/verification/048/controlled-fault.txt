@@ -1,0 +1,15 @@
+Controlled temporary fault: removed only started_at zero-sentinel normalization.
+Command: cargo test --manifest-path src-tauri/Cargo.toml --locked observed_created_container_preserves_nulls -- --nocapture
+EXPECTED exit 101 (regression catches fault):
+test docker::inspect::tests::observed_created_container_preserves_nulls_and_never_invents_start_or_publish_state ... FAILED
+    docker::inspect::tests::observed_created_container_preserves_nulls_and_never_invents_start_or_publish_state
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 178 filtered out; finished in 0.00s
+thread 'docker::inspect::tests::observed_created_container_preserves_nulls_and_never_invents_start_or_publish_state' (1286094) panicked at src/docker/inspect/tests.rs:253:5:
+assertion `left == right` failed
+  left: Some("0001-01-01T00:00:00Z")
+ right: None
+error: test failed, to rerun pass `--lib`
+
+Restored parser byte-for-byte before full Rust suite.
+SHA-256: a458338611e7b5d4ca9d30a9e90261fa95180260c6646cdabb37fc327da9112a
+After restoration: cargo test --manifest-path src-tauri/Cargo.toml --locked -> 151 passed, 28 opt-in ignored, 0 failed.

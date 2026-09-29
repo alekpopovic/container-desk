@@ -215,6 +215,97 @@
       "timeoutSeconds": 10
     }
   },
+  "observedCreated": {
+    "createdAt": "2026-09-29T00:00:00Z",
+    "environment": [
+      {
+        "masked": true,
+        "name": "TOKEN",
+        "value": null
+      },
+      {
+        "masked": true,
+        "name": "PATH",
+        "value": null
+      }
+    ],
+    "environmentNames": [
+      "TOKEN",
+      "PATH"
+    ],
+    "environmentValuesMasked": true,
+    "exitCode": 0,
+    "exposedPorts": [
+      {
+        "privatePort": 8080,
+        "protocol": "tcp"
+      }
+    ],
+    "finishedAt": null,
+    "healthcheckConfigured": false,
+    "imageId": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "labels": [
+      {
+        "masked": true,
+        "name": "dev.containerdesk.lab",
+        "value": null
+      },
+      {
+        "masked": true,
+        "name": "token",
+        "value": null
+      }
+    ],
+    "mounts": [],
+    "networks": [
+      {
+        "aliases": [],
+        "gateway": null,
+        "ipv4": null,
+        "ipv6": null,
+        "macAddress": null,
+        "name": "none",
+        "networkId": null
+      }
+    ],
+    "oomKilled": false,
+    "resources": {
+      "cpuPeriod": "0",
+      "cpuQuota": "0",
+      "cpuShares": "0",
+      "cpusetCpus": null,
+      "memoryBytes": "0",
+      "memorySwapBytes": "0",
+      "nanoCpus": "0",
+      "pidsLimit": null,
+      "privileged": false,
+      "readOnlyRootfs": true
+    },
+    "restartCount": 0,
+    "restartMaximumRetryCount": 0,
+    "restartPolicy": "no",
+    "startedAt": null,
+    "summary": {
+      "cli": null,
+      "compose": null,
+      "health": null,
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "image": "alpine:observed-fixture",
+      "name": "created-null-fields",
+      "ports": [],
+      "scope": {
+        "daemonId": "fixture-daemon",
+        "selection": {
+          "hostId": "h_11111111111111111111111111111111",
+          "selectionGeneration": 7
+        },
+        "sessionGeneration": 3,
+        "sessionId": "s_22222222222222222222222222222222"
+      },
+      "state": "created",
+      "status": "created"
+    }
+  },
   "policyError": {
     "code": "permission_denied",
     "message": "This operation is not permitted.",

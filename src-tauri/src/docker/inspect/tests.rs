@@ -241,3 +241,36 @@ fn pressure_large_inspect_and_listing_benchmark() {
         serde_json::json!({"iterations":100,"inspectBytes":bytes.len(),"inspectTotalMs":inspect_ms,"listingBytes":listing.len(),"listingTotalMs":start.elapsed().as_secs_f64()*1000.0})
     );
 }
+
+#[test]
+fn observed_created_container_preserves_nulls_and_never_invents_start_or_publish_state() {
+    let bytes = include_bytes!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../tests/fixtures/docker/048-created.inspect.json"
+    ));
+    let detail = parse(&scope(), &ContainerId("a".repeat(64)), false, bytes).unwrap();
+    assert_eq!(detail.summary.state, "created");
+    assert_eq!(detail.started_at, None);
+    assert_eq!(detail.finished_at, None);
+    assert_eq!(detail.summary.health, None);
+    assert_eq!(detail.healthcheck_configured, Some(false));
+    assert_eq!(detail.resources.pids_limit, None);
+    assert_eq!(detail.resources.memory_bytes.as_deref(), Some("0"));
+    assert!(detail.mounts.is_empty());
+    assert!(detail.summary.ports.is_empty());
+    assert_eq!(detail.exposed_ports.len(), 1);
+    assert_eq!(detail.exposed_ports[0].private_port, 8080);
+    assert_eq!(detail.networks.len(), 1);
+    assert!(detail.networks[0].aliases.is_empty());
+    assert!(
+        detail
+            .environment
+            .iter()
+            .all(|entry| entry.masked && entry.value.is_none())
+    );
+    assert!(
+        !serde_json::to_string(&detail)
+            .unwrap()
+            .contains("SEEDED_048")
+    );
+}

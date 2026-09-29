@@ -232,7 +232,18 @@ fn serialized_fixtures_are_current() {
     }])).unwrap().as_slice()).unwrap();
     let mut stats = crate::docker::stats::parse(&ContainerStatsRequest { scope: scope(), container_id: ContainerId("a".repeat(64)) }, &serde_json::to_vec(&json!({"ID":"a".repeat(64), "CPUPerc":"234.5%", "MemUsage":"2MiB / 64MiB", "MemPerc":"3.125%", "NetIO":"1.2kB / 3MB", "BlockIO":"4KiB / 5B", "PIDs":"7"})).unwrap()).unwrap();
     stats.captured_at_ms = 1_770_000_000_000.0;
+    let observed_created = crate::docker::inspect::parse(
+        &scope(),
+        &summary.id,
+        false,
+        include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../tests/fixtures/docker/048-created.inspect.json"
+        )),
+    )
+    .unwrap();
     let fixtures = json!({
+        "observedCreated": observed_created,
         "stats": stats,
         "effectiveSsh": EffectiveSshConfig { selection: SshSelection { alias: "fixture-host".into(), config_path: "/fixture/.ssh/config".into(), use_default_config: false }, executable_path: "/usr/bin/ssh".into(), hostname: "192.0.2.10".into(), user: "fixture-user".into(), port: 2222, proxy_jump: Some("fixture-jump".into()), has_proxy_command: false },
         "discovery": HostDiscovery { config_path: "/fixture/.ssh/config".into(), candidates: vec![SshCandidate { alias: "fixture-host".into(), source: "/fixture/.ssh/config".into(), line: 2 }], warnings: vec![DiscoveryWarning { code: DiscoveryWarningCode::PatternsSkipped, source: "/fixture/.ssh/config".into(), line: Some(3) }] },

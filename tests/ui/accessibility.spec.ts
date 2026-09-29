@@ -83,7 +83,7 @@ test("shortcuts and accessible paging survive 200 percent text and reduced motio
   ).toBeEnabled();
   if (["wide-light", "minimum-dark"].includes(info.project.name))
     await page.screenshot({
-      path: `docs/verification/044-browser/${info.project.name}-200-text.png`,
+      path: info.outputPath(`${info.project.name}-200-text.png`),
       fullPage: true,
     });
 });
