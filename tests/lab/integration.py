@@ -2,7 +2,7 @@
 """Opt-in 049: real native Rust/OpenSSH -> disposable QEMU VM -> dedicated Docker.
 
 No host Docker invocation/socket, privileged container, host network changes, user keys,
-or production SSH configuration. Requires Linux/KVM and an explicitly supplied image.
+or production SSH configuration. Uses Linux KVM/TCG or native macOS QEMU TCG and a pinned image.
 """
 import argparse
 import base64
@@ -281,7 +281,7 @@ exit "$status"
             with (root / 'native.log').open('w') as log:
                 client = subprocess.Popen([executable, 'checkpoint049_disposable_integration', '--ignored', '--nocapture'],
                                           env=test_env, stdout=log, stderr=log, start_new_session=True)
-                deadline = time.monotonic() + 180
+                deadline = time.monotonic() + (600 if mac or args.tcg else 180)
                 from native_pressure import process_sample
                 while client.poll() is None:
                     for alias in ('direct-owned', 'private-owned'):
@@ -354,18 +354,28 @@ exit "$status"
 
 
 def ssh_identities(config, exclude):
-    rows = run(['/bin/ps', '-axo', 'pid=,lstart=,command=']).stdout.splitlines()
+    # App SSH uses its own policy overlay, whose user.conf symlink names this exact lab config.
+    # Include the owned runtime socket path because background masters change their ps title.
+    paths = [str(config)]
+    runtime = Path('/tmp')/f'containerdesk-{os.getuid()}'
+    if runtime.is_dir():
+        for folder in runtime.iterdir():
+            try:
+                if (folder/'user.conf').is_symlink() and (folder/'user.conf').resolve(strict=True) == config.resolve():
+                    paths.append(str(folder)+'/')
+            except (FileNotFoundError, OSError): pass
+    rows = run(['/bin/ps', '-ww', '-axo', 'pid=,lstart=,command=']).stdout.splitlines()
     result=set()
     for row in rows:
         fields=row.split(None,6)
-        if len(fields)==7 and str(config) in fields[6] and re_ssh(fields[6]):
+        if len(fields)==7 and any(path in fields[6] for path in paths) and re_ssh(fields[6]):
             pid=int(fields[0])
             if pid != exclude: result.add((pid,' '.join(fields[1:6])))
     return result
 
 
 def re_ssh(command):
-    return command.startswith(('/usr/bin/ssh ', 'ssh '))
+    return command.startswith(('/usr/bin/ssh ', 'ssh ', 'ssh: '))
 
 
 def identity(pid):

@@ -4,6 +4,14 @@ set -eu
 apk add --no-cache docker docker-cli-compose openssh python3
 rc-service cgroups start
 rc-service docker start
+# OpenRC can report started before the daemon socket is ready, especially under TCG.
+# Poll only the disposable daemon's read-only readiness before creating any workload.
+attempt=0
+until docker info >/dev/null 2>&1; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge 120 ]; then echo 'Owned Docker daemon readiness deadline exceeded' >&2; exit 1; fi
+    sleep 1
+done
 adduser -D -s /bin/sh lab
 addgroup lab docker
 passwd -d lab

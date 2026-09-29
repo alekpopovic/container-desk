@@ -77,7 +77,7 @@ async fn checkpoint049_disposable_integration() {
                 scope: scope.clone(),
                 container_id: target.clone(),
                 tail: 10,
-                timeout_seconds: 5,
+                timeout_seconds: 30,
                 since: None,
                 until: None,
             })
@@ -118,7 +118,7 @@ async fn checkpoint049_disposable_integration() {
                 sequence: 0,
             })
             .unwrap();
-        let batch = tokio::time::timeout(Duration::from_secs(5), receiver.recv())
+        let batch = tokio::time::timeout(Duration::from_secs(30), receiver.recv())
             .await
             .unwrap()
             .unwrap();
@@ -361,14 +361,30 @@ async fn checkpoint049_disposable_integration() {
             .unwrap()
             .is_err()
         );
-        backend
-            .disconnect_inventory_host(InventoryDisconnectRequest {
-                mode: WorkspaceMode::Live,
-                host_id: host_id.clone(),
-                token: connected.token,
-            })
-            .await
-            .unwrap();
+        // The health monitor revokes the lost generation asynchronously. Repeated
+        // connects while it still reports Ready deliberately share that same attempt.
+        tokio::time::timeout(Duration::from_secs(10), async {
+            loop {
+                let current = backend
+                    .host_inventory(InventoryModeRequest {
+                        mode: WorkspaceMode::Live,
+                    })
+                    .unwrap()
+                    .connection
+                    .unwrap();
+                if current.token != connected.token {
+                    assert_eq!(current.state, ConnectionState::Degraded);
+                    assert_eq!(
+                        current.diagnostic.unwrap().code,
+                        ConnectionDiagnosticCode::ConnectionLost
+                    );
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        })
+        .await
+        .unwrap();
         backend.connect_inventory_host(connect).await.unwrap();
         ready(&backend, WorkspaceMode::Live, host_id.clone()).await;
         let next = backend

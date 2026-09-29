@@ -88,6 +88,9 @@ do {
     try press(root, "Save reviewed report…")
     _ = try waitFor(root, "Save")
     try require(app.activate(options: [.activateIgnoringOtherApps]), "Cannot activate owned save dialog")
+    let activeDeadline = Date().addingTimeInterval(5)
+    while !app.isActive && Date() < activeDeadline { RunLoop.current.run(until: Date().addingTimeInterval(0.1)) }
+    try require(app.isActive, "Owned save dialog did not become active")
     func key(_ code: CGKeyCode, _ flags: CGEventFlags = []) throws {
       guard let down = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true),
             let up = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: false) else {
@@ -97,17 +100,37 @@ do {
       down.postToPid(app.processIdentifier); up.postToPid(app.processIdentifier)
       RunLoop.current.run(until: Date().addingTimeInterval(0.3))
     }
-    // NSSavePanel's native Go to Folder sheet. Events target only the owned app PID.
+    // Native keyboard input commits the field editor and path-completion state.
+    // AXValue alone can leave NSSavePanel using its previous directory.
+    let previousFocus = attribute(root, kAXFocusedUIElementAttribute)
     try key(5, [.maskCommand, .maskShift])
-    RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+    RunLoop.current.run(until: Date().addingTimeInterval(0.7))
     guard let focused = attribute(root, kAXFocusedUIElementAttribute),
           CFGetTypeID(focused) == AXUIElementGetTypeID() else {
       throw CheckFailure(description: "Native save folder field missing")
     }
-    try require(AXUIElementSetAttributeValue(focused as! AXUIElement, kAXValueAttribute as CFString,
-      reportPath.deletingLastPathComponent().path as CFString) == .success, "Cannot select owned export folder")
+    if let previousFocus {
+      try require(!CFEqual(previousFocus, focused), "Go to Folder did not change native focus")
+    }
+    let folderField = focused as! AXUIElement
+    report["folderFieldRole"] = attribute(folderField, kAXRoleAttribute) as? String
+    report["folderFieldDescription"] = attribute(folderField, kAXDescriptionAttribute) as? String
+    try key(0, [.maskCommand])
+    let units = Array(reportPath.deletingLastPathComponent().path.utf16)
+    guard let typed = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true),
+          let released = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: false) else {
+      throw CheckFailure(description: "Cannot create native path input")
+    }
+    typed.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
+    released.keyboardSetUnicodeString(stringLength: units.count, unicodeString: units)
+    typed.postToPid(app.processIdentifier); released.postToPid(app.processIdentifier)
+    RunLoop.current.run(until: Date().addingTimeInterval(1))
+    report["enteredFolder"] = attribute(folderField, kAXValueAttribute) as? String
+    try require((attribute(folderField, kAXValueAttribute) as? String) == reportPath.deletingLastPathComponent().path,
+      "Native folder input did not match the owned destination")
     try key(36)
-    RunLoop.current.run(until: Date().addingTimeInterval(0.5))
+    RunLoop.current.run(until: Date().addingTimeInterval(1))
+    _ = try waitFor(root, reportPath.deletingLastPathComponent().lastPathComponent)
     try press(root, "Save")
     let saveDeadline = Date().addingTimeInterval(15)
     while !FileManager.default.fileExists(atPath: destination.path) && Date() < saveDeadline {

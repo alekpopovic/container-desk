@@ -129,7 +129,9 @@ def main():
         assert result['sshFilesUnchanged']
         run(['xdotool','windowactivate','--sync',window,'key','--clearmodifiers','alt+F4'])
         deadline=time.monotonic()+15
-        while Path(f'/proc/{app_pid}').exists() and time.monotonic()<deadline:time.sleep(.1)
+        while Path(f'/proc/{app_pid}').exists() and time.monotonic()<deadline:
+            for child in owned: child.poll()  # Reap an exited AppImage exec'd as our child.
+            time.sleep(.1)
         assert not Path(f'/proc/{app_pid}').exists(), 'Application did not close normally'
         if mount:
             deadline=time.monotonic()+10
@@ -150,9 +152,10 @@ def main():
                 except Exception:pass
             (OUT/'failure-accessibility.json').write_text(json.dumps(labels,indent=2)+'\n')
             subprocess.run(['import','-window','root',str(OUT/'failure-screen.png')],timeout=10,capture_output=True)
-        if app_pid and Path(f'/proc/{app_pid}/exe').resolve()==loaded_binary:
-            try: os.kill(app_pid,signal.SIGTERM)
-            except ProcessLookupError:pass
+        if app_pid:
+            try:
+                if Path(f'/proc/{app_pid}/exe').resolve()==loaded_binary: os.kill(app_pid,signal.SIGTERM)
+            except (ProcessLookupError, FileNotFoundError): pass
         for child in reversed(owned):
             if child.poll() is None:os.killpg(child.pid,signal.SIGTERM)
             try:child.wait(timeout=5)
