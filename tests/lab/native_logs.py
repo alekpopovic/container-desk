@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -84,9 +84,29 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             button('Save host')
             button('Connect saved host')
             wait('return document.body.innerText.includes("Ready · Read-only session")')
+            if mvp:
+                assert script('return document.body.innerText.includes("logs-jump")')
+                (artifacts / 'native-jump-connected.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
             wait('return document.querySelectorAll("[data-container-id]").length === 3')
             click(f'//tr[@data-container-id="{live_id}"]//button')
+            if mvp:
+                wait('return document.querySelector(".inspect-detail")?.innerText.includes("healthy")')
+                click('//button[@role="tab" and normalize-space(.)="Ports"]')
+                wait('return document.querySelector(".inspect-detail")?.innerText.includes("8080/tcp")')
+                assert script('return document.querySelector(".inspect-detail").innerText.includes("No active host bindings reported.")')
+                script('document.querySelector(".inspect-detail").scrollIntoView({block:"start",behavior:"instant"})')
+                (artifacts / 'native-jump-inspect-ports.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Compose"]')
+                wait('return document.querySelectorAll(".compose-project-choice").length === 2')
+                assert script('return document.querySelector(".compose-view").innerText.includes("Compose project listing failed; inspected container labels")')
+                click('//button[contains(@class,"compose-project-choice") and starts-with(normalize-space(.),"mvp-live")]')
+                wait('return document.querySelector(".compose-instances button")?.disabled === false')
+                script('document.querySelector(".compose-view").scrollIntoView({block:"start",behavior:"instant"})')
+                (artifacts / 'native-jump-compose.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                click('//table[contains(@class,"compose-instances")]//button')
+                wait(f'return document.querySelector(".selected-container code")?.textContent === "{live_id}"')
+                print('PASS integrated jump-host list/inspect: healthy real running workload, exposed versus published ports, Compose label fallback and same-container detail/log navigation.', flush=True)
             if stats:
                 wait('return document.querySelector(".container-stats")?.innerText.includes("Sample received")')
                 assert script('return document.querySelectorAll(".stats-chart polyline").length') == 2
@@ -204,6 +224,14 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                 print('PASS native Docker events: live scoped channel automatically invalidated inventory after external removal; authoritative snapshot removed the selected owned container without manual refresh.', flush=True)
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
             wait('return !document.querySelector(".live-logs")')
+            if mvp:
+                button('Disconnect saved host')
+                wait('return document.body.innerText.includes("Disconnected · Read-only session")')
+                click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
+                wait('return document.querySelectorAll("[data-container-id]").length === 0')
+                assert script('return !document.querySelector(".container-stats") && !document.querySelector(".live-logs")')
+                (artifacts / 'native-jump-disconnected.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
+                print('PASS integrated jump-host disconnect: old rows and live read views removed, selected host retained with offline state.', flush=True)
             time.sleep(.5)
             command('DELETE', '')
             session = None

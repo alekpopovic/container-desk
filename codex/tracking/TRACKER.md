@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T02:32:40+00:00
+Updated: 2026-09-29T02:43:54+00:00
 
-blocked: **0** | done: **29** | in_progress: **0** | pending: **31**
+blocked: **0** | done: **30** | in_progress: **0** | pending: **30**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -39,7 +39,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 027 | 03 Read-only MVP | Docker event stream and inventory invalidation | high | done | codex/tracking/evidence/027.md |
 | 028 | 03 Read-only MVP | Read refresh scheduling and stale data | high | done | codex/tracking/evidence/028.md |
 | 029 | 03 Read-only MVP | Compose project discovery and read views | high | done | codex/tracking/evidence/029.md |
-| 030 | 03 Read-only MVP | Read-only MVP checkpoint | high | pending | — |
+| 030 | 03 Read-only MVP | Read-only MVP checkpoint | high | done | codex/tracking/evidence/030.md |
 | 031 | 04 Management | Mutation intents and local activity records | high | pending | — |
 | 032 | 04 Management | Container start stop and restart | high | pending | — |
 | 033 | 04 Management | Multi-container actions and stopped-container removal | high | pending | — |
@@ -132,3 +132,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T02:09:20+00:00 — 028: done; 105 Rust tests; 54 IPC tests; 66 browser cases plus final 12 recovery cases; real slow SSH read cancellation and native release stats/log regression passed
 - 2026-09-29T02:09:48+00:00 — 029: start;
 - 2026-09-29T02:32:40+00:00 — 029: done; 108 Rust tests, 56 IPC tests, 48 affected browser cases and final 6 Compose cases; real isolated Engine/plugin and absent-plugin ProxyJump backend plus native Tauri UI passed
+- 2026-09-29T02:33:26+00:00 — 030: start;
+- 2026-09-29T02:43:54+00:00 — 030: done; Native release direct/ProxyJump read-only and empty/denied/disconnect journeys passed; npm check 56 tests; cargo test 108 passed, 17 opt-in ignored

@@ -22,6 +22,8 @@ REPO = Path(__file__).resolve().parents[2]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sshd-root', type=Path, required=True, help='Extracted Ubuntu openssh-server package root; no system install')
+    parser.add_argument('--jump', action='store_true', help='Use a second owned loopback sshd as an actual ProxyJump')
+    parser.add_argument('--mvp', action='store_true', help='Integrated 030 native journey; requires --stream --stats --jump')
     parser.add_argument('--stream', action='store_true')
     parser.add_argument('--reads', action='store_true', help='Slow native reads and disconnect cancellation; requires --stream')
     parser.add_argument('--events', action='store_true', help='Owned event lifecycle/reconnect checks; requires --stream')
@@ -34,6 +36,7 @@ def main():
     args = parser.parse_args()
     if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
         parser.error('Native driver flags require --stream and both driver paths')
+    if args.mvp and (not args.stream or not args.stats or not args.jump or args.events or args.reads): parser.error('--mvp requires --stream --stats --jump')
     if args.reads and (not args.stream or args.stats or args.events): parser.error('--reads requires --stream and excludes --stats/--events')
     if args.events and (not args.stream or args.stats): parser.error('--events requires --stream and excludes --stats')
     if args.stats and not args.stream: parser.error('--stats requires --stream')
@@ -49,6 +52,8 @@ def main():
         owned = []
         removed = set()
         server = None
+        jump_server = None
+        jump_log = None
         watcher = None
         finished = threading.Event()
         try:
@@ -56,7 +61,7 @@ def main():
             for driver in (('json-file', 'none', 'live') if args.stream else ('json-file', 'none')):
                 name = root.name + '-' + driver
                 workload = sequence if driver != 'live' else "while true; do awk 'BEGIN { for (i=0; i<5000; i++) print \"024-synthetic-live-line\" }'; sleep 0.1; done"
-                created = subprocess.run(docker + ['create', '--name', name, '--label', 'dev.containerdesk.lab=023', '--network', 'none', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--pids-limit', '32', '--memory', '32m', '--log-driver', 'json-file' if driver == 'live' else driver] + (['--log-opt', 'max-size=2m', '--log-opt', 'max-file=1'] if driver == 'live' else []) + [BASE, '/bin/sh', '-c', workload], env=env, check=True, capture_output=True, text=True, timeout=30)
+                created = subprocess.run(docker + ['create', '--name', name, '--label', 'dev.containerdesk.lab=023', '--network', 'none', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--pids-limit', '32', '--memory', '32m', '--log-driver', 'json-file' if driver == 'live' else driver] + (['--log-opt', 'max-size=2m', '--log-opt', 'max-file=1'] if driver == 'live' else []) + (['--label', 'com.docker.compose.project=' + ('mvp-live' if driver == 'live' else 'mvp-exited'), '--label', 'com.docker.compose.service=web', '--label', 'com.docker.compose.project.config_files=/remote/unverified/compose.yml', '--expose', '8080/tcp', '--expose', '53/udp'] + (['--health-cmd', '/bin/true', '--health-interval', '1s'] if driver == 'live' else []) if args.mvp else []) + [BASE, '/bin/sh', '-c', workload], env=env, check=True, capture_output=True, text=True, timeout=30)
                 ident = created.stdout.strip()
                 assert len(ident) == 64 and all(c in '0123456789abcdef' for c in ident)
                 owned.append(ident)
@@ -69,7 +74,7 @@ def main():
             print('Native CLI oracle: stdout/stderr records', len(oracle.stdout.splitlines()), len(oracle.stderr.splitlines()), 'largest stderr line bytes', max(map(len, oracle.stderr.splitlines()), default=0), flush=True)
             (root / 'oracle.stdout').write_bytes(oracle.stdout)
             (root / 'oracle.stderr').write_bytes(oracle.stderr)
-            for key in ('host', 'client'):
+            for key in (('host', 'client', 'jump-host') if args.jump else ('host', 'client')):
                 subprocess.run(['/usr/bin/ssh-keygen', '-q', '-t', 'ed25519', '-N', '', '-f', str(root / key)], check=True)
             (root / 'authorized_keys').write_text('restrict ' + (root / 'client.pub').read_text())
             (root / 'authorized_keys').chmod(0o600)
@@ -80,12 +85,27 @@ def main():
             # This fixture-only gate prevents tests from reading unrelated host resources or changing state.
             gate = REPO / 'tests/lab/logs_gate.py'
             server_config = root / 'sshd_config'
-            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY no\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} --owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
+            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY no\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} {('--mvp ' if args.mvp else '')}--owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
             public = (root / 'host.pub').read_text().split()
             known = root / 'known_hosts'
             known.write_text(f'[127.0.0.1]:{port} {public[0]} {public[1]}\n')
             ssh_config = root / 'ssh_config'
             ssh_config.write_text(f'Host logs-owned\n HostName 127.0.0.1\n User {user}\n Port {port}\n IdentityFile {root}/client\n IdentitiesOnly yes\n IdentityAgent none\n UserKnownHostsFile {known}\n StrictHostKeyChecking yes\n')
+            if args.jump:
+                with socket.socket() as sock:
+                    sock.bind(('127.0.0.1', 0))
+                    jump_port = sock.getsockname()[1]
+                (root / 'jump_authorized_keys').write_text(f'restrict,port-forwarding,permitopen="127.0.0.1:{port}" ' + (root / 'client.pub').read_text())
+                (root / 'jump_authorized_keys').chmod(0o600)
+                jump_config = root / 'sshd_jump_config'
+                jump_config.write_text(f'ListenAddress 127.0.0.1\nPort {jump_port}\nHostKey {root}/jump-host\nPidFile {root}/jump-pid\nAuthorizedKeysFile {root}/jump_authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding local\nPermitOpen 127.0.0.1:{port}\nAllowAgentForwarding no\nPermitTTY no\nForceCommand /usr/bin/false\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
+                public = (root / 'jump-host.pub').read_text().split()
+                known.write_text(known.read_text() + f'[127.0.0.1]:{jump_port} {public[0]} {public[1]}\n')
+                ssh_config.write_text(ssh_config.read_text() + f' ProxyJump logs-jump\nHost logs-jump\n HostName 127.0.0.1\n User {user}\n Port {jump_port}\n IdentityFile {root}/client\n IdentitiesOnly yes\n IdentityAgent none\n UserKnownHostsFile {known}\n StrictHostKeyChecking yes\n ForwardAgent no\n')
+                jump_log = (root / 'jump.log').open('w')
+                jump_server = subprocess.Popen([str(args.sshd_root / 'usr/sbin/sshd'), '-D', '-e', '-f', str(jump_config)], env={'PATH':'/usr/bin:/bin','LANG':'C'}, stdout=jump_log, stderr=jump_log, start_new_session=True)
+                time.sleep(.2)
+                assert jump_server.poll() is None, 'Owned jump sshd failed to start'
             before = hashlib.sha256(known.read_bytes()).hexdigest()
             with (root / 'server.log').open('w') as log:
                 server = subprocess.Popen([str(args.sshd_root / 'usr/sbin/sshd'), '-D', '-e', '-f', str(server_config)], env={'PATH': '/usr/bin:/bin', 'LANG': 'C'}, stdout=log, stderr=log, start_new_session=True)
@@ -101,7 +121,7 @@ def main():
                 manifest.write_text(json.dumps({'config': str(ssh_config), 'containerId': owned[0], 'unsupportedId': owned[1], 'oracleStdout': str(root / 'oracle.stdout'), 'oracleStderr': str(root / 'oracle.stderr'), 'liveId': owned[-1] if args.stream else None}))
                 def cut_network():
                     while not finished.wait(.05):
-                        if args.events:
+                        if args.events or args.mvp:
                             for marker, operation, target in [('event-start', 'start', owned[0]), ('event-delete', 'rm', owned[0]), ('gui-delete', 'rm', owned[1])]:
                                 if (root / marker).exists() and not (root / (marker + '-done')).exists():
                                     subprocess.run(docker + [operation, '--', target], env=env, check=True, stdout=subprocess.DEVNULL, timeout=10)
@@ -138,7 +158,7 @@ def main():
                     watcher.start()
                 if args.stream and args.native_driver:
                     from native_logs import verify
-                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events else None)
+                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp)
                 checkpoint = 'checkpoint028_owned_reads' if args.reads else 'checkpoint027_owned_events' if args.events else 'checkpoint026_owned_stats' if args.stats else 'checkpoint024_owned_stream' if args.stream else 'checkpoint023_owned_logs'
                 result = subprocess.run(['cargo', 'test', '--manifest-path', str(REPO / 'src-tauri/Cargo.toml'), '--locked', '--no-run', '--message-format=json'], env=env, capture_output=True, text=True, check=True, timeout=180)
                 executables = [json.loads(line)['executable'] for line in result.stdout.splitlines() if line.startswith('{') and json.loads(line).get('reason') == 'compiler-artifact' and json.loads(line).get('executable') and json.loads(line).get('target', {}).get('name') == 'containerdesk_lib' and json.loads(line).get('profile', {}).get('test') is True]
@@ -153,10 +173,15 @@ def main():
                     print(checked.stderr)
                     raise RuntimeError('Native log checkpoint failed')
             assert hashlib.sha256(known.read_bytes()).hexdigest() == before
+            if args.jump: print('PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.', flush=True)
             print('PASS: owned slow native reads obey host limits and disconnect cancellation; strict trust unchanged.' if args.reads else 'PASS: owned Docker events, cancellation, gap/replay and authoritative deleted-container snapshot; strict client trust unchanged.' if args.events else 'PASS: stats running/stopped/disappeared/concurrent/disconnect checks; strict client trust unchanged.' if args.stats else 'PASS: native streaming/cancellation/network-loss checkpoint; strict client trust unchanged.' if args.stream else 'PASS: real exited fixture logs match independent native Docker CLI; unsupported driver, UTF-8/line bounds; no raw synthetic log in app diagnostics; strict client trust unchanged.')
         finally:
             finished.set()
             if watcher: watcher.join(timeout=2)
+            if jump_server is not None:
+                if jump_server.poll() is None: os.killpg(jump_server.pid, signal.SIGTERM)
+                jump_server.wait(timeout=10)
+            if jump_log: jump_log.close()
             if server is not None:
                 if server.poll() is None:
                     os.killpg(server.pid, signal.SIGTERM)

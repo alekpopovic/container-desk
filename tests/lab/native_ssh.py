@@ -233,6 +233,19 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                         print(f'PASS native Compose {alias}: two projects/same web service, plugin/fallback status, unverified missing remote path and shared container detail/log navigation.', flush=True)
                     node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
                     command("POST", f"/element/{node}/click", {})
+                else:
+                    node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
+                    command("POST", f"/element/{node}/click", {})
+                    deadline = time.monotonic() + 20
+                    while time.monotonic() < deadline:
+                        if script('return document.body.innerText.includes("No containers in this snapshot") && !!document.querySelector("time")'): break
+                        time.sleep(.1)
+                    else: raise AssertionError('Native empty daemon did not show a successful empty snapshot')
+                    assert script('return document.querySelectorAll("[data-container-id]").length') == 0
+                    (artifacts / f"native-empty-{alias}.png").write_bytes(base64.b64decode(command("GET", "/screenshot"), validate=True))
+                    print(f"PASS native empty daemon {alias}: successful snapshot timestamp, zero rows and explicit empty state.", flush=True)
+                    node = element('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
+                    command("POST", f"/element/{node}/click", {})
                 button("Disconnect saved host")
                 wait_text("Disconnected · Read-only session")
                 assert engine["engineId"] not in details()
@@ -243,6 +256,7 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, in
                 button("Connect saved host")
                 wait_text("Connection error · Read-only session")
                 assert expected.lower() in details().lower(), details()
+                (artifacts / f"native-denied-{alias}.png").write_bytes(base64.b64decode(command("GET", "/screenshot"), validate=True))
                 button("Disconnect saved host")
                 wait_text("Disconnected · Read-only session")
                 print(f"PASS native UI {alias}: bounded diagnostic, explicit disconnect", flush=True)

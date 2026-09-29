@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--mvp', action='store_true')
 parser.add_argument('--config', required=True)
 parser.add_argument('--control', type=Path)
 parser.add_argument('--owned', nargs='+', required=True)
@@ -53,6 +54,14 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
         if allowed:
             for ident in args.owned: words.extend(['--filter', 'container=' + ident])
             original = 'exec ' + ' '.join(shlex.quote(word) for word in words)
+    # Project listing is deliberately not admitted: 030 exercises honest label fallback.
+    # Real Compose-plugin listing on a wholly isolated Engine is covered by 029.
+    if args.mvp and operation == ['ps', '--all', '--quiet', '--no-trunc', '--filter', 'label=com.docker.compose.project']:
+        allowed = True
+        for ident in args.owned: words.extend(['--filter', 'id=' + ident])
+        original = 'exec ' + ' '.join(shlex.quote(word) for word in words)
+    if args.mvp and len(operation) >= 7 and operation[:4] == ['inspect', '--type', 'container', '--format'] and operation[4] == '{"id":{{json .Id}},"name":{{json .Name}},"state":{{json .State.Status}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"service":{{json (index .Config.Labels "com.docker.compose.service")}},"configFiles":{{json (index .Config.Labels "com.docker.compose.project.config_files")}},"workingDir":{{json (index .Config.Labels "com.docker.compose.project.working_dir")}}}' and operation[5] == '--':
+        allowed = 1 <= len(operation[6:]) <= 64 and len(set(operation[6:])) == len(operation[6:]) and all(ident in args.owned for ident in operation[6:])
     if operation == ['ps', '--all', '--no-trunc', '--format', '{{json .}}']:
         allowed = True
         if args.control and (args.control / 'delay-list').exists():

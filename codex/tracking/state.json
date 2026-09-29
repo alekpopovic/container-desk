@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T02:32:40+00:00",
+  "updated_at": "2026-09-29T02:43:54+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1004,6 +1004,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T02:33:26+00:00",
+      "id": "030",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T02:43:54+00:00",
+      "id": "030",
+      "action": "done",
+      "note": "Native release direct/ProxyJump read-only and empty/denied/disconnect journeys passed; npm check 56 tests; cargo test 108 passed, 17 opt-in ignored",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T02:33:26+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1383,12 +1417,14 @@
       "note": ""
     },
     "030": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T02:33:26+00:00",
+      "finished_at": "2026-09-29T02:43:54+00:00",
+      "evidence": "codex/tracking/evidence/030.md",
+      "evidence_sha256": "8a74af72378759b69a67ecc48b977154cdc3f63c82cfeb74ca0bc96798d78f24",
+      "checks": [
+        "Native release direct/ProxyJump read-only and empty/denied/disconnect journeys passed; npm check 56 tests; cargo test 108 passed, 17 opt-in ignored"
+      ],
       "commit": "",
       "note": ""
     },

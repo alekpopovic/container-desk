@@ -1,0 +1,11 @@
+Native CLI oracle: stdout/stderr records 4 2 largest stderr line bytes 300589
+PASS integrated jump-host list/inspect: healthy real running workload, exposed versus published ports, Compose label fallback and same-container detail/log navigation.
+PASS native stats: real selected-container IPC values/charts and explicit polling pause.
+PASS native Docker events: live scoped channel automatically invalidated inventory after external removal; authoritative snapshot removed the selected owned container without manual refresh.
+PASS integrated jump-host disconnect: old rows and live read views removed, selected host retained with offline state.
+PASS native release Tauri channel: actual follow batches, event-loop stall/drop marker, bounded preview, stop, timestamp resume, route unmount; app storage/diagnostics clean.
+PASS native stats: actual CLI values, per-host concurrent request denied, stopped zero output replaced by a gap, disappearance between state/stats reads is a gap, disconnect reaps in-flight read and restores slots; old scope rejected.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 7.44s
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: stats running/stopped/disappeared/concurrent/disconnect checks; strict client trust unchanged.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.
