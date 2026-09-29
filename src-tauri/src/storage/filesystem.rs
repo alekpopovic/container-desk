@@ -14,6 +14,7 @@ static SERIAL: AtomicU64 = AtomicU64::new(0);
 pub struct FileStorage {
     directory: PathBuf,
     _lock: File,
+    name: &'static str,
 }
 fn refused() -> io::Error {
     io::Error::new(io::ErrorKind::PermissionDenied, "Unsafe settings file")
@@ -35,8 +36,14 @@ fn check_owner(file: &File, directory: bool) -> io::Result<()> {
 }
 impl FileStorage {
     pub fn open(app_data: &Path) -> io::Result<Self> {
+        Self::open_named(app_data, "preferences", "settings")
+    }
+    pub fn open_activity(app_data: &Path) -> io::Result<Self> {
+        Self::open_named(app_data, "activity", "history")
+    }
+    fn open_named(app_data: &Path, namespace: &str, name: &'static str) -> io::Result<Self> {
         fs::create_dir_all(app_data)?;
-        let directory = app_data.join("preferences");
+        let directory = app_data.join(namespace);
         match fs::DirBuilder::new().mode(0o700).create(&directory) {
             Ok(()) => (),
             Err(e) if e.kind() == io::ErrorKind::AlreadyExists => (),
@@ -54,7 +61,7 @@ impl FileStorage {
             .truncate(false)
             .mode(0o600)
             .custom_flags(libc::O_NOFOLLOW)
-            .open(directory.join("settings.lock"))?;
+            .open(directory.join(format!("{name}.lock")))?;
         check_owner(&lock, false)?;
         // SAFETY: the owned File's descriptor stays valid for the lifetime of this adapter.
         if unsafe { libc::flock(lock.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
@@ -63,6 +70,7 @@ impl FileStorage {
         Ok(Self {
             directory,
             _lock: lock,
+            name,
         })
     }
     fn atomic_write(&self, name: &str, bytes: &[u8]) -> io::Result<()> {
@@ -93,9 +101,9 @@ impl FileStorage {
 impl Storage for FileStorage {
     fn read(&self, previous: bool) -> io::Result<Option<Vec<u8>>> {
         let path = self.directory.join(if previous {
-            "settings.previous.json"
+            format!("{}.previous.json", self.name)
         } else {
-            "settings.json"
+            format!("{}.json", self.name)
         });
         let file = match OpenOptions::new()
             .read(true)
@@ -123,7 +131,9 @@ impl Storage for FileStorage {
             .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))?;
         // Exclusive recovery copies retain the exact damaged bytes without touching the original.
         for n in 0..16 {
-            let destination = self.directory.join(format!("settings.corrupt-{n}.json"));
+            let destination = self
+                .directory
+                .join(format!("{}.corrupt-{n}.json", self.name));
             match OpenOptions::new()
                 .write(true)
                 .create_new(true)
@@ -149,9 +159,9 @@ impl Storage for FileStorage {
     }
     fn commit(&self, current: &[u8], previous: Option<&[u8]>) -> io::Result<()> {
         if let Some(previous) = previous {
-            self.atomic_write("settings.previous.json", previous)?;
+            self.atomic_write(&format!("{}.previous.json", self.name), previous)?;
         }
-        self.atomic_write("settings.json", current)
+        self.atomic_write(&format!("{}.json", self.name), current)
     }
 }
 

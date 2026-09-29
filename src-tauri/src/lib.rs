@@ -1,3 +1,4 @@
+pub mod activity;
 mod diagnostics;
 pub mod docker;
 mod log_export;
@@ -25,6 +26,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::app_version,
+            commands::get_activity,
             commands::get_host_inventory,
             commands::save_host,
             commands::remove_host,

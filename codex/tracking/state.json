@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T02:43:54+00:00",
+  "updated_at": "2026-09-29T02:52:01+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1038,6 +1038,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T02:44:20+00:00",
+      "id": "031",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T02:52:01+00:00",
+      "id": "031",
+      "action": "done",
+      "note": "114 Rust tests and 56 IPC tests passed; Clippy/build passed; interruption/no-replay, bounded history, private persistence and direct IPC denial verified",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T02:44:20+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1429,12 +1463,14 @@
       "note": ""
     },
     "031": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T02:44:20+00:00",
+      "finished_at": "2026-09-29T02:52:01+00:00",
+      "evidence": "codex/tracking/evidence/031.md",
+      "evidence_sha256": "f9220233fb7e24d046b0e0351be2e99c15cccb45323df135f115f7e59956d3ee",
+      "checks": [
+        "114 Rust tests and 56 IPC tests passed; Clippy/build passed; interruption/no-replay, bounded history, private persistence and direct IPC denial verified"
+      ],
       "commit": "",
       "note": ""
     },

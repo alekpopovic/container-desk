@@ -5,6 +5,7 @@
   "windows": ["main"],
   "permissions": [
     "allow-app-version",
+    "allow-get-activity",
     "allow-list-hosts",
     "allow-connect-host",
     "allow-list-containers",

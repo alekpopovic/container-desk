@@ -140,6 +140,7 @@ mod tests {
                 inspect_container,
                 container_logs,
                 prepare_confirmation,
+                get_activity,
                 mutate_container,
                 open_container_terminal
             ])
@@ -203,6 +204,11 @@ mod tests {
             "invalid_limits"
         );
         assert_eq!(invoke("open_container_terminal", json!({"scope":scope,"intentId":format!("i_{}", "1".repeat(32)),"spec":{"containerId":"a".repeat(64),"shell":"sh","columns":80,"rows":24}})).unwrap_err()["code"], "permission_denied");
+        assert_eq!(
+            invoke("get_activity", json!({})).unwrap(),
+            json!([]),
+            "Rejected direct IPC must not create dispatched activity"
+        );
     }
 
     #[test]
@@ -517,4 +523,11 @@ pub async fn list_compose(
     request: ListComposeRequest,
 ) -> Result<ListComposeResponse, AppError> {
     backend.list_compose(request).await
+}
+
+#[tauri::command]
+pub fn get_activity(
+    backend: tauri::State<'_, Backend>,
+) -> Result<Vec<crate::activity::ActivityRecord>, AppError> {
+    backend.activity_records()
 }

@@ -18,6 +18,7 @@ pub struct Backend {
     shutting_down: std::sync::atomic::AtomicBool,
     config_home: std::path::PathBuf,
     policy: Arc<Mutex<PolicyEngine>>,
+    activities: Result<crate::activity::Activities, AppError>,
     settings: Mutex<Result<SettingsStore, AppError>>,
     diagnostic_slot: Arc<tokio::sync::Semaphore>,
     export_slot: tokio::sync::Semaphore,
@@ -42,6 +43,7 @@ impl Backend {
             config_home,
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(settings),
+            activities: crate::activity::Activities::open(app_data),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             export_slot: tokio::sync::Semaphore::new(1),
             stats_slots: Default::default(),
@@ -685,19 +687,24 @@ impl Backend {
             .map_err(|_| AppError::new(ErrorCode::Internal))?
             .prepare(request)
     }
+    pub fn activity_records(&self) -> Result<Vec<crate::activity::ActivityRecord>, AppError> {
+        self.require_live_mode()?;
+        self.activities.as_ref().map_err(Clone::clone)?.records()
+    }
     pub fn mutate_container(&self, request: MutationRequest) -> Result<MutationResponse, AppError> {
-        let authorized = self
-            .policy
-            .lock()
-            .map_err(|_| AppError::new(ErrorCode::Internal))?
-            .consume(
-                &request.scope,
-                &request.intent_id,
-                &ConfirmationOperation::Mutation(request.spec),
-            )?;
-        // A future dispatcher must accept the owned authorization and never replay it.
-        // No remote transport exists yet; do not report a synthetic mutation success.
-        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(authorized.scope()))
+        self.require_live_mode()?;
+        let scope = request.scope.clone();
+        let _operation = self.activities.as_ref().map_err(Clone::clone)?.begin(
+            &mut *self
+                .policy
+                .lock()
+                .map_err(|_| AppError::new(ErrorCode::Internal))?,
+            request,
+        )?;
+        self.require_session(&scope)?;
+        // Prompt 032 supplies transport. This owner never dispatches a synthetic success.
+        // Dropping before dispatch records NotDispatched and releases the exact host slot.
+        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&scope))
     }
     pub fn open_container_terminal(
         &self,
@@ -893,6 +900,9 @@ impl Default for Backend {
             config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
+            activities: crate::activity::Activities::load(Box::<
+                crate::storage::tests::MemoryStorage,
+            >::default()),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             export_slot: tokio::sync::Semaphore::new(1),
             stats_slots: Default::default(),

@@ -1,3 +1,4 @@
+use crate::activity::{ActivityOutcome, ActivityRecord};
 use crate::domain::*;
 use serde_json::json;
 use std::path::Path;
@@ -86,6 +87,8 @@ fn generated_contract_is_current() {
         SetSshExecutableResponse,
         IntentId,
         HostAccess,
+        ActivityRecord,
+        ActivityOutcome,
         MutationOperation,
         MutationSpec,
         TerminalShell,
