@@ -14,6 +14,8 @@
     "allow-list-hosts",
     "allow-connect-host",
     "allow-list-containers",
+    "allow-verify-compose-project",
+    "allow-mutate-compose-project",
     "allow-list-compose",
     "allow-list-images",
     "allow-list-volumes",

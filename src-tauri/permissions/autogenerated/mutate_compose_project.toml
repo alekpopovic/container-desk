@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-mutate-compose-project"
+description = "Enables the mutate_compose_project command without any pre-configured scope."
+commands.allow = ["mutate_compose_project"]
+
+[[permission]]
+identifier = "deny-mutate-compose-project"
+description = "Denies the mutate_compose_project command without any pre-configured scope."
+commands.deny = ["mutate_compose_project"]

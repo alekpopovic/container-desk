@@ -156,6 +156,11 @@ export default function App() {
       }
       composeExtra={
         <ComposeInventory
+          host={
+            selectedHost
+              ? `${selectedHost.displayName} · ${selectedHost.alias}`
+              : undefined
+          }
           view={containers.view}
           native={native && workspace.mode.mode === "live"}
           refreshContainers={() => {

@@ -126,6 +126,23 @@ pub(crate) trait StageDriver: Send + Sync {
     ) -> StageFuture<'a, Result<super::runner::Job, AppError>> {
         Box::pin(async { Err(AppError::new(ErrorCode::FeatureUnavailable)) })
     }
+    fn verify_compose<'a>(
+        &'a self,
+        request: &'a VerifyComposeRequest,
+    ) -> StageFuture<'a, Result<crate::docker::compose_actions::VerifiedRead, AppError>> {
+        Box::pin(async move {
+            Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
+        })
+    }
+    fn mutate_compose<'a>(
+        &'a self,
+        _request: ComposeMutationRequest,
+        _expected: crate::docker::compose_actions::VerifiedRead,
+        _owner: crate::activity::Operation,
+        _current: crate::docker::mutations::Current,
+    ) -> StageFuture<'a, Result<ComposeMutationResponse, AppError>> {
+        Box::pin(async { Err(AppError::new(ErrorCode::FeatureUnavailable)) })
+    }
     fn mutate<'a>(
         &'a self,
         _request: MutationRequest,
@@ -236,6 +253,63 @@ impl StageDriver for NativeDriver {
                     StageOutcome::Probed(Box::new(report))
                 }
             }
+        })
+    }
+    fn verify_compose<'a>(
+        &'a self,
+        request: &'a VerifyComposeRequest,
+    ) -> StageFuture<'a, Result<crate::docker::compose_actions::VerifiedRead, AppError>> {
+        Box::pin(async move {
+            let client = self
+                .connection
+                .lock()
+                .await
+                .as_ref()
+                .map(|c| c.client())
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+            let binding = self
+                .docker_binding
+                .lock()
+                .await
+                .as_ref()
+                .cloned()
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+            crate::docker::compose_actions::verify(&client, &self.docker_options, &binding, request)
+                .await
+        })
+    }
+    fn mutate_compose<'a>(
+        &'a self,
+        request: ComposeMutationRequest,
+        expected: crate::docker::compose_actions::VerifiedRead,
+        owner: crate::activity::Operation,
+        current: crate::docker::mutations::Current,
+    ) -> StageFuture<'a, Result<ComposeMutationResponse, AppError>> {
+        Box::pin(async move {
+            let client = self
+                .connection
+                .lock()
+                .await
+                .as_ref()
+                .map(|c| c.client())
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+            let binding = self
+                .docker_binding
+                .lock()
+                .await
+                .as_ref()
+                .cloned()
+                .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+            crate::docker::compose_actions::run(
+                &client,
+                &self.docker_options,
+                &binding,
+                request,
+                expected,
+                owner,
+                current,
+            )
+            .await
         })
     }
     fn mutate<'a>(
@@ -784,6 +858,72 @@ impl Sessions {
             return Err(AppError::new(ErrorCode::StaleSession).in_scope(scope));
         }
         Ok(())
+    }
+    pub(crate) async fn verify_compose(
+        &self,
+        request: &VerifyComposeRequest,
+    ) -> Result<crate::docker::compose_actions::VerifiedRead, AppError> {
+        self.require_scope(&request.scope)?;
+        let driver = self
+            .control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+            .as_ref()
+            .and_then(|w| w.driver.upgrade())
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+        let result = driver.verify_compose(request).await;
+        self.require_scope(&request.scope)?;
+        if result
+            .as_ref()
+            .is_err_and(|e| e.code == ErrorCode::StaleSession)
+        {
+            drop(driver);
+            let _ = self
+                .disconnect(&ConnectionToken {
+                    session_id: request.scope.session_id.clone(),
+                    session_generation: request.scope.session_generation,
+                })
+                .await;
+        }
+        result
+    }
+    pub(crate) async fn mutate_compose(
+        &self,
+        request: ComposeMutationRequest,
+        expected: crate::docker::compose_actions::VerifiedRead,
+        owner: crate::activity::Operation,
+        current: crate::docker::mutations::Current,
+    ) -> Result<ComposeMutationResponse, AppError> {
+        self.require_scope(&request.scope)?;
+        let driver = self
+            .control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+            .as_ref()
+            .and_then(|w| w.driver.upgrade())
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+        let scope = request.scope.clone();
+        let result = driver
+            .mutate_compose(request, expected, owner, current)
+            .await;
+        if result
+            .as_ref()
+            .is_err_and(|e| e.code == ErrorCode::StaleSession)
+            || result.as_ref().is_ok_and(|r| {
+                r.results
+                    .iter()
+                    .any(|r| r.error == Some(ErrorCode::StaleSession))
+            })
+        {
+            drop(driver);
+            let _ = self
+                .disconnect(&ConnectionToken {
+                    session_id: scope.session_id,
+                    session_generation: scope.session_generation,
+                })
+                .await;
+        }
+        result
     }
     pub(crate) async fn mutate(
         &self,

@@ -14,6 +14,8 @@ fn main() {
             "list_hosts",
             "connect_host",
             "list_containers",
+            "verify_compose_project",
+            "mutate_compose_project",
             "list_compose",
             "list_images",
             "list_volumes",

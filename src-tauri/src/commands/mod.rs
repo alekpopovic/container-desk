@@ -609,3 +609,18 @@ pub async fn inspect_network(
 ) -> Result<NetworkDetail, AppError> {
     backend.inspect_network(request).await
 }
+
+#[tauri::command]
+pub async fn verify_compose_project(
+    backend: tauri::State<'_, crate::backend::Backend>,
+    request: VerifyComposeRequest,
+) -> Result<ComposeVerification, AppError> {
+    backend.verify_compose_project(request).await
+}
+#[tauri::command]
+pub async fn mutate_compose_project(
+    backend: tauri::State<'_, crate::backend::Backend>,
+    request: ComposeMutationRequest,
+) -> Result<ComposeMutationResponse, AppError> {
+    backend.mutate_compose_project(request).await
+}

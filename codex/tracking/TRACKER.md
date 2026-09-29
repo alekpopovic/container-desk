@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T04:56:34+00:00
+Updated: 2026-09-29T05:25:39+00:00
 
-blocked: **0** | done: **36** | in_progress: **0** | pending: **24**
+blocked: **0** | done: **37** | in_progress: **0** | pending: **23**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -46,7 +46,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 034 | 04 Management | Image inventory and inspection | medium | done | codex/tracking/evidence/034.md |
 | 035 | 04 Management | Volume inventory and mount relationships | medium | done | codex/tracking/evidence/035.md |
 | 036 | 04 Management | Network inventory and container attachments | medium | done | codex/tracking/evidence/036.md |
-| 037 | 04 Management | Verified remote Compose project actions | high | pending | — |
+| 037 | 04 Management | Verified remote Compose project actions | high | done | codex/tracking/evidence/037.md |
 | 038 | 04 Management | Management MVP checkpoint | high | pending | — |
 | 039 | 05 Terminal and resilience | PTY terminal transport | high | pending | — |
 | 040 | 05 Terminal and resilience | Terminal UI with bounded lifecycle | high | pending | — |
@@ -146,3 +146,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T04:42:38+00:00 — 035: done; 127 Rust, 66 Node and 54 browser checks passed; production Linux native direct/ProxyJump volume lab and actual disappearance/reconciliation passed; fixed metadata gate verified no volume data reads.
 - 2026-09-29T04:43:02+00:00 — 036: start;
 - 2026-09-29T04:56:34+00:00 — 036: done; 130 Rust, 69 Node, 54 browser tests passed; actual production native network UI and strict ProxyJump Docker oracle matched one real dual-stack attachment and IPAM; unknown/stale endpoint and masking tests passed.
+- 2026-09-29T04:57:04+00:00 — 037: start;
+- 2026-09-29T05:25:39+00:00 — 037: done; 134 Rust, 72 Node and 60 final browser cases passed; actual native Compose UI and strict ProxyJump start/stop/restart passed; exact four commands, no replay, unchanged unrelated project; missing env/wrong name/ordered-file and post-confirmation drift checks passed.

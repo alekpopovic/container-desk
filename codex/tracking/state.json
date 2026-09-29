@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T04:56:34+00:00",
+  "updated_at": "2026-09-29T05:25:39+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1242,6 +1242,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T04:57:04+00:00",
+      "id": "037",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T05:25:39+00:00",
+      "id": "037",
+      "action": "done",
+      "note": "134 Rust, 72 Node and 60 final browser cases passed; actual native Compose UI and strict ProxyJump start/stop/restart passed; exact four commands, no replay, unchanged unrelated project; missing env/wrong name/ordered-file and post-confirmation drift checks passed.",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T04:57:04+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1705,12 +1739,14 @@
       "note": ""
     },
     "037": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T04:57:04+00:00",
+      "finished_at": "2026-09-29T05:25:39+00:00",
+      "evidence": "codex/tracking/evidence/037.md",
+      "evidence_sha256": "86226b5e99d5dd02b1713885e8d40b62f217eb6f4d9ebc7bacfa7e75ad714ef9",
+      "checks": [
+        "134 Rust, 72 Node and 60 final browser cases passed; actual native Compose UI and strict ProxyJump start/stop/restart passed; exact four commands, no replay, unchanged unrelated project; missing env/wrong name/ordered-file and post-confirmation drift checks passed."
+      ],
       "commit": "",
       "note": ""
     },

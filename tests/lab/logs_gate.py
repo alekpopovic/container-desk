@@ -11,6 +11,7 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mvp', action='store_true')
+parser.add_argument('--compose-actions', action='store_true')
 parser.add_argument('--networks', action='store_true')
 parser.add_argument('--batch', action='store_true')
 parser.add_argument('--management', action='store_true')
@@ -23,11 +24,28 @@ try:
     words = shlex.split(original)
 except ValueError:
     sys.exit(126)
-if not words or words.pop(0) != 'exec':
-    sys.exit(126)
-canonical = 'exec ' + ' '.join("'" + word.replace("'", "'\\''") + "'" for word in words)
-if canonical != original:
-    sys.exit(126)
+compose_metadata=None
+compound_files=None
+if args.compose_actions and args.control:
+    import json
+    compose_metadata=json.loads((args.control/'compose-project.json').read_text())
+if words and words[0]=='cd' and compose_metadata:
+    if len(words)<4 or words[1]!=compose_metadata['configuration']['workingDirectory'] or words[2]!='&&':sys.exit(126)
+    directory=words[1];remaining=words[3:];compound_files=[]
+    while remaining[:2]==['test','-f']:
+        if len(remaining)<8 or remaining[3:6]!=['&&','test','-r'] or remaining[6]!=remaining[2] or remaining[7]!='&&' or remaining[2] not in compose_metadata['allowedFiles']:sys.exit(126)
+        compound_files.append(remaining[2]);remaining=remaining[8:]
+    if not compound_files or len(compound_files)>8 or len(set(compound_files))!=len(compound_files):sys.exit(126)
+    prefix='cd '+"'"+directory.replace("'","'\\''")+"'"
+    for file in compound_files:
+        quoted="'"+file.replace("'","'\\''")+"'"
+        prefix+=' && test -f '+quoted+' && test -r '+quoted
+    words=remaining
+else:prefix=None
+if not words or words.pop(0)!='exec':sys.exit(126)
+canonical='exec '+' '.join("'"+word.replace("'","'\\''")+"'" for word in words)
+if prefix:canonical=prefix+' && '+canonical
+if canonical!=original:sys.exit(126)
 env = {'PATH': '/usr/bin:/bin', 'LANG': 'C', 'LC_ALL': 'C', 'DOCKER_CONFIG': args.config, 'DOCKER_HOST': 'unix:///var/run/docker.sock'}
 allowed = words == ['printf', 'containerdesk-access-ok']
 if words and words[0] in ('docker', '/usr/bin/docker'):
@@ -35,6 +53,29 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
     if operation[:2] == ['--host', 'unix:///var/run/docker.sock']:
         operation = operation[2:]
     allowed = (len(operation) == 3 and operation[0] in ('version', 'info') and operation[1] == '--format') or (len(operation) == 4 and operation[:3] == ['context', 'inspect', '--format']) or operation in (['compose', 'version'], ['compose', 'version', '--format', 'json'])
+    if compose_metadata:
+        if operation==['compose','ls','--all','--format','json']:
+            allowed=True
+            words.extend(['--filter','name='+compose_metadata['configuration']['projectName']])
+            original='exec '+' '.join(shlex.quote(word) for word in words)
+        template='{"id":{{json .Id}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"service":{{json (index .Config.Labels "com.docker.compose.service")}},"hash":{{json (index .Config.Labels "com.docker.compose.config-hash")}},"oneoff":{{json (index .Config.Labels "com.docker.compose.oneoff")}}}'
+        if len(operation)>=7 and operation[:6]==['inspect','--type','container','--format',template,'--']:
+            allowed=1<=len(operation[6:])<=20 and len(set(operation[6:]))==len(operation[6:]) and all(ident in compose_metadata['ids'] for ident in operation[6:])
+        if compound_files:
+            prefix=['compose','--ansi','never','--progress','quiet','--parallel','1','--profile','*','--project-directory',compose_metadata['configuration']['workingDirectory'],'--project-name']
+            if operation[:len(prefix)]!=prefix or len(operation)<=len(prefix) or operation[len(prefix)] not in compose_metadata['allowedProjects']:sys.exit(126)
+            project=operation[len(prefix)];offset=len(prefix)+1
+            file_args=[]
+            for file in compound_files:file_args.extend(['--file',file])
+            if operation[offset:offset+len(file_args)]!=file_args:sys.exit(126)
+            tail=operation[offset+len(file_args):]
+            allowed=tail in (['config','--quiet'],['config','--hash','*'],['ps','--all','--quiet','--orphans=false'])
+            if project==compose_metadata['configuration']['projectName'] and compound_files==compose_metadata['configuration']['configFiles']:
+                valid=(tail==['start','--','web','worker']) or (len(tail)==6 and tail[0]=='stop' and tail[1]=='--timeout' and tail[2].isdigit() and 1<=int(tail[2])<=120 and tail[3:]==['--','web','worker']) or (len(tail)==7 and tail[:3]==['restart','--no-deps','--timeout'] and tail[3].isdigit() and 1<=int(tail[3])<=120 and tail[4:]==['--','web','worker'])
+                if valid:
+                    allowed=True
+                    with (args.control/'compose-action-commands.jsonl').open('a') as trace:trace.write(json.dumps(tail)+'\n')
+            if not allowed:sys.exit(126)
     if args.networks and args.control:
         import json
         network=(args.control/'owned-network-id').read_text().strip()
@@ -92,11 +133,11 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
             original = 'exec ' + ' '.join(shlex.quote(word) for word in words)
     # Project listing is deliberately not admitted: 030 exercises honest label fallback.
     # Real Compose-plugin listing on a wholly isolated Engine is covered by 029.
-    if args.mvp and operation == ['ps', '--all', '--quiet', '--no-trunc', '--filter', 'label=com.docker.compose.project']:
+    if (args.mvp or args.compose_actions) and operation == ['ps', '--all', '--quiet', '--no-trunc', '--filter', 'label=com.docker.compose.project']:
         allowed = True
         for ident in args.owned: words.extend(['--filter', 'id=' + ident])
         original = 'exec ' + ' '.join(shlex.quote(word) for word in words)
-    if args.mvp and len(operation) >= 7 and operation[:4] == ['inspect', '--type', 'container', '--format'] and operation[4] == '{"id":{{json .Id}},"name":{{json .Name}},"state":{{json .State.Status}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"service":{{json (index .Config.Labels "com.docker.compose.service")}},"configFiles":{{json (index .Config.Labels "com.docker.compose.project.config_files")}},"workingDir":{{json (index .Config.Labels "com.docker.compose.project.working_dir")}}}' and operation[5] == '--':
+    if (args.mvp or args.compose_actions) and len(operation) >= 7 and operation[:4] == ['inspect', '--type', 'container', '--format'] and operation[4] == '{"id":{{json .Id}},"name":{{json .Name}},"state":{{json .State.Status}},"project":{{json (index .Config.Labels "com.docker.compose.project")}},"service":{{json (index .Config.Labels "com.docker.compose.service")}},"configFiles":{{json (index .Config.Labels "com.docker.compose.project.config_files")}},"workingDir":{{json (index .Config.Labels "com.docker.compose.project.working_dir")}}}' and operation[5] == '--':
         allowed = 1 <= len(operation[6:]) <= 64 and len(set(operation[6:])) == len(operation[6:]) and all(ident in args.owned for ident in operation[6:])
     if operation == ['ps', '--all', '--no-trunc', '--format', '{{json .}}']:
         allowed = True

@@ -31,6 +31,7 @@ export function ComposeFixture() {
   const [opened, open] = useState("");
   const [revision, revise] = useState(1);
   mockIPC((command, args) => {
+    if (command === "get_management") return { scope, enabled: false };
     if (command !== "list_compose")
       throw Error(`Unexpected transport session or command ${command}`);
     const current = (args as { request: { scope: SessionScope } }).request

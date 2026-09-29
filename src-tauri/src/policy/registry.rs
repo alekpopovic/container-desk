@@ -14,6 +14,7 @@ pub enum ResponseKind {
     ComposeList,
     ComposeIds,
     ComposeLabels,
+    ComposeConfiguration,
     ContainerStats,
     StatsState,
     ContainerDetail,
@@ -55,6 +56,18 @@ pub enum ReadOperation {
         image_id: ImageId,
     },
     InspectImageReferences {
+        container_ids: Vec<ContainerId>,
+    },
+    ComposeValidate {
+        configuration: ComposeConfiguration,
+    },
+    ComposeHashes {
+        configuration: ComposeConfiguration,
+    },
+    ComposeExistingIds {
+        configuration: ComposeConfiguration,
+    },
+    ComposeExistingLabels {
         container_ids: Vec<ContainerId>,
     },
     ListCompose,
@@ -100,8 +113,12 @@ pub struct CommandPlan {
     category: OperationCategory,
     response: ResponseKind,
     timeout_seconds: u32,
+    compose_configuration: Option<ComposeConfiguration>,
 }
 impl CommandPlan {
+    pub fn compose_configuration(&self) -> Option<&ComposeConfiguration> {
+        self.compose_configuration.as_ref()
+    }
     pub fn args(&self) -> &[String] {
         &self.args
     }
@@ -126,6 +143,7 @@ fn plan(
         category,
         response,
         timeout_seconds,
+        compose_configuration: None,
     }
 }
 fn limits(value: i32, min: i32, max: i32) -> Result<u32, AppError> {
@@ -135,8 +153,128 @@ fn limits(value: i32, min: i32, max: i32) -> Result<u32, AppError> {
         Err(AppError::new(ErrorCode::InvalidLimits))
     }
 }
+pub(crate) fn validate_compose(configuration: &ComposeConfiguration) -> Result<(), AppError> {
+    let name = &configuration.project_name;
+    if name.is_empty()
+        || name.len() > 128
+        || !name.as_bytes()[0].is_ascii_alphanumeric()
+        || !name
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b"_-".contains(&b))
+    {
+        return Err(AppError::new(ErrorCode::InvalidRemoteArgument));
+    }
+    crate::docker::validate_absolute_path(&configuration.working_directory)?;
+    if configuration.config_files.is_empty() || configuration.config_files.len() > 8 {
+        return Err(AppError::new(ErrorCode::InvalidLimits));
+    }
+    let mut seen = HashSet::new();
+    for path in &configuration.config_files {
+        crate::docker::validate_absolute_path(path)?;
+        if !seen.insert(path) {
+            return Err(AppError::new(ErrorCode::InvalidRemoteArgument));
+        }
+    }
+    Ok(())
+}
+pub(crate) fn validate_service(name: &str) -> Result<(), AppError> {
+    if name.is_empty()
+        || name.len() > 128
+        || !name.as_bytes()[0].is_ascii_alphanumeric()
+        || !name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"_.-".contains(&b))
+    {
+        Err(AppError::new(ErrorCode::InvalidRemoteArgument))
+    } else {
+        Ok(())
+    }
+}
+fn compose_plan(
+    configuration: &ComposeConfiguration,
+    tail: &[&str],
+    category: OperationCategory,
+    timeout: u32,
+) -> Result<CommandPlan, AppError> {
+    validate_compose(configuration)?;
+    let mut command = plan(
+        &[
+            "docker",
+            "compose",
+            "--ansi",
+            "never",
+            "--progress",
+            "quiet",
+            "--parallel",
+            "1",
+            "--profile",
+            "*",
+            "--project-directory",
+            &configuration.working_directory,
+            "--project-name",
+            &configuration.project_name,
+        ],
+        category,
+        ResponseKind::ComposeConfiguration,
+        timeout,
+    );
+    for file in &configuration.config_files {
+        command.args.extend(["--file".into(), file.clone()]);
+    }
+    command.args.extend(tail.iter().map(|v| (*v).into()));
+    command.compose_configuration = Some(configuration.clone());
+    Ok(command)
+}
 pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
     Ok(match operation {
+        ReadOperation::ComposeValidate { configuration } => compose_plan(
+            configuration,
+            &["config", "--quiet"],
+            OperationCategory::Read,
+            30,
+        )?,
+        ReadOperation::ComposeHashes { configuration } => compose_plan(
+            configuration,
+            &["config", "--hash", "*"],
+            OperationCategory::Read,
+            30,
+        )?,
+        ReadOperation::ComposeExistingIds { configuration } => compose_plan(
+            configuration,
+            &["ps", "--all", "--quiet", "--orphans=false"],
+            OperationCategory::Read,
+            30,
+        )?,
+        ReadOperation::ComposeExistingLabels { container_ids } => {
+            if container_ids.is_empty() || container_ids.len() > 20 {
+                return Err(AppError::new(ErrorCode::InvalidLimits));
+            }
+            let mut seen = HashSet::new();
+            for id in container_ids {
+                id.validate()?;
+                if !seen.insert(id) {
+                    return Err(AppError::new(ErrorCode::InvalidId));
+                }
+            }
+            let mut command = plan(
+                &[
+                    "docker",
+                    "inspect",
+                    "--type",
+                    "container",
+                    "--format",
+                    crate::docker::compose_actions::INSTANCE_TEMPLATE,
+                    "--",
+                ],
+                OperationCategory::Read,
+                ResponseKind::ComposeLabels,
+                30,
+            );
+            command
+                .args
+                .extend(container_ids.iter().map(|id| id.0.clone()));
+            command
+        }
         ReadOperation::ListCompose => plan(
             &["docker", "compose", "ls", "--all", "--format", "json"],
             OperationCategory::Read,
@@ -505,6 +643,7 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
                 category: OperationCategory::Read,
                 response: ResponseKind::LogSnapshot,
                 timeout_seconds: timeout,
+                compose_configuration: None,
             }
         }
     })
@@ -588,6 +727,49 @@ pub fn confirmation(operation: &ConfirmationOperation) -> Result<CommandPlan, Ap
             command
                 .args
                 .extend(spec.container_ids.iter().map(|id| id.0.clone()));
+            command
+        }
+        ConfirmationOperation::Compose(spec) => {
+            spec.verification_id.validate()?;
+            if spec.services.is_empty()
+                || spec.services.len() > 20
+                || spec.container_ids.is_empty()
+                || spec.container_ids.len() > 20
+            {
+                return Err(AppError::new(ErrorCode::InvalidLimits));
+            }
+            let mut services = HashSet::new();
+            for service in &spec.services {
+                validate_service(service)?;
+                if !services.insert(service) {
+                    return Err(AppError::new(ErrorCode::InvalidRemoteArgument));
+                }
+            }
+            let mut ids = HashSet::new();
+            for id in &spec.container_ids {
+                id.validate()?;
+                if !ids.insert(id) {
+                    return Err(AppError::new(ErrorCode::InvalidId));
+                }
+            }
+            let timeout = limits(spec.timeout_seconds, 1, 120)?;
+            let seconds = timeout.to_string();
+            let tail = match spec.operation {
+                ComposeActionOperation::Start => vec!["start"],
+                ComposeActionOperation::Stop => vec!["stop", "--timeout", &seconds],
+                ComposeActionOperation::Restart => {
+                    vec!["restart", "--no-deps", "--timeout", &seconds]
+                }
+            };
+            let mut command = compose_plan(
+                &spec.configuration,
+                &tail,
+                OperationCategory::Mutation,
+                timeout + 10,
+            )?;
+            command.response = ResponseKind::Mutation;
+            command.args.push("--".into());
+            command.args.extend(spec.services.iter().cloned());
             command
         }
         ConfirmationOperation::Terminal(spec) => {

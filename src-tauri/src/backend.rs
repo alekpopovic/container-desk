@@ -5,6 +5,7 @@ use crate::{
     storage::{FileStorage, SettingsStore},
 };
 use std::sync::{Arc, Mutex};
+mod compose_actions;
 mod inventory;
 
 /// Resource operations remain behind identity gates. Local version probes are separately bounded.
@@ -18,6 +19,7 @@ pub struct Backend {
     shutting_down: std::sync::atomic::AtomicBool,
     config_home: std::path::PathBuf,
     policy: Arc<Mutex<PolicyEngine>>,
+    compose_verified: Mutex<std::collections::HashMap<HostId, compose_actions::Verified>>,
     activities: Result<crate::activity::Activities, AppError>,
     settings: Mutex<Result<SettingsStore, AppError>>,
     diagnostic_slot: Arc<tokio::sync::Semaphore>,
@@ -44,6 +46,7 @@ impl Backend {
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(settings),
             activities: crate::activity::Activities::open(app_data),
+            compose_verified: Default::default(),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             export_slot: tokio::sync::Semaphore::new(1),
             stats_slots: Default::default(),
@@ -956,6 +959,9 @@ impl Backend {
                 return Err(AppError::new(ErrorCode::ContainerNotStopped));
             }
         }
+        if let ConfirmationOperation::Compose(spec) = &request.operation {
+            self.recheck_compose(&request.scope, spec).await?;
+        }
         self.policy
             .lock()
             .map_err(|_| AppError::new(ErrorCode::Internal))?
@@ -1212,6 +1218,7 @@ impl Default for Backend {
             config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
+            compose_verified: Default::default(),
             activities: crate::activity::Activities::load(Box::<
                 crate::storage::tests::MemoryStorage,
             >::default()),

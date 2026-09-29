@@ -14,6 +14,7 @@ identifier!(ContainerId);
 identifier!(ImageId);
 identifier!(VolumeName);
 identifier!(NetworkId);
+identifier!(ComposeVerificationId);
 identifier!(SubscriptionId);
 identifier!(IntentId);
 
@@ -51,6 +52,15 @@ impl ContainerId {
 impl ImageId {
     pub fn validate(&self) -> Result<(), AppError> {
         if full_sha256(self.0.strip_prefix("sha256:").unwrap_or(&self.0)) {
+            Ok(())
+        } else {
+            Err(AppError::new(ErrorCode::InvalidId))
+        }
+    }
+}
+impl ComposeVerificationId {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if opaque_id(&self.0, "v_") {
             Ok(())
         } else {
             Err(AppError::new(ErrorCode::InvalidId))
@@ -159,6 +169,9 @@ pub enum ErrorCode {
     ImageNotFound,
     VolumeNotFound,
     NetworkNotFound,
+    ComposeConfigurationUnavailable,
+    ComposeProjectMismatch,
+    ComposeVerificationExpired,
     LogDriverUnsupported,
     ExportFailed,
     SessionNotFound,
@@ -204,6 +217,15 @@ impl AppError {
             }
             ErrorCode::LogDriverUnsupported => {
                 "This container logging driver does not support reading logs."
+            }
+            ErrorCode::ComposeConfigurationUnavailable => {
+                "Compose configuration could not be verified. Check remote paths, required environment files and configuration dependencies in your terminal."
+            }
+            ErrorCode::ComposeProjectMismatch => {
+                "The configured Compose project does not match the existing services, or its configuration changed. Verify the project again."
+            }
+            ErrorCode::ComposeVerificationExpired => {
+                "Compose verification expired. Verify the project again before requesting an action."
             }
             ErrorCode::NetworkNotFound => {
                 "The network no longer exists. Refresh the network inventory."
@@ -687,6 +709,7 @@ pub struct TerminalSpec {
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub enum ConfirmationOperation {
     Mutation(MutationSpec),
+    Compose(ComposeActionSpec),
     Terminal(TerminalSpec),
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -1626,4 +1649,83 @@ pub struct NetworkDetail {
     pub attachments: Vec<NetworkAttachment>,
     pub attachments_reported: bool,
     pub metadata_incomplete: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ComposeConfiguration {
+    pub project_name: String,
+    pub working_directory: String,
+    pub config_files: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct VerifyComposeRequest {
+    pub scope: SessionScope,
+    pub configuration: ComposeConfiguration,
+    pub acknowledged: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ComposeVerification {
+    pub scope: SessionScope,
+    pub id: ComposeVerificationId,
+    pub configuration: ComposeConfiguration,
+    pub services: Vec<String>,
+    pub container_ids: Vec<ContainerId>,
+    pub expires_in_ms: u32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ComposeActionSpec {
+    pub verification_id: ComposeVerificationId,
+    pub configuration: ComposeConfiguration,
+    pub services: Vec<String>,
+    pub container_ids: Vec<ContainerId>,
+    pub operation: ComposeActionOperation,
+    pub timeout_seconds: i32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ComposeMutationRequest {
+    pub scope: SessionScope,
+    pub intent_id: IntentId,
+    pub spec: ComposeActionSpec,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ComposeMutationResponse {
+    pub scope: SessionScope,
+    pub spec: ComposeActionSpec,
+    pub outcome: MutationOutcome,
+    pub results: Vec<MutationTargetResult>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum ComposeActionOperation {
+    Start,
+    Stop,
+    Restart,
+}
+impl ComposeActionOperation {
+    pub fn mutation(&self) -> MutationOperation {
+        match self {
+            Self::Start => MutationOperation::Start,
+            Self::Stop => MutationOperation::Stop,
+            Self::Restart => MutationOperation::Restart,
+        }
+    }
 }

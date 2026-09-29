@@ -1380,3 +1380,23 @@ legend {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.compose-management textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  padding: 0.5rem;
+  font: inherit;
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.compose-management input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+}
+.compose-management code,
+.compose-management li {
+  overflow-wrap: anywhere;
+}

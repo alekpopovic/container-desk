@@ -1,0 +1,13 @@
+037 native Compose verification, 2026-09-29
+Ubuntu 26.04.1 x86_64 X11/Xvfb/WebKit; actual production binary and strict native ProxyJump.
+Docker 29.8.1; Compose v5.5.1; two owned projects.
+Release SHA-256: 752c3f36817f060b55b388f9846bc70b75c0b43c49e325537be7c0f668a8ce25
+Command: python3 /tmp/containerdesk-037-xvfb.py, invoking logs.py --stream --jump --compose-actions with native drivers.
+Exit status: 0
+PASS native Compose UI: explicit quoted remote files/name, verification, management opt-in, full host/daemon/service/ID confirmation, cancel dispatched nothing, exactly one restart, both services observed running and disconnect.
+PASS native verified Compose over strict ProxyJump: spaces/apostrophes and ordered files, absent required env file and wrong project rejected, reversed file order rejected, readonly/confirmation enforced, two existing services restarted once, stopped, then started with each actual state observed, consumed intent not replayed, actual config drift after confirmation failed before dispatch, no resolved secret in returned activity.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 156 filtered out; finished in 21.11s
+PASS independent Compose oracle: 4 explicit lifecycle command(s); both owned services running with newer start times; both unrelated project services retain original start times; no deployment/build/pull/down command admitted by app gate.
+PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.
+PASS: verified Compose project action and unchanged unrelated project.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.

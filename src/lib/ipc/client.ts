@@ -32,6 +32,12 @@ const messages: Record<ErrorCode, string> = {
   log_driver_unsupported:
     "This container logging driver does not support reading logs.",
   container_not_found: "The container no longer exists. Refresh the inventory.",
+  compose_configuration_unavailable:
+    "Compose configuration could not be verified. Check remote paths, required environment files and configuration dependencies in your terminal.",
+  compose_project_mismatch:
+    "The configured Compose project does not match the existing services, or its configuration changed. Verify the project again.",
+  compose_verification_expired:
+    "Compose verification expired. Verify the project again before requesting an action.",
   network_not_found:
     "The network no longer exists. Refresh the network inventory.",
   volume_not_found:
@@ -1992,4 +1998,120 @@ export async function inspectNetwork(
     keys.add(row.endpointKey);
   }
   return value as unknown as import("./generated.ts").NetworkDetail;
+}
+
+function sameComposeConfiguration(
+  value: unknown,
+  expected: import("./generated.ts").ComposeConfiguration,
+): boolean {
+  return (
+    record(value) &&
+    value.projectName === expected.projectName &&
+    value.workingDirectory === expected.workingDirectory &&
+    Array.isArray(value.configFiles) &&
+    value.configFiles.length === expected.configFiles.length &&
+    value.configFiles.every((file, i) => file === expected.configFiles[i])
+  );
+}
+function sameComposeSpec(
+  value: unknown,
+  expected: import("./generated.ts").ComposeActionSpec,
+): boolean {
+  return (
+    record(value) &&
+    value.verificationId === expected.verificationId &&
+    sameComposeConfiguration(value.configuration, expected.configuration) &&
+    value.operation === expected.operation &&
+    value.timeoutSeconds === expected.timeoutSeconds &&
+    Array.isArray(value.services) &&
+    value.services.length === expected.services.length &&
+    value.services.every((service, i) => service === expected.services[i]) &&
+    Array.isArray(value.containerIds) &&
+    value.containerIds.length === expected.containerIds.length &&
+    value.containerIds.every((id, i) => id === expected.containerIds[i])
+  );
+}
+export async function verifyComposeProject(
+  request: import("./generated.ts").VerifyComposeRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").ComposeVerification> {
+  // Explicit verification acknowledges trusted remote configuration; no automatic retries.
+  const value = await call("verify_compose_project", request, () =>
+    sameScope(request.scope, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, request.scope) ||
+    typeof value.id !== "string" ||
+    !/^v_[a-f0-9]{32}$/.test(value.id) ||
+    !sameComposeConfiguration(value.configuration, request.configuration) ||
+    !Array.isArray(value.services) ||
+    !value.services.length ||
+    value.services.length > 20 ||
+    !value.services.every(
+      (v) =>
+        typeof v === "string" && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/.test(v),
+    ) ||
+    new Set(value.services).size !== value.services.length ||
+    !Array.isArray(value.containerIds) ||
+    !value.containerIds.length ||
+    value.containerIds.length > 20 ||
+    !value.containerIds.every(
+      (id) => typeof id === "string" && /^[a-f0-9]{64}$/.test(id),
+    ) ||
+    new Set(value.containerIds).size !== value.containerIds.length ||
+    !Number.isInteger(value.expiresInMs) ||
+    Number(value.expiresInMs) < 1 ||
+    Number(value.expiresInMs) > 300000
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as import("./generated.ts").ComposeVerification;
+}
+export async function prepareComposeAction(
+  selected: SessionScope,
+  spec: import("./generated.ts").ComposeActionSpec,
+  current: () => SessionScope | null,
+): Promise<ConfirmationIntent> {
+  const value = await call(
+    "prepare_confirmation",
+    { scope: selected, operation: { category: "compose", spec } },
+    () => sameScope(selected, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, selected) ||
+    typeof value.id !== "string" ||
+    !/^i_[a-f0-9]{32}$/.test(value.id) ||
+    !record(value.operation) ||
+    value.operation.category !== "compose" ||
+    !sameComposeSpec(value.operation.spec, spec) ||
+    !Number.isInteger(value.expiresInMs) ||
+    Number(value.expiresInMs) < 1 ||
+    Number(value.expiresInMs) > 30000
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as ConfirmationIntent;
+}
+export async function mutateComposeProject(
+  request: import("./generated.ts").ComposeMutationRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").ComposeMutationResponse> {
+  // A dispatched project command is never sent through the read retry scheduler.
+  const value = await call("mutate_compose_project", request, () =>
+    sameScope(request.scope, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, request.scope) ||
+    !sameComposeSpec(value.spec, request.spec) ||
+    !targetResults(value.results, request.spec.containerIds) ||
+    (aggregateTargets(value.results) === "not_dispatched"
+      ? "cancelled"
+      : aggregateTargets(value.results)) !== value.outcome
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as import("./generated.ts").ComposeMutationResponse;
 }

@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--jump', action='store_true', help='Use a second owned loopback sshd as an actual ProxyJump')
     parser.add_argument('--mvp', action='store_true', help='Integrated 030 native journey; requires --stream --stats --jump')
     parser.add_argument('--stream', action='store_true')
+    parser.add_argument('--compose-actions', action='store_true', help='037 verified existing Compose project actions; requires --stream --jump')
     parser.add_argument('--networks', action='store_true', help='036 dual-stack network attachments; requires --stream --jump')
     parser.add_argument('--batch', action='store_true', help='033 owned batch/removal gate; requires --management')
     parser.add_argument('--management', action='store_true', help='Permit explicit lifecycle actions only on the owned live fixture')
@@ -40,6 +41,7 @@ def main():
     args = parser.parse_args()
     if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
         parser.error('Native driver flags require --stream and both driver paths')
+    if args.compose_actions and (not args.stream or not args.jump or args.management or args.stats or args.events or args.reads or args.mvp or args.networks): parser.error('--compose-actions requires --stream --jump and excludes other checkpoint modes')
     if args.networks and (not args.stream or not args.jump or args.management or args.stats or args.events or args.reads or args.mvp): parser.error('--networks requires --stream --jump and excludes other checkpoint modes')
     if args.batch and not args.management: parser.error('--batch requires --management')
     if args.management and (not args.stream or not args.jump or args.stats or args.events or args.reads or args.mvp): parser.error('--management requires --stream --jump and excludes other checkpoint modes')
@@ -58,6 +60,7 @@ def main():
         docker = ['/usr/bin/docker', '--config', str(config), '--host', 'unix:///var/run/docker.sock']
         owned = []
         owned_network = None
+        compose_manifest = None
         removed = set()
         server = None
         jump_server = None
@@ -95,6 +98,10 @@ def main():
                     continue
                 waited = subprocess.run(docker + ['wait', ident], env=env, check=True, capture_output=True, text=True, timeout=15)
                 assert waited.stdout.strip() == '0', 'Owned log workload must exit successfully'
+            if args.compose_actions:
+                from compose_actions import setup
+                compose_ids,compose_manifest=setup(root,docker,env)
+                owned.extend(compose_ids)
             oracle = subprocess.run(docker + ['logs', '--timestamps', '--tail', '100', '--', owned[0]], env=env, check=True, capture_output=True, timeout=10)
             print('Native CLI oracle: stdout/stderr records', len(oracle.stdout.splitlines()), len(oracle.stderr.splitlines()), 'largest stderr line bytes', max(map(len, oracle.stderr.splitlines()), default=0), flush=True)
             (root / 'oracle.stdout').write_bytes(oracle.stdout)
@@ -110,7 +117,7 @@ def main():
             # This fixture-only gate prevents tests from reading unrelated host resources or changing state.
             gate = REPO / 'tests/lab/logs_gate.py'
             server_config = root / 'sshd_config'
-            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY no\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} {('--mvp ' if args.mvp else '')}{('--management ' if args.management else '')}{('--batch ' if args.batch else '')}{('--networks ' if args.networks else '')}--owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
+            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY no\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} {('--mvp ' if args.mvp else '')}{('--management ' if args.management else '')}{('--batch ' if args.batch else '')}{('--networks ' if args.networks else '')}{('--compose-actions ' if args.compose_actions else '')}--owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
             public = (root / 'host.pub').read_text().split()
             known = root / 'known_hosts'
             known.write_text(f'[127.0.0.1]:{port} {public[0]} {public[1]}\n')
@@ -143,7 +150,7 @@ def main():
                     print((root / 'server.log').read_text())
                     raise RuntimeError('Owned SSH gate did not execute the marker')
                 manifest = root / 'manifest.json'
-                manifest.write_text(json.dumps({'config': str(ssh_config), 'containerId': owned[0], 'unsupportedId': owned[1], 'oracleStdout': str(root / 'oracle.stdout'), 'oracleStderr': str(root / 'oracle.stderr'), 'liveId': owned[-1] if args.stream else None}))
+                manifest.write_text(json.dumps({'config': str(ssh_config), 'containerId': owned[0], 'unsupportedId': owned[1], 'oracleStdout': str(root / 'oracle.stdout'), 'oracleStderr': str(root / 'oracle.stderr'), 'liveId': owned[2] if args.stream else None,'composeActions':compose_manifest,'ownedIds':owned}))
                 if args.networks:
                     oracle=json.loads(subprocess.run(docker+['network','inspect','--',owned_network],env=env,check=True,capture_output=True,text=True,timeout=10).stdout)[0]
                     assert len(oracle['Containers'])==1 and owned[-1] in oracle['Containers']
@@ -187,8 +194,8 @@ def main():
                     watcher.start()
                 if args.stream and args.native_driver:
                     from native_logs import verify
-                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks)
-                checkpoint = 'checkpoint036_owned_networks' if args.networks else 'checkpoint033_owned_batch' if args.batch else 'checkpoint032_owned_mutations' if args.management else 'checkpoint028_owned_reads' if args.reads else 'checkpoint027_owned_events' if args.events else 'checkpoint026_owned_stats' if args.stats else 'checkpoint024_owned_stream' if args.stream else 'checkpoint023_owned_logs'
+                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions)
+                checkpoint = 'checkpoint037_owned_compose' if args.compose_actions else 'checkpoint036_owned_networks' if args.networks else 'checkpoint033_owned_batch' if args.batch else 'checkpoint032_owned_mutations' if args.management else 'checkpoint028_owned_reads' if args.reads else 'checkpoint027_owned_events' if args.events else 'checkpoint026_owned_stats' if args.stats else 'checkpoint024_owned_stream' if args.stream else 'checkpoint023_owned_logs'
                 result = subprocess.run(['cargo', 'test', '--manifest-path', str(REPO / 'src-tauri/Cargo.toml'), '--locked', '--no-run', '--message-format=json'], env=env, capture_output=True, text=True, check=True, timeout=180)
                 executables = [json.loads(line)['executable'] for line in result.stdout.splitlines() if line.startswith('{') and json.loads(line).get('reason') == 'compiler-artifact' and json.loads(line).get('executable') and json.loads(line).get('target', {}).get('name') == 'containerdesk_lib' and json.loads(line).get('profile', {}).get('test') is True]
                 assert len(executables) == 1
@@ -201,9 +208,12 @@ def main():
                 if checked.returncode:
                     print(checked.stderr)
                     raise RuntimeError('Native log checkpoint failed')
+            if args.compose_actions:
+                from compose_actions import verify
+                verify(root,docker,env,compose_manifest,bool(args.native_driver))
             assert hashlib.sha256(known.read_bytes()).hexdigest() == before
             if args.jump: print('PASS actual ProxyJump logs-jump: strict trust on both owned SSH hops, no agent forwarding, same scoped read workflow.', flush=True)
-            print('PASS: owned network metadata and nonzero IPv4/IPv6 attachment count matched real Docker inspect over strict ProxyJump.' if args.networks else 'PASS: batch partial outcomes, cancellation, stopped removal and native state race checks.' if args.batch else 'PASS: explicitly enabled owned lifecycle actions and post-dispatch loss had no replay; strict client trust unchanged.' if args.management else 'PASS: owned slow native reads obey host limits and disconnect cancellation; strict trust unchanged.' if args.reads else 'PASS: owned Docker events, cancellation, gap/replay and authoritative deleted-container snapshot; strict client trust unchanged.' if args.events else 'PASS: stats running/stopped/disappeared/concurrent/disconnect checks; strict client trust unchanged.' if args.stats else 'PASS: native streaming/cancellation/network-loss checkpoint; strict client trust unchanged.' if args.stream else 'PASS: real exited fixture logs match independent native Docker CLI; unsupported driver, UTF-8/line bounds; no raw synthetic log in app diagnostics; strict client trust unchanged.')
+            print('PASS: verified Compose project action and unchanged unrelated project.' if args.compose_actions else 'PASS: owned network metadata and nonzero IPv4/IPv6 attachment count matched real Docker inspect over strict ProxyJump.' if args.networks else 'PASS: batch partial outcomes, cancellation, stopped removal and native state race checks.' if args.batch else 'PASS: explicitly enabled owned lifecycle actions and post-dispatch loss had no replay; strict client trust unchanged.' if args.management else 'PASS: owned slow native reads obey host limits and disconnect cancellation; strict trust unchanged.' if args.reads else 'PASS: owned Docker events, cancellation, gap/replay and authoritative deleted-container snapshot; strict client trust unchanged.' if args.events else 'PASS: stats running/stopped/disappeared/concurrent/disconnect checks; strict client trust unchanged.' if args.stats else 'PASS: native streaming/cancellation/network-loss checkpoint; strict client trust unchanged.' if args.stream else 'PASS: real exited fixture logs match independent native Docker CLI; unsupported driver, UTF-8/line bounds; no raw synthetic log in app diagnostics; strict client trust unchanged.')
         finally:
             finished.set()
             if watcher: watcher.join(timeout=2)

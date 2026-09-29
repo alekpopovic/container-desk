@@ -141,7 +141,15 @@ pub fn prepare(
     }
     let args = config.arguments(plan.args().iter().skip(1).cloned());
     Ok(PreparedCommand {
-        encoded: quoting::command(&args)?,
+        encoded: if let Some(configuration) = plan.compose_configuration() {
+            quoting::in_directory(
+                &args,
+                &configuration.working_directory,
+                &configuration.config_files,
+            )?
+        } else {
+            quoting::command(&args)?
+        },
         category: plan.category().clone(),
         response: plan.response().clone(),
         timeout_seconds: plan.timeout_seconds(),
@@ -161,3 +169,5 @@ pub(crate) mod images;
 pub(crate) mod volumes;
 
 pub(crate) mod networks;
+
+pub(crate) mod compose_actions;

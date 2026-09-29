@@ -2508,3 +2508,221 @@ async fn checkpoint036_owned_networks_match_real_attachment_oracle() {
         "PASS actual network over strict ProxyJump: owned internal dual-stack bridge, full network identity, exact nonzero attachment count and container identity, both IP families/IPAM matched independent Docker inspect; options/labels masked, foreign/disconnected scope refused, management stayed read-only; PATH=/nonexistent."
     );
 }
+
+#[tokio::test]
+#[ignore = "requires explicitly owned Compose projects and strict SSH lab"]
+async fn checkpoint037_owned_compose_restart_verification_and_configuration_drift() {
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let control = std::path::Path::new(&manifest).parent().unwrap();
+    let fixture = &lab["composeActions"];
+    let config: ComposeConfiguration =
+        serde_json::from_value(fixture["configuration"].clone()).unwrap();
+    let backend = Backend::new(&control.join("compose-app-data"), "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id,
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    let request = VerifyComposeRequest {
+        scope: scope.clone(),
+        configuration: config.clone(),
+        acknowledged: true,
+    };
+    let mut unconfirmed = request.clone();
+    unconfirmed.acknowledged = false;
+    assert_eq!(
+        backend
+            .verify_compose_project(unconfirmed)
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    let mut missing = request.clone();
+    missing.configuration.config_files[1] = fixture["missingOverride"].as_str().unwrap().into();
+    assert_eq!(
+        backend
+            .verify_compose_project(missing)
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::ComposeConfigurationUnavailable
+    );
+    let mut wrong = request.clone();
+    wrong.configuration.project_name.push_str("_wrong");
+    assert_eq!(
+        backend
+            .verify_compose_project(wrong)
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::ComposeProjectMismatch
+    );
+    let mut swapped = request.clone();
+    swapped.configuration.config_files.reverse();
+    assert_eq!(
+        backend
+            .verify_compose_project(swapped)
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::ComposeProjectMismatch
+    );
+    let verified = backend
+        .verify_compose_project(request.clone())
+        .await
+        .unwrap();
+    assert_eq!(verified.services, vec!["web", "worker"]);
+    let mut expected: Vec<ContainerId> = serde_json::from_value(fixture["ids"].clone()).unwrap();
+    expected.sort_by(|a, b| a.0.cmp(&b.0));
+    assert_eq!(verified.container_ids, expected);
+    let spec = ComposeActionSpec {
+        verification_id: verified.id,
+        configuration: config,
+        services: verified.services,
+        container_ids: verified.container_ids,
+        operation: ComposeActionOperation::Restart,
+        timeout_seconds: 1,
+    };
+    let prepare = PrepareConfirmationRequest {
+        scope: scope.clone(),
+        operation: ConfirmationOperation::Compose(spec.clone()),
+    };
+    assert_eq!(
+        backend
+            .prepare_confirmation(prepare.clone())
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::PermissionDenied
+    );
+    backend
+        .set_management(SetManagementRequest {
+            scope: scope.clone(),
+            enabled: true,
+        })
+        .unwrap();
+    let intent = backend.prepare_confirmation(prepare.clone()).await.unwrap();
+    let mutation = ComposeMutationRequest {
+        scope: scope.clone(),
+        intent_id: intent.id,
+        spec: spec.clone(),
+    };
+    let result = backend
+        .mutate_compose_project(mutation.clone())
+        .await
+        .unwrap();
+    assert_eq!(result.outcome, MutationOutcome::Succeeded);
+    assert!(
+        result
+            .results
+            .iter()
+            .all(|row| row.dispatched && row.outcome == MutationTargetOutcome::Succeeded)
+    );
+    assert!(backend.mutate_compose_project(mutation).await.is_err());
+    for id in &expected {
+        let detail = backend
+            .inspect_container(InspectContainerRequest {
+                scope: scope.clone(),
+                container_id: id.clone(),
+                reveal_sensitive: false,
+            })
+            .await
+            .unwrap();
+        assert_eq!(detail.summary.state, "running");
+    }
+    for (action, state) in [
+        (ComposeActionOperation::Stop, "exited"),
+        (ComposeActionOperation::Start, "running"),
+    ] {
+        let mut action_spec = spec.clone();
+        action_spec.operation = action;
+        let intent = backend
+            .prepare_confirmation(PrepareConfirmationRequest {
+                scope: scope.clone(),
+                operation: ConfirmationOperation::Compose(action_spec.clone()),
+            })
+            .await
+            .unwrap();
+        let result = backend
+            .mutate_compose_project(ComposeMutationRequest {
+                scope: scope.clone(),
+                intent_id: intent.id,
+                spec: action_spec,
+            })
+            .await
+            .unwrap();
+        assert_eq!(result.outcome, MutationOutcome::Succeeded);
+        for id in &expected {
+            let detail = backend
+                .inspect_container(InspectContainerRequest {
+                    scope: scope.clone(),
+                    container_id: id.clone(),
+                    reveal_sensitive: false,
+                })
+                .await
+                .unwrap();
+            assert_eq!(detail.summary.state, state);
+        }
+    }
+    let intent = backend.prepare_confirmation(prepare).await.unwrap();
+    let override_file = std::path::Path::new(fixture["override"].as_str().unwrap());
+    let original = std::fs::read_to_string(override_file).unwrap();
+    assert!(original.contains("override-v1"));
+    std::fs::write(
+        override_file,
+        original.replace("override-v1", "override-v2"),
+    )
+    .unwrap();
+    let result = backend
+        .mutate_compose_project(ComposeMutationRequest {
+            scope: scope.clone(),
+            intent_id: intent.id,
+            spec,
+        })
+        .await
+        .unwrap();
+    std::fs::write(override_file, original).unwrap();
+    assert_eq!(result.outcome, MutationOutcome::Failed);
+    assert!(
+        result
+            .results
+            .iter()
+            .all(|row| !row.dispatched && row.error == Some(ErrorCode::ComposeProjectMismatch))
+    );
+    assert!(
+        !serde_json::to_string(&backend.activity_records().unwrap())
+            .unwrap()
+            .contains("synthetic-compose-037-private")
+    );
+    backend.shutdown().await;
+    println!(
+        "PASS native verified Compose over strict ProxyJump: spaces/apostrophes and ordered files, absent required env file and wrong project rejected, reversed file order rejected, readonly/confirmation enforced, two existing services restarted once, stopped, then started with each actual state observed, consumed intent not replayed, actual config drift after confirmation failed before dispatch, no resolved secret in returned activity."
+    );
+}

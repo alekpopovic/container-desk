@@ -38,6 +38,8 @@ pub fn run() {
             commands::list_hosts,
             commands::connect_host,
             commands::list_containers,
+            commands::verify_compose_project,
+            commands::mutate_compose_project,
             commands::list_compose,
             commands::list_images,
             commands::list_volumes,

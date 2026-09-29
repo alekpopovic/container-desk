@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -93,6 +93,12 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                 assert script('return document.body.innerText.includes("logs-jump")')
                 (artifacts / 'native-jump-connected.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
+            if compose_actions:
+                count=len(json.loads((root/'manifest.json').read_text())['ownedIds'])
+                wait('return document.querySelectorAll("[data-container-id]").length === '+str(count))
+                from native_compose_actions import verify as verify_compose
+                verify_compose(root,artifacts,script,command,click,button,fill,wait,element)
+                return
             wait('return document.querySelectorAll("[data-container-id]").length === 3')
             click(f'//tr[@data-container-id="{live_id}"]//button')
             if networks:

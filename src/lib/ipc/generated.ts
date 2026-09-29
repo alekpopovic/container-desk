@@ -5,6 +5,14 @@ export type ContainerId = string;
 export type ImageId = string;
 export type VolumeName = string;
 export type NetworkId = string;
+export type ComposeVerificationId = string;
+export type ComposeActionOperation = "start" | "stop" | "restart";
+export type ComposeConfiguration = { projectName: string, workingDirectory: string, configFiles: Array<string>, };
+export type VerifyComposeRequest = { scope: SessionScope, configuration: ComposeConfiguration, acknowledged: boolean, };
+export type ComposeVerification = { scope: SessionScope, id: ComposeVerificationId, configuration: ComposeConfiguration, services: Array<string>, containerIds: Array<ContainerId>, expiresInMs: number, };
+export type ComposeActionSpec = { verificationId: ComposeVerificationId, configuration: ComposeConfiguration, services: Array<string>, containerIds: Array<ContainerId>, operation: ComposeActionOperation, timeoutSeconds: number, };
+export type ComposeMutationRequest = { scope: SessionScope, intentId: IntentId, spec: ComposeActionSpec, };
+export type ComposeMutationResponse = { scope: SessionScope, spec: ComposeActionSpec, outcome: MutationOutcome, results: Array<MutationTargetResult>, };
 export type ListNetworksRequest = { scope: SessionScope, };
 export type InspectNetworkRequest = { scope: SessionScope, networkId: NetworkId, };
 export type NetworkSummary = { scope: SessionScope, id: NetworkId, name: string, driver: string | null, networkScope: string | null, internal: boolean | null, ipv6: boolean | null, };
@@ -37,7 +45,7 @@ export type SessionScope = { selection: HostSelection, sessionId: SessionId,
  * Backend-issued epoch; changes after reconnect or daemon/context changes.
  */
 sessionGeneration: number, daemonId: string, };
-export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "container_not_found" | "container_not_stopped" | "image_not_found" | "volume_not_found" | "network_not_found" | "log_driver_unsupported" | "export_failed" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
+export type ErrorCode = "invalid_id" | "invalid_generation" | "host_not_found" | "container_not_found" | "container_not_stopped" | "image_not_found" | "volume_not_found" | "network_not_found" | "compose_configuration_unavailable" | "compose_project_mismatch" | "compose_verification_expired" | "log_driver_unsupported" | "export_failed" | "session_not_found" | "stale_session" | "subscription_not_found" | "feature_unavailable" | "permission_denied" | "resource_limit" | "transport_unavailable" | "invalid_response" | "internal" | "storage_unavailable" | "storage_conflict" | "invalid_preferences" | "invalid_limits" | "invalid_intent" | "intent_expired" | "disconnected" | "operation_timed_out" | "operation_cancelled" | "invalid_alias" | "invalid_config_path" | "invalid_remote_argument" | "ssh_unavailable" | "ssh_resolution_failed";
 export type AppError = { code: ErrorCode, message: string, scope: SessionScope | null, };
 export type ConnectionState = "disconnected" | "resolving" | "connecting" | "probing" | "ready" | "degraded" | "error";
 export type HostCapabilities = { docker: boolean, compose: boolean, management: boolean, terminal: boolean, };
@@ -110,7 +118,7 @@ export type MutationOperation = "start" | "stop" | "restart" | "remove";
 export type MutationSpec = { operation: MutationOperation, containerIds: Array<ContainerId>, timeoutSeconds: number, };
 export type TerminalShell = "sh" | "bash";
 export type TerminalSpec = { containerId: ContainerId, shell: TerminalShell, columns: number, rows: number, };
-export type ConfirmationOperation = { "category": "mutation", "spec": MutationSpec } | { "category": "terminal", "spec": TerminalSpec };
+export type ConfirmationOperation = { "category": "mutation", "spec": MutationSpec } | { "category": "compose", "spec": ComposeActionSpec } | { "category": "terminal", "spec": TerminalSpec };
 export type PrepareConfirmationRequest = { scope: SessionScope, operation: ConfirmationOperation, };
 export type ConfirmationIntent = { id: IntentId, scope: SessionScope, operation: ConfirmationOperation, expiresInMs: number, };
 export type MutationRequest = { scope: SessionScope, intentId: IntentId, spec: MutationSpec, };

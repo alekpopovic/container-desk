@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-verify-compose-project"
+description = "Enables the verify_compose_project command without any pre-configured scope."
+commands.allow = ["verify_compose_project"]
+
+[[permission]]
+identifier = "deny-verify-compose-project"
+description = "Denies the verify_compose_project command without any pre-configured scope."
+commands.deny = ["verify_compose_project"]

@@ -1,3 +1,4 @@
+import { ComposeManagement } from "./ComposeManagement";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { InventoryView } from "../containers/cache";
 import type {
@@ -36,11 +37,13 @@ function fromRows(view: InventoryView): ComposeProject[] {
 export function ComposeInventory({
   view,
   native,
+  host,
   refreshContainers,
   openContainer,
 }: {
   view: InventoryView;
   native: boolean;
+  host?: string | undefined;
   refreshContainers: () => void;
   openContainer: (scope: SessionScope, id: string) => void;
 }) {
@@ -170,8 +173,8 @@ export function ComposeInventory({
       )}
       <p className="muted">
         Configuration paths are reported remote metadata. They have not been
-        checked for existence, readability or completeness, and cannot be used
-        for project actions here.
+        checked for existence, readability or completeness. Project actions
+        require separate confirmation and verification of remote configuration.
       </p>
       {!busy && !error && !projects.length && (
         <p>No Compose projects discovered on this daemon.</p>
@@ -215,8 +218,19 @@ export function ComposeInventory({
         </aside>
         {chosen && (
           <Project
-            key={chosen.name}
+            key={JSON.stringify([scope, chosen.name])}
             project={chosen}
+            actions={
+              native && visible?.data.plugin === "available" ? (
+                <ComposeManagement
+                  scope={scope}
+                  project={chosen.name}
+                  host={host ?? scope.selection.hostId}
+                  stale={view.stale || !!error}
+                  refresh={refreshContainers}
+                />
+              ) : undefined
+            }
             view={view}
             openContainer={openContainer}
           />
@@ -227,10 +241,12 @@ export function ComposeInventory({
 }
 function Project({
   project: p,
+  actions,
   view,
   openContainer,
 }: {
   project: ComposeProject;
+  actions?: import("react").ReactNode;
   view: InventoryView;
   openContainer: (scope: SessionScope, id: string) => void;
 }) {
@@ -270,6 +286,7 @@ function Project({
           </ul>
         </>
       )}
+      {actions}
       <h4>Services and container instances</h4>
       {p.instances.length === 0 ? (
         <p>No inspected instances in this snapshot.</p>

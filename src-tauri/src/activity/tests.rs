@@ -500,3 +500,118 @@ fn full_batches_trim_history_by_bytes_and_keep_an_active_record() {
         activity.records().unwrap()
     );
 }
+
+#[test]
+fn compose_intent_uses_same_host_lock_and_persists_all_unknown_before_one_dispatch() {
+    let activities =
+        Activities::load(Box::<crate::storage::tests::MemoryStorage>::default()).unwrap();
+    let mut policy = PolicyEngine::default();
+    let scope = crate::contract_tests::scope();
+    policy.register(scope.clone()).unwrap();
+    policy.set_access(&scope, HostAccess::Manage).unwrap();
+    let spec = ComposeActionSpec {
+        verification_id: ComposeVerificationId(format!("v_{}", "a".repeat(32))),
+        configuration: ComposeConfiguration {
+            project_name: "owned".into(),
+            working_directory: "/srv/owned project".into(),
+            config_files: vec!["/srv/owned project/a.yml".into()],
+        },
+        services: vec!["web".into()],
+        container_ids: vec![ContainerId("a".repeat(64)), ContainerId("b".repeat(64))],
+        operation: ComposeActionOperation::Restart,
+        timeout_seconds: 1,
+    };
+    let intent = policy
+        .prepare(PrepareConfirmationRequest {
+            scope: scope.clone(),
+            operation: ConfirmationOperation::Compose(spec.clone()),
+        })
+        .unwrap();
+    let request = ComposeMutationRequest {
+        scope: scope.clone(),
+        intent_id: intent.id.clone(),
+        spec: spec.clone(),
+    };
+    let mut owner = activities
+        .begin_compose(&mut policy, request.clone())
+        .unwrap();
+    assert!(owner.dispatch_target(&spec.container_ids[0]).is_err());
+    let second = policy
+        .prepare(PrepareConfirmationRequest {
+            scope: scope.clone(),
+            operation: ConfirmationOperation::Mutation(MutationSpec {
+                operation: MutationOperation::Stop,
+                container_ids: vec![spec.container_ids[0].clone()],
+                timeout_seconds: 1,
+            }),
+        })
+        .unwrap();
+    assert!(
+        activities
+            .begin(
+                &mut policy,
+                MutationRequest {
+                    scope: scope.clone(),
+                    intent_id: second.id,
+                    spec: MutationSpec {
+                        operation: MutationOperation::Stop,
+                        container_ids: vec![spec.container_ids[0].clone()],
+                        timeout_seconds: 1
+                    }
+                }
+            )
+            .is_err()
+    );
+    owner.dispatch_compose().unwrap();
+    assert!(owner.dispatch_compose().is_err());
+    let records = activities.records().unwrap();
+    assert!(
+        records[0]
+            .results
+            .iter()
+            .all(|r| r.dispatched && r.outcome == MutationTargetOutcome::Unknown)
+    );
+    owner
+        .complete_compose(
+            MutationTargetOutcome::Unknown,
+            true,
+            Some(ErrorCode::TransportUnavailable),
+        )
+        .unwrap();
+    drop(owner);
+    assert!(activities.begin_compose(&mut policy, request).is_err());
+    assert_eq!(
+        activities.records().unwrap()[0].outcome,
+        ActivityOutcome::Unknown
+    );
+    let intent = policy
+        .prepare(PrepareConfirmationRequest {
+            scope: scope.clone(),
+            operation: ConfirmationOperation::Compose(spec.clone()),
+        })
+        .unwrap();
+    let mut owner = activities
+        .begin_compose(
+            &mut policy,
+            ComposeMutationRequest {
+                scope: scope.clone(),
+                intent_id: intent.id.clone(),
+                spec,
+            },
+        )
+        .unwrap();
+    activities
+        .cancel(&CancelMutationRequest {
+            scope,
+            intent_id: intent.id,
+        })
+        .unwrap();
+    assert!(owner.dispatch_compose().is_err());
+    owner
+        .complete_compose(
+            MutationTargetOutcome::Cancelled,
+            false,
+            Some(ErrorCode::OperationCancelled),
+        )
+        .unwrap();
+}

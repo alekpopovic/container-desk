@@ -77,6 +77,8 @@ pub struct Operation {
     host: HostId,
     id: IntentId,
     spec: MutationSpec,
+    compose: Option<ComposeActionSpec>,
+    project_dispatched: bool,
     cursor: usize,
     inflight: Option<ContainerId>,
     cancelled: Arc<AtomicBool>,
@@ -260,11 +262,42 @@ impl Activities {
         policy: &mut PolicyEngine,
         request: MutationRequest,
     ) -> Result<Operation, AppError> {
-        let _authorized = policy.consume(
-            &request.scope,
-            &request.intent_id,
-            &ConfirmationOperation::Mutation(request.spec.clone()),
-        )?;
+        self.begin_operation(
+            policy,
+            request.clone(),
+            ConfirmationOperation::Mutation(request.spec.clone()),
+            None,
+        )
+    }
+    pub(crate) fn begin_compose(
+        &self,
+        policy: &mut PolicyEngine,
+        request: ComposeMutationRequest,
+    ) -> Result<Operation, AppError> {
+        let mutation = MutationRequest {
+            scope: request.scope,
+            intent_id: request.intent_id,
+            spec: MutationSpec {
+                operation: request.spec.operation.mutation(),
+                container_ids: request.spec.container_ids.clone(),
+                timeout_seconds: request.spec.timeout_seconds,
+            },
+        };
+        self.begin_operation(
+            policy,
+            mutation,
+            ConfirmationOperation::Compose(request.spec.clone()),
+            Some(request.spec),
+        )
+    }
+    fn begin_operation(
+        &self,
+        policy: &mut PolicyEngine,
+        request: MutationRequest,
+        confirmation: ConfirmationOperation,
+        compose: Option<ComposeActionSpec>,
+    ) -> Result<Operation, AppError> {
+        let _authorized = policy.consume(&request.scope, &request.intent_id, &confirmation)?;
         let mut state = self.state.lock().map_err(|_| storage_error())?;
         if state.persistence_failed {
             return Err(storage_error());
@@ -319,6 +352,8 @@ impl Activities {
             host,
             id: request.intent_id,
             spec: request.spec,
+            compose,
+            project_dispatched: false,
             cursor: 0,
             inflight: None,
             cancelled,
@@ -348,6 +383,79 @@ impl Activities {
     }
 }
 impl Operation {
+    pub(crate) fn dispatch_compose(&mut self) -> Result<CommandPlan, AppError> {
+        let spec = self
+            .compose
+            .as_ref()
+            .ok_or_else(|| AppError::new(ErrorCode::InvalidIntent))?;
+        if self.project_dispatched || self.cursor != 0 || self.inflight.is_some() {
+            return Err(AppError::new(ErrorCode::InvalidIntent));
+        }
+        if self.cancelled() {
+            return Err(AppError::new(ErrorCode::OperationCancelled));
+        }
+        let plan = registry::confirmation(&ConfirmationOperation::Compose(spec.clone()))?;
+        self.update_project(MutationTargetOutcome::Unknown, true, None)?;
+        self.project_dispatched = true;
+        Ok(plan)
+    }
+    pub(crate) fn complete_compose(
+        &mut self,
+        outcome: MutationTargetOutcome,
+        dispatched: bool,
+        error: Option<ErrorCode>,
+    ) -> Result<(), AppError> {
+        if self.compose.is_none()
+            || self.cursor != 0
+            || self.project_dispatched != dispatched
+            || (dispatched
+                && !matches!(
+                    outcome,
+                    MutationTargetOutcome::Succeeded | MutationTargetOutcome::Unknown
+                ))
+            || (!dispatched
+                && !matches!(
+                    outcome,
+                    MutationTargetOutcome::Failed | MutationTargetOutcome::Cancelled
+                ))
+        {
+            return Err(AppError::new(ErrorCode::InvalidIntent));
+        }
+        self.update_project(outcome, dispatched, error)?;
+        self.cursor = self.spec.container_ids.len();
+        Ok(())
+    }
+    fn update_project(
+        &self,
+        outcome: MutationTargetOutcome,
+        dispatched: bool,
+        error: Option<ErrorCode>,
+    ) -> Result<(), AppError> {
+        let mut state = self.state.lock().map_err(|_| storage_error())?;
+        if state.persistence_failed {
+            return Err(storage_error());
+        }
+        let mut next = state.history.clone();
+        let record = next
+            .records
+            .iter_mut()
+            .find(|r| r.id == self.id)
+            .ok_or_else(storage_error)?;
+        record.results = self
+            .spec
+            .container_ids
+            .iter()
+            .map(|id| MutationTargetResult {
+                container_id: id.clone(),
+                outcome: outcome.clone(),
+                dispatched,
+                error: error.clone(),
+            })
+            .collect();
+        record.updated_at_ms = now_ms()?.max(record.started_at_ms);
+        record.outcome = aggregate(&record.results);
+        state.persist(next)
+    }
     pub fn cancelled(&self) -> bool {
         self.cancelled.load(Ordering::SeqCst)
     }
@@ -358,6 +466,9 @@ impl Operation {
         Ok(())
     }
     pub fn dispatch_target(&mut self, id: &ContainerId) -> Result<CommandPlan, AppError> {
+        if self.compose.is_some() {
+            return Err(AppError::new(ErrorCode::InvalidIntent));
+        }
         self.require_next(id)?;
         if self.cancelled() {
             return Err(AppError::new(ErrorCode::OperationCancelled));
