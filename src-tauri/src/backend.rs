@@ -912,6 +912,32 @@ impl Backend {
             enabled: request.enabled,
         })
     }
+    // Admission waits before dispatch; no dispatched operation is ever retried.
+    async fn action_read_admission(
+        &self,
+        scope: &SessionScope,
+    ) -> Result<
+        (
+            crate::ssh::read_limits::Slot<'_>,
+            tokio::sync::SemaphorePermit<'_>,
+        ),
+        AppError,
+    > {
+        for _ in 0..30 {
+            self.require_session(scope)?;
+            match self.read_hosts.acquire(&scope.selection.host_id) {
+                Ok(host) => {
+                    if let Ok(global) = self.read_slots.try_acquire() {
+                        return Ok((host, global));
+                    }
+                }
+                Err(error) if error.code == ErrorCode::ResourceLimit => (),
+                Err(error) => return Err(error),
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+        Err(AppError::new(ErrorCode::ResourceLimit))
+    }
     pub async fn prepare_confirmation(
         &self,
         request: PrepareConfirmationRequest,
@@ -924,23 +950,7 @@ impl Backend {
         self.require_session(&request.scope)?;
         // Action targets must come from an actual current-scope native inventory.
         if let ConfirmationOperation::Mutation(spec) = &request.operation {
-            // Wait for bounded read admission before issuing any command. No dispatched read or mutation is replayed here.
-            let mut admission = None;
-            for _ in 0..30 {
-                self.require_session(&request.scope)?;
-                match self.read_hosts.acquire(&request.scope.selection.host_id) {
-                    Ok(host) => {
-                        if let Ok(global) = self.read_slots.try_acquire() {
-                            admission = Some((host, global));
-                            break;
-                        }
-                    }
-                    Err(error) if error.code == ErrorCode::ResourceLimit => (),
-                    Err(error) => return Err(error),
-                }
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-            }
-            let _admission = admission.ok_or_else(|| AppError::new(ErrorCode::ResourceLimit))?;
+            let _admission = self.action_read_admission(&request.scope).await?;
             let inventory = self
                 .list_containers_admitted(ListContainersRequest {
                     scope: request.scope.clone(),
@@ -964,13 +974,19 @@ impl Backend {
             }
         }
         if let ConfirmationOperation::Terminal(spec) = &request.operation {
+            let _admission = self.action_read_admission(&request.scope).await?;
             let detail = self
-                .inspect_container(InspectContainerRequest {
+                .sessions
+                .inspect(&InspectContainerRequest {
                     scope: request.scope.clone(),
                     container_id: spec.container_id.clone(),
                     reveal_sensitive: false,
                 })
                 .await?;
+            self.require_session(&request.scope)?;
+            if detail.summary.scope != request.scope || detail.summary.id != spec.container_id {
+                return Err(AppError::new(ErrorCode::InvalidResponse));
+            }
             if detail.summary.state != "running" {
                 return Err(AppError::new(ErrorCode::ContainerNotRunning));
             }

@@ -71,11 +71,7 @@ impl Backend {
             sessions.require_scope(&scope)
         });
         let reservation = self.terminals.reserve(&request, current)?;
-        let _host = self.read_hosts.acquire(&request.scope.selection.host_id)?;
-        let _global = self
-            .read_slots
-            .try_acquire()
-            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let _admission = self.action_read_admission(&request.scope).await?;
         let launch = self.sessions.terminal_launch(&request).await?;
         self.require_session(&request.scope)?;
         reservation.launch(launch)

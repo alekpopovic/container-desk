@@ -1,6 +1,6 @@
 # Container terminal transport
 
-Prompt 039 adds a separate Rust PTY transport. The terminal screen follows in 040. The app launches the validated native OpenSSH executable directly in a local PTY provided by pinned `portable-pty 0.9.0`. It reuses only its own SSH connection identity/socket, requests the remote PTY with `-tt`, enables stdin explicitly and disables OpenSSH escape commands with `EscapeChar=none`. Structured JSON commands retain `-T`/`-n`, pipe capture and their existing bounds.
+Prompt 039 adds a separate Rust PTY transport. Prompt 040 connects it to an explicitly opened terminal tab. The app launches the validated native OpenSSH executable directly in a local PTY provided by pinned `portable-pty 0.9.0`. It reuses only its own SSH connection identity/socket, requests the remote PTY with `-tt`, enables stdin explicitly and disables OpenSSH escape commands with `EscapeChar=none`. Structured JSON commands retain `-T`/`-n`, pipe capture and their existing bounds.
 
 ## Permission, identity and command
 
@@ -27,10 +27,26 @@ The generated contracts expose `get/set_terminal_permission`, `open_container_te
 
 PTY stdout and stderr are one byte stream. Bytes remain untrusted terminal data for the renderer to interpret; they are not HTML or application diagnostics. No terminal transcript or input enters preferences, activity history, telemetry or default diagnostics. Rust Debug representations expose byte counts, not payloads. Closing SSH cannot undo commands already sent or guarantee termination of independently detached remote workloads.
 
+## Terminal interface and lifecycle
+
+The selected container console has separate Logs and Terminal tabs. Switching away unmounts the terminal and closes its exact owned backend handle. The header retains the saved host name and SSH alias, full container ID, daemon identity and UID/GID. A new terminal requires management, a separate terminal grant, a shell choice and a short-lived confirmation. A failed or closed session remains closed until the user explicitly opens another one.
+
+Pinned `@xterm/xterm 6.0.0` and `@xterm/addon-fit 0.11.0` load only with the terminal tab. Scrollback is 1,000 lines; fit stays within the backend size limits. One output poll runs at a time and waits for xterm's rendering acknowledgement before fetching another bounded batch. The renderer queues at most 64 KiB / 32 input chunks and sends strictly sequentially. Lost input responses or queue pressure close the session without replay. Resize coalesces to the latest dimensions. Late open responses after unmount are closed using their original scope, even though that scope is no longer selected.
+
+Only a visible, focused, active terminal accepts keyboard input; Ctrl+Shift+Escape moves focus to Disconnect. A hidden application closes its terminal. Permission revocation, host/session changes, tab closure and backend failures disable input. These controls supplement backend authorization, which remains authoritative.
+
+Wait for the remote shell prompt before typing; starting the local SSH process precedes remote shell initialization. On Linux, use Ctrl+Shift+V for clipboard paste; Ctrl+V remains the shell control key. macOS uses its native Command+V shortcut (not verified on macOS here). Paste is intercepted before xterm receives it. CR/CRLF and Unicode line separators become LF; multiline text requires a visible plaintext preview and explicit Send. Other control characters are rejected. Paste is limited to 16 KiB including possible bracketed-paste framing. Cancel sends nothing. Copy writes only an explicitly selected visible region, with a 64 KiB maximum. No transcript/history persistence or terminal activity logging is added.
+
+No clipboard, hyperlink, title, cwd, notification, image or shell-integration addons are loaded. OSC handlers consume the corresponding integrations, links have an inert activation handler, and xterm window operations are disabled. Terminal bytes are rendered through xterm, never HTML. Browser fixtures exercise malicious OSC clipboard/title/link sequences; they are not native SSH evidence.
+
+References: [xterm security guidance](https://xtermjs.org/docs/guides/security/), [terminal options](https://xtermjs.org/docs/api/terminal/interfaces/iterminaloptions/), [parser hooks](https://xtermjs.org/docs/guides/hooks/).
+
 ## Evidence and platform scope
 
 [039 evidence](../codex/tracking/evidence/039.md) records actual Linux PTY tests over both direct OpenSSH and ProxyJump. They verify output distinct from echoed input, UID 1000, Ctrl-C cancelling sleep, resize observed through remote stty, exit 7, an actually shell-less running container, rejection after permission revocation, disconnect/reaping and a concurrent JSON inventory request without a PTY. The lab keeps both primary container processes running; only test-created resources are removed.
 
-The native implementation is tested on Ubuntu 26.04.1 x86_64. The crate supports Unix PTYs, including macOS, but this is not macOS runtime, desktop terminal UI, package-install, Wayland or signing evidence. Production compilation and native backend execution are recorded separately. The selected UID can be unsuitable for an image, and other operators can stop/replace the container after preflight; failures remain visible and are never replayed.
+[040 evidence](../codex/tracking/evidence/040.md) adds actual release-webview input, resize, native clipboard confirmation, tab closure during output, two saved host sessions, revocation and transcript-free storage/diagnostics.
+
+The native implementation is tested on Ubuntu 26.04.1 x86_64. The crate supports Unix PTYs, including macOS, but this is not macOS runtime, package-install, Wayland or signing evidence. Production compilation and native backend execution are recorded separately. The selected UID can be unsuitable for an image, and other operators can stop/replace the container after preflight; failures remain visible and are never replayed.
 
 References checked for this increment: [portable-pty 0.9.0 source/API](https://docs.rs/crate/portable-pty/0.9.0/source/src/lib.rs), [OpenSSH terminal and escape options](https://man.openbsd.org/ssh.1), [Docker exec options](https://docs.docker.com/reference/cli/docker/container/exec/).

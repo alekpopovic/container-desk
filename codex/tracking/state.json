@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T06:13:35+00:00",
+  "updated_at": "2026-09-29T06:57:59+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1344,6 +1344,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T06:14:29+00:00",
+      "id": "040",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T06:57:59+00:00",
+      "id": "040",
+      "action": "done",
+      "note": "Pinned Node 24.21/npm 11.19 npm check: 78 tests; Playwright terminal/log/container: 42 passed; Rust: 137 passed/24 ignored; clippy/fmt/build passed; actual Linux release terminal GUI and PTY over strict ProxyJump passed, independent four-command oracle and clean storage/diagnostics",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T06:14:29+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1843,12 +1877,14 @@
       "note": ""
     },
     "040": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T06:14:29+00:00",
+      "finished_at": "2026-09-29T06:57:59+00:00",
+      "evidence": "codex/tracking/evidence/040.md",
+      "evidence_sha256": "e03f400082bb296b17633f08e96c847d2dcbde3e8aabdb583f141299031ff886",
+      "checks": [
+        "Pinned Node 24.21/npm 11.19 npm check: 78 tests; Playwright terminal/log/container: 42 passed; Rust: 137 passed/24 ignored; clippy/fmt/build passed; actual Linux release terminal GUI and PTY over strict ProxyJump passed, independent four-command oracle and clean storage/diagnostics"
+      ],
       "commit": "",
       "note": ""
     },

@@ -628,9 +628,9 @@ pub async fn mutate_compose_project(
 #[tauri::command]
 pub fn get_terminal_permission(
     backend: tauri::State<'_, Backend>,
-    scope: SessionScope,
+    request: ListContainersRequest,
 ) -> Result<ManagementState, AppError> {
-    backend.terminal_permission(scope)
+    backend.terminal_permission(request.scope)
 }
 #[tauri::command]
 pub fn set_terminal_permission(

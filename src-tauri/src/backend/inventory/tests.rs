@@ -2967,22 +2967,46 @@ async fn checkpoint039_owned_terminal_echo_interrupt_resize_exit_and_permissions
         scope: &SessionScope,
         spec: TerminalSpec,
     ) -> TerminalHandleRequest {
-        let intent = backend
-            .prepare_confirmation(PrepareConfirmationRequest {
+        // Real preflight waits for read pressure before dispatch, then consumes one intent once.
+        let first = backend
+            .read_hosts
+            .acquire(&scope.selection.host_id)
+            .unwrap();
+        let second = backend
+            .read_hosts
+            .acquire(&scope.selection.host_id)
+            .unwrap();
+        let (intent, ()) = tokio::join!(
+            backend.prepare_confirmation(PrepareConfirmationRequest {
                 scope: scope.clone(),
                 operation: ConfirmationOperation::Terminal(spec.clone()),
-            })
-            .await
-            .unwrap();
+            }),
+            async {
+                tokio::time::sleep(Duration::from_millis(150)).await;
+                drop(first);
+                drop(second);
+            }
+        );
         let request = TerminalRequest {
             scope: scope.clone(),
             spec,
-            intent_id: intent.id,
+            intent_id: intent.unwrap().id,
         };
-        let response = backend
-            .open_container_terminal(request.clone())
-            .await
+        let first = backend
+            .read_hosts
+            .acquire(&scope.selection.host_id)
             .unwrap();
+        let second = backend
+            .read_hosts
+            .acquire(&scope.selection.host_id)
+            .unwrap();
+        let (response, ()) =
+            tokio::join!(backend.open_container_terminal(request.clone()), async {
+                tokio::time::sleep(Duration::from_millis(150)).await;
+                drop(first);
+                drop(second);
+            });
+        let response = response.unwrap();
         assert_eq!(
             backend
                 .open_container_terminal(request)

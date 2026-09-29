@@ -2135,3 +2135,176 @@ export async function mutateComposeProject(
     throw new IpcError("invalid_response");
   return value as unknown as import("./generated.ts").ComposeMutationResponse;
 }
+
+import type {
+  TerminalSpec,
+  TerminalRequest,
+  TerminalResponse,
+  TerminalHandleRequest,
+  TerminalInputRequest,
+  TerminalResizeRequest,
+  TerminalOutput,
+} from "./generated.ts";
+function sameTerminalSpec(value: unknown, expected: TerminalSpec) {
+  return (
+    record(value) &&
+    value.containerId === expected.containerId &&
+    value.shell === expected.shell &&
+    value.columns === expected.columns &&
+    value.rows === expected.rows
+  );
+}
+export async function getTerminalPermission(
+  selected: SessionScope,
+  current: () => SessionScope | null,
+): Promise<ManagementState> {
+  const value = await call("get_terminal_permission", { scope: selected }, () =>
+    sameScope(selected, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, selected) ||
+    typeof value.enabled !== "boolean"
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as ManagementState;
+}
+export async function setTerminalPermission(
+  selected: SessionScope,
+  enabled: boolean,
+  current: () => SessionScope | null,
+): Promise<ManagementState> {
+  const value = await call(
+    "set_terminal_permission",
+    { scope: selected, enabled },
+    () => sameScope(selected, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, selected) ||
+    value.enabled !== enabled
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as ManagementState;
+}
+export async function prepareTerminal(
+  selected: SessionScope,
+  spec: TerminalSpec,
+  current: () => SessionScope | null,
+): Promise<ConfirmationIntent> {
+  const value = await call(
+    "prepare_confirmation",
+    { scope: selected, operation: { category: "terminal", spec } },
+    () => sameScope(selected, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, selected) ||
+    typeof value.id !== "string" ||
+    !/^i_[a-f0-9]{32}$/.test(value.id) ||
+    !record(value.operation) ||
+    value.operation.category !== "terminal" ||
+    !sameTerminalSpec(value.operation.spec, spec) ||
+    !Number.isInteger(value.expiresInMs) ||
+    Number(value.expiresInMs) < 1 ||
+    Number(value.expiresInMs) > 30000
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as ConfirmationIntent;
+}
+export async function closeTerminal(
+  request: TerminalHandleRequest,
+): Promise<void> {
+  const value = await call("close_terminal", request);
+  if (value !== null) throw new IpcError("invalid_response");
+}
+export async function openTerminal(
+  request: TerminalRequest,
+  current: () => SessionScope | null,
+): Promise<TerminalResponse> {
+  if (!sameScope(request.scope, current())) throw new IpcError("stale_session");
+  // Preserve a late handle long enough to close it after navigation. Never repeat the opening.
+  const value = await call("open_container_terminal", request);
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, request.scope) ||
+    typeof value.terminalId !== "string" ||
+    !/^sub_[a-f0-9]{32}$/.test(value.terminalId)
+  )
+    throw new IpcError("invalid_response");
+  const result = value as unknown as TerminalResponse;
+  if (!sameScope(request.scope, current())) {
+    await closeTerminal(result);
+    throw new IpcError("stale_session");
+  }
+  return result;
+}
+export async function readTerminal(
+  request: TerminalHandleRequest,
+  current: () => SessionScope | null,
+): Promise<TerminalOutput> {
+  const value = await call("read_terminal", request, () =>
+    sameScope(request.scope, current()),
+  );
+  if (
+    !record(value) ||
+    !scope(value.scope) ||
+    !sameScope(value.scope, request.scope) ||
+    value.terminalId !== request.terminalId ||
+    !generation(value.sequence) ||
+    !Array.isArray(value.bytes) ||
+    value.bytes.length > 32768 ||
+    !value.bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255) ||
+    !["starting", "running", "exited"].includes(String(value.state)) ||
+    !(
+      value.exitCode === null ||
+      (Number.isInteger(value.exitCode) &&
+        Number(value.exitCode) >= 0 &&
+        Number(value.exitCode) <= 0xffffffff)
+    ) ||
+    !(
+      value.error === null ||
+      (typeof value.error === "string" && Object.hasOwn(messages, value.error))
+    )
+  )
+    throw new IpcError("invalid_response");
+  return value as unknown as TerminalOutput;
+}
+export async function writeTerminal(
+  request: TerminalInputRequest,
+  current: () => SessionScope | null,
+): Promise<void> {
+  if (
+    !generation(request.sequence) ||
+    !request.bytes.length ||
+    request.bytes.length > 16384 ||
+    !request.bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)
+  )
+    throw new IpcError("invalid_limits");
+  const value = await call("write_terminal", request, () =>
+    sameScope(request.scope, current()),
+  );
+  if (value !== null) throw new IpcError("invalid_response");
+}
+export async function resizeTerminal(
+  request: TerminalResizeRequest,
+  current: () => SessionScope | null,
+): Promise<void> {
+  if (
+    !Number.isInteger(request.columns) ||
+    request.columns < 20 ||
+    request.columns > 500 ||
+    !Number.isInteger(request.rows) ||
+    request.rows < 5 ||
+    request.rows > 300
+  )
+    throw new IpcError("invalid_limits");
+  const value = await call("resize_terminal", request, () =>
+    sameScope(request.scope, current()),
+  );
+  if (value !== null) throw new IpcError("invalid_response");
+}

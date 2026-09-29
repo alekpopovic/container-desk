@@ -42,7 +42,7 @@ def main():
     args = parser.parse_args()
     if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
         parser.error('Native driver flags require --stream and both driver paths')
-    if args.terminal and (not args.stream or args.management or args.compose_actions or args.networks or args.stats or args.events or args.reads or args.mvp or args.native_driver): parser.error('--terminal requires --stream and excludes other checkpoint modes')
+    if args.terminal and (not args.stream or args.management or args.compose_actions or args.networks or args.stats or args.events or args.reads or args.mvp): parser.error('--terminal requires --stream and excludes other checkpoint modes')
     if args.compose_actions and (not args.stream or not args.jump or args.management or args.stats or args.events or args.reads or args.mvp or args.networks): parser.error('--compose-actions requires --stream --jump and excludes other checkpoint modes')
     if args.networks and (not args.stream or not args.jump or args.management or args.stats or args.events or args.reads or args.mvp): parser.error('--networks requires --stream --jump and excludes other checkpoint modes')
     if args.batch and not args.management: parser.error('--batch requires --management')
@@ -131,7 +131,7 @@ def main():
             known = root / 'known_hosts'
             known.write_text(f'[127.0.0.1]:{port} {public[0]} {public[1]}\n')
             ssh_config = root / 'ssh_config'
-            ssh_config.write_text(f'Host logs-owned\n HostName 127.0.0.1\n User {user}\n Port {port}\n IdentityFile {root}/client\n IdentitiesOnly yes\n IdentityAgent none\n UserKnownHostsFile {known}\n StrictHostKeyChecking yes\n')
+            ssh_config.write_text(f'Host logs-owned{" logs-second" if args.terminal else ""}\n HostName 127.0.0.1\n User {user}\n Port {port}\n IdentityFile {root}/client\n IdentitiesOnly yes\n IdentityAgent none\n UserKnownHostsFile {known}\n StrictHostKeyChecking yes\n')
             if args.jump:
                 with socket.socket() as sock:
                     sock.bind(('127.0.0.1', 0))
@@ -204,7 +204,7 @@ def main():
                 if args.stream and args.native_driver:
                     from native_logs import verify
                     try:
-                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions)
+                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[2] if args.terminal else owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions, args.terminal)
                     except Exception:
                         # Only bounded state fields from owned fixtures; no logs, env or generic inspect dump.
                         if args.management:
@@ -227,7 +227,7 @@ def main():
                     raise RuntimeError('Native log checkpoint failed')
             if args.terminal:
                 trace=[json.loads(line) for line in (root/'pty-execs.jsonl').read_text().splitlines()]
-                assert 2<=len(trace)<=4 and sum(row['id']==owned[3] for row in trace)==1
+                assert (4<=len(trace)<=6 if args.native_driver else 2<=len(trace)<=4) and sum(row['id']==owned[3] for row in trace)==1
                 assert all(row['tty'] and row['user']=='1000:1000' and row['shell']=='/bin/sh' and row['id'] in owned[2:] for row in trace)
                 states=subprocess.run(docker+['inspect','--format','{{.State.Running}}','--',owned[2],owned[3]],env=env,check=True,capture_output=True,text=True,timeout=10).stdout.split()
                 assert states==['true','true'], 'Terminal signals must not terminate either container primary process'

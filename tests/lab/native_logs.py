@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -68,7 +68,7 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                 if script(condition): return
                 time.sleep(.1)
             (artifacts / 'native-timeout.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
-            print('Native state:', script('return {management:document.querySelector(".container-management")?.innerText,dialogs: document.querySelectorAll("dialog[open]").length, buttons: Array.from(document.querySelectorAll(".live-logs button"), b=>({text:b.textContent,disabled:b.disabled})), status: Array.from(document.querySelectorAll(".live-logs > p[role=status]"), p=>p.textContent)}'), flush=True)
+            print('Native state:', script('return {terminal:document.querySelector(".terminal-status")?.textContent,terminalError:document.querySelector(".terminal-panel [role=alert]")?.textContent,terminalButtons:Array.from(document.querySelectorAll(".terminal-controls button"),b=>({text:b.textContent,disabled:b.disabled})),management:document.querySelector(".container-management")?.innerText,dialogs: document.querySelectorAll("dialog[open]").length, buttons: Array.from(document.querySelectorAll(".live-logs button"), b=>({text:b.textContent,disabled:b.disabled})), status: Array.from(document.querySelectorAll(".live-logs > p[role=status]"), p=>p.textContent)}'), flush=True)
             raise AssertionError('Native log condition did not become true: ' + condition)
         try:
             for _ in range(100):
@@ -79,7 +79,7 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             result = request('POST', '/session', {'capabilities': {'alwaysMatch': {'browserName': 'wry', 'tauri:options': {'application': str(REPO / 'src-tauri/target/release/containerdesk')}}}})
             session = result['sessionId']
             command('POST', '/timeouts', {'implicit': 5000, 'script': 5000, 'pageLoad': 15000})
-            if stats and xdotool:
+            if (stats or terminal) and xdotool:
                 found = subprocess.run([str(xdotool), 'search', '--onlyvisible', '--name', '^ContainerDesk$'], env=env, capture_output=True, text=True, check=True, timeout=10).stdout.split()
                 owned_windows = []
                 for window in found:
@@ -101,6 +101,19 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                 assert script('return document.body.innerText.includes("logs-jump")')
                 (artifacts / 'native-jump-connected.png').write_bytes(base64.b64decode(command('GET','/screenshot'),validate=True))
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
+            if terminal:
+                wait('return document.querySelectorAll("[data-container-id]").length === 4')
+                click(f'//tr[@data-container-id="{live_id}"]//button')
+                from native_terminal import verify as verify_terminal
+                verify_terminal(root,artifacts,script,command,click,button,fill,wait,element,config,live_id,xdotool)
+                command('DELETE', '')
+                session = None
+                for file in (root / 'native-data').rglob('*'):
+                    if file.is_file():
+                        assert b'CD040_' not in file.read_bytes(), 'Terminal transcript persisted'
+                assert b'CD040_' not in (root / 'native-driver.log').read_bytes(), 'Terminal transcript in diagnostics'
+                print('PASS native terminal app storage and diagnostics contain no transcript markers.',flush=True)
+                return
             if compose_actions:
                 count=len(json.loads((root/'manifest.json').read_text())['ownedIds'])
                 wait('return document.querySelectorAll("[data-container-id]").length === '+str(count))

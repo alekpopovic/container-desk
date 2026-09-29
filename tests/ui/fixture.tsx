@@ -1,3 +1,4 @@
+import { TerminalFixture } from "./terminal-fixture";
 import { ComposeActionsFixture } from "./compose-actions-fixture";
 import { NetworksFixture } from "./networks-fixture";
 import { VolumesFixture } from "./volumes-fixture";
@@ -36,7 +37,9 @@ if (kind === "error")
 const root = document.getElementById("root");
 if (!root) throw new Error("Fixture root missing");
 createRoot(root).render(
-  kind === "compose-actions" ? (
+  kind === "terminal" ? (
+    <TerminalFixture />
+  ) : kind === "compose-actions" ? (
     <ComposeActionsFixture />
   ) : kind === "networks" ? (
     <NetworksFixture />

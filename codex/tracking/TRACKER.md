@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T06:13:35+00:00
+Updated: 2026-09-29T06:57:59+00:00
 
-blocked: **0** | done: **39** | in_progress: **0** | pending: **21**
+blocked: **0** | done: **40** | in_progress: **0** | pending: **20**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -49,7 +49,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 037 | 04 Management | Verified remote Compose project actions | high | done | codex/tracking/evidence/037.md |
 | 038 | 04 Management | Management MVP checkpoint | high | done | codex/tracking/evidence/038.md |
 | 039 | 05 Terminal and resilience | PTY terminal transport | high | done | codex/tracking/evidence/039.md |
-| 040 | 05 Terminal and resilience | Terminal UI with bounded lifecycle | high | pending | — |
+| 040 | 05 Terminal and resilience | Terminal UI with bounded lifecycle | high | done | codex/tracking/evidence/040.md |
 | 041 | 05 Terminal and resilience | Sleep wake network loss and graceful shutdown | high | pending | — |
 | 042 | 05 Terminal and resilience | Cross-platform GUI launch and SSH agent behavior | high | pending | — |
 | 043 | 05 Terminal and resilience | Support diagnostics and redacted export | high | pending | — |
@@ -152,3 +152,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T05:47:33+00:00 — 038: done; PASS: 134 Rust tests and clippy; 74 IPC tests; 72 browser cases; rebuilt production native lifecycle, batch and Compose journeys plus direct/ProxyJump resource and dual-stack network checks. Reproduced and fixed pre-action read coalescing; endpoint read-only/revocation gates passed.
 - 2026-09-29T05:48:35+00:00 — 039: start;
 - 2026-09-29T06:13:35+00:00 — 039: done; PASS: 137 Rust tests, clippy, 74 IPC tests, production Linux build; real direct and ProxyJump PTY echo, UID 1000, Ctrl-C, resize, exit 7, shell-less failure, permission/sequence/scope denial, child reaping and independent no-fallback/liveness oracle.
+- 2026-09-29T06:14:29+00:00 — 040: start;
+- 2026-09-29T06:57:59+00:00 — 040: done; Pinned Node 24.21/npm 11.19 npm check: 78 tests; Playwright terminal/log/container: 42 passed; Rust: 137 passed/24 ignored; clippy/fmt/build passed; actual Linux release terminal GUI and PTY over strict ProxyJump passed, independent four-command oracle and clean storage/diagnostics

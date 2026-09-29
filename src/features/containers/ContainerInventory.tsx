@@ -4,7 +4,7 @@ import { sameScope } from "../../lib/ipc/client";
 import { ContainerManagement } from "../management/ContainerManagement";
 import { ContainerStats } from "../stats/ContainerStats";
 import { StatsHistory } from "../stats/sampling";
-import { LiveLogs } from "../logs/LiveLogs";
+import { ContainerConsole } from "../terminal/ContainerConsole";
 import { ContainerDetails } from "./ContainerDetails";
 import type { ContainerSummary } from "../../lib/ipc/generated";
 import {
@@ -467,11 +467,12 @@ export function ContainerInventory({
         inspectEnabled &&
         (!view.stale || view.loading) &&
         view.scope && (
-          <LiveLogs
-            key={JSON.stringify(["logs", view.scope, chosen.id])}
+          <ContainerConsole
+            key={JSON.stringify(["console", view.scope, chosen.id])}
             scope={view.scope}
             id={chosen.id}
-            source={`${host?.name ?? "Selected host"} / ${chosen.name}`}
+            name={chosen.name}
+            host={host ? `${host.name} · ${host.alias}` : "Selected host"}
           />
         )}
     </div>

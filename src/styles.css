@@ -1400,3 +1400,60 @@ legend {
 .compose-management li {
   overflow-wrap: anywhere;
 }
+
+.container-console {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.terminal-panel {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  min-width: 0;
+}
+.terminal-identity {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.8rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.terminal-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+.terminal-controls label {
+  display: grid;
+  gap: 0.3rem;
+}
+.terminal-surface {
+  height: 360px;
+  min-width: 0;
+  background: #101820;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+.terminal-surface .xterm {
+  height: 100%;
+}
+.terminal-paste {
+  border: 2px solid var(--accent);
+  padding: 1rem;
+  margin: 0.8rem 0;
+}
+.terminal-paste pre {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.terminal-status {
+  font-weight: 600;
+}
