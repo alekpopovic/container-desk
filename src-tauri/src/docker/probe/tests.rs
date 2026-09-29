@@ -474,3 +474,38 @@ async fn checkpoint018_real_engine_version_and_bounded_empty_list_without_client
         );
     }
 }
+
+#[test]
+fn missing_transport_evidence_is_distinct_from_a_changed_daemon() {
+    let mut observed = DockerProbeReport::empty(false);
+    observed.status = DockerProbeStatus::ConnectionFailed;
+    assert_eq!(
+        transport_ready(&observed).unwrap_err().code,
+        ErrorCode::Disconnected
+    );
+    observed.status = DockerProbeStatus::TimedOut;
+    assert_eq!(
+        transport_ready(&observed).unwrap_err().code,
+        ErrorCode::OperationTimedOut
+    );
+    observed.status = DockerProbeStatus::Ready;
+    observed.daemon_id = Some("old".into());
+    let binding = VerifiedDocker {
+        config: DockerCommandConfig::from_options(&DockerOptions::default()).unwrap(),
+        report: observed.clone(),
+    };
+    observed.daemon_id = Some("different".into());
+    assert_eq!(
+        binding
+            .prepare(
+                crate::policy::registry::read(
+                    &crate::policy::registry::ReadOperation::ListContainers
+                )
+                .unwrap(),
+                &observed
+            )
+            .unwrap_err()
+            .code,
+        ErrorCode::StaleSession
+    );
+}

@@ -19,6 +19,7 @@ pub struct Backend {
     terminals: crate::ssh::terminal::Terminals,
     event_streams: crate::ssh::subscriptions::Subscriptions,
     shutting_down: std::sync::atomic::AtomicBool,
+    shutdown_complete: std::sync::atomic::AtomicBool,
     config_home: std::path::PathBuf,
     policy: Arc<Mutex<PolicyEngine>>,
     compose_verified: Mutex<std::collections::HashMap<HostId, compose_actions::Verified>>,
@@ -45,6 +46,7 @@ impl Backend {
             terminals: Default::default(),
             event_streams: crate::ssh::subscriptions::Subscriptions::with_capacity(1),
             shutting_down: std::sync::atomic::AtomicBool::new(false),
+            shutdown_complete: std::sync::atomic::AtomicBool::new(false),
             config_home,
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(settings),
@@ -58,13 +60,31 @@ impl Backend {
             read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
         }
     }
+    pub fn shutdown_complete(&self) -> bool {
+        self.shutdown_complete
+            .load(std::sync::atomic::Ordering::SeqCst)
+    }
+    pub fn begin_shutdown(&self) -> bool {
+        !self
+            .shutting_down
+            .swap(true, std::sync::atomic::Ordering::SeqCst)
+    }
     pub async fn shutdown(&self) {
-        self.shutting_down
+        self.begin_shutdown();
+        self.process_runner.cancel_all();
+        // Signal independent owners together; one stalled owner cannot postpone all others.
+        let _ = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            tokio::join!(
+                self.terminals.shutdown(),
+                self.sessions.shutdown(),
+                self.log_streams.shutdown(),
+                self.event_streams.shutdown(),
+                self.process_runner.wait_idle(),
+            );
+        })
+        .await;
+        self.shutdown_complete
             .store(true, std::sync::atomic::Ordering::SeqCst);
-        self.terminals.shutdown().await;
-        self.sessions.shutdown().await;
-        self.log_streams.shutdown().await;
-        self.event_streams.shutdown().await;
     }
     pub fn config_path(&self, path: Option<&str>) -> Result<SshConfigPath, AppError> {
         let preferences = self.preferences()?;
@@ -1233,6 +1253,7 @@ impl Default for Backend {
             terminals: Default::default(),
             event_streams: crate::ssh::subscriptions::Subscriptions::with_capacity(1),
             shutting_down: std::sync::atomic::AtomicBool::new(false),
+            shutdown_complete: std::sync::atomic::AtomicBool::new(false),
             config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),

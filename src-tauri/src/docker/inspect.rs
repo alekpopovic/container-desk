@@ -392,6 +392,7 @@ pub(crate) async fn read(
             container_id: request.container_id.clone(),
         };
         let (fresh, _) = super::probe::run(connection, options).await;
+        super::probe::transport_ready(&fresh)?;
         if fresh.daemon_id.as_deref() != Some(scope.daemon_id.as_str()) {
             return Err(err(scope, ErrorCode::StaleSession));
         }

@@ -34,6 +34,7 @@ export default function App() {
   const native = isTauri();
   const workspace = useWorkspaceMode(native);
   const [snapshot, setSnapshot] = useState<PreferencesSnapshot | null>(null);
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [inventory, setInventory] = useState<Inventory | null>(null);
   const inventoryChanged = useCallback((value: Inventory) => {
     setInventory(value);
@@ -142,6 +143,7 @@ export default function App() {
   return (
     <WorkspaceShell
       state={displayState}
+      connectionNotice={recoveryMessage}
       containersExtra={
         <ContainerInventory
           inspectEnabled={native && workspace.mode.mode === "live"}
@@ -226,6 +228,7 @@ export default function App() {
           key={workspace.mode.mode}
           mode={workspace.mode.mode}
           onChange={inventoryChanged}
+          onRecovery={setRecoveryMessage}
         />
       }
       demo={{

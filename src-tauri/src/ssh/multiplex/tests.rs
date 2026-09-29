@@ -397,3 +397,48 @@ async fn disposable_lab_native_idle_persistence_expires_without_reconnect() {
     monitored.close().await;
     println!("native ControlPersist and monitored app idle deadline expired; no reconnect loop");
 }
+
+#[tokio::test]
+#[ignore = "requires explicitly owned 041 SSH lab; ends by interrupting its server"]
+async fn checkpoint041_owned_fallback_health_detects_loss_without_touching_foreign_socket() {
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value = serde_json::from_slice(&fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest).parent().unwrap();
+    let mut connection = Connection::new(
+        "/usr/bin/ssh",
+        SshSelection {
+            alias: "logs-owned".into(),
+            config_path: lab["config"].as_str().unwrap().into(),
+            use_default_config: false,
+        },
+    )
+    .unwrap();
+    let runtime = connection.policy.runtime.clone();
+    let socket = runtime.socket_path();
+    fs::write(&socket, b"owned-test-foreign-socket-marker").unwrap();
+    assert_eq!(
+        connection.start().await.unwrap().status,
+        SshAccessStatus::Verified
+    );
+    assert_eq!(connection.mode(), SshTransportMode::DirectFallback);
+    assert!(connection.client().healthy().await);
+    fs::write(root.join("cut-network"), b"owned server only").unwrap();
+    let started = std::time::Instant::now();
+    loop {
+        if !connection.client().healthy().await {
+            break;
+        }
+        assert!(started.elapsed() < Duration::from_secs(8));
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    connection.close().await;
+    assert_eq!(
+        fs::read(&socket).unwrap(),
+        b"owned-test-foreign-socket-marker"
+    );
+    fs::remove_file(socket).unwrap();
+    drop(runtime);
+    println!(
+        "PASS native direct fallback: exact bounded marker health check succeeds then detects owned server loss; foreign socket-path contents unchanged, strict trust retained."
+    );
+}

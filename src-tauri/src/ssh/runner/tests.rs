@@ -67,6 +67,7 @@ async fn noisy_stderr_does_not_block_partial_stdout_or_hide_nonzero_exit() {
 async fn cancellation_and_dropped_waiter_reap_before_releasing_capacity() {
     let lab = Lab::new("sleep");
     let runner = Runner {
+        shutdown: tokio::sync::watch::channel(false).0,
         slots: Arc::new(Semaphore::new(1)),
     };
     let mut job = runner
@@ -221,4 +222,56 @@ async fn closed_session_rejects_a_late_job_before_dispatch() {
         .unwrap();
     assert_eq!(job.wait().await.unwrap_err(), RunError::Cancelled);
     assert!(!lab.0.join("pid").exists());
+}
+
+#[tokio::test]
+async fn shutdown_cancels_owned_jobs_reaps_and_does_not_touch_another_runner() {
+    let runner = Runner::default();
+    let other = Runner::default();
+    let owned = Lab::new("sleep");
+    let unrelated = Lab::new("sleep");
+    let job = runner
+        .start(&owned.executable(), owned.arguments(), Limits::default())
+        .unwrap();
+    let mut survivor = other
+        .start(
+            &unrelated.executable(),
+            unrelated.arguments(),
+            Limits::default(),
+        )
+        .unwrap();
+    let pid = owned.pid().await;
+    let other_pid = unrelated.pid().await;
+    let stream_lab = Lab::new("sleep");
+    let stream = runner
+        .start_stream(
+            &stream_lab.executable(),
+            stream_lab.arguments(),
+            Arc::new(|_, _, _| {}),
+            Box::new(()),
+            None,
+        )
+        .unwrap();
+    let stream_pid = stream_lab.pid().await;
+    runner.cancel_all();
+    tokio::time::timeout(Duration::from_secs(2), runner.wait_idle())
+        .await
+        .unwrap();
+    assert_eq!(job.wait().await.unwrap_err(), RunError::Cancelled);
+    reaped(pid);
+    assert_eq!(stream.wait().await.unwrap_err(), RunError::Cancelled);
+    reaped(stream_pid);
+    assert_eq!(unsafe { libc::kill(other_pid, 0) }, 0);
+    assert_eq!(
+        runner
+            .start(&owned.executable(), owned.arguments(), Limits::default())
+            .unwrap()
+            .wait()
+            .await
+            .unwrap_err(),
+        RunError::Cancelled
+    );
+    survivor.cancel();
+    assert_eq!(survivor.wait().await.unwrap_err(), RunError::Cancelled);
+    reaped(other_pid);
 }

@@ -199,6 +199,7 @@ pub(crate) async fn read(
 ) -> Result<ListComposeResponse, AppError> {
     tokio::time::timeout(Duration::from_secs(30), async {
         let (fresh, _) = super::probe::run(client, options).await;
+        super::probe::transport_ready(&fresh)?;
         if fresh.daemon_id.as_deref() != Some(scope.daemon_id.as_str()) {
             return Err(err(scope, ErrorCode::StaleSession));
         }

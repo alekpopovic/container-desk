@@ -26,8 +26,9 @@ impl Runner {
             .map_err(|_| RunError::Busy)?;
         let (cancel, cancelled) = oneshot::channel();
         let (result, receive) = oneshot::channel();
+        let shutdown = self.shutdown.subscribe();
         tokio::spawn(async move {
-            let outcome = execute(executable, args, sink, cancelled, session).await;
+            let outcome = execute(executable, args, sink, cancelled, session, shutdown).await;
             drop(resource);
             drop(permit);
             let _ = result.send(outcome);
@@ -79,8 +80,10 @@ async fn execute(
     sink: LineSink,
     mut cancel: oneshot::Receiver<()>,
     mut session: Option<tokio::sync::watch::Receiver<bool>>,
+    mut shutdown: tokio::sync::watch::Receiver<bool>,
 ) -> Result<Captured, RunError> {
-    if !matches!(cancel.try_recv(), Err(oneshot::error::TryRecvError::Empty))
+    if *shutdown.borrow()
+        || !matches!(cancel.try_recv(), Err(oneshot::error::TryRecvError::Empty))
         || session
             .as_ref()
             .is_some_and(|r| *r.borrow() || r.has_changed().is_err())
@@ -97,6 +100,7 @@ async fn execute(
     let outcome = tokio::select! {
         biased;
         _ = &mut cancel => Err(RunError::Cancelled),
+        _ = shutdown.wait_for(|stopped| *stopped) => Err(RunError::Cancelled),
         _ = async {
             if let Some(receiver) = &mut session {
                 while !*receiver.borrow() { if receiver.changed().await.is_err() { break; } }

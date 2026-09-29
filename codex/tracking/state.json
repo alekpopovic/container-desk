@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T06:57:59+00:00",
+  "updated_at": "2026-09-29T07:30:08+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1378,6 +1378,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T06:58:15+00:00",
+      "id": "041",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T07:30:08+00:00",
+      "id": "041",
+      "action": "done",
+      "note": "Pinned npm check: 83 passed; Rust: 140 passed; browser: 42 passed; actual native network/master/exit and PTY/fallback checkpoints: PASS, owned processes reaped in 0.117 seconds",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T06:58:15+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1889,12 +1923,14 @@
       "note": ""
     },
     "041": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T06:58:15+00:00",
+      "finished_at": "2026-09-29T07:30:08+00:00",
+      "evidence": "codex/tracking/evidence/041.md",
+      "evidence_sha256": "52b89449b96f2a7104cdf9dd928db509be3c9e6b6dc29f1479d08ef9bd5c8bd2",
+      "checks": [
+        "Pinned npm check: 83 passed; Rust: 140 passed; browser: 42 passed; actual native network/master/exit and PTY/fallback checkpoints: PASS, owned processes reaped in 0.117 seconds"
+      ],
       "commit": "",
       "note": ""
     },

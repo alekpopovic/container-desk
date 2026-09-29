@@ -1,0 +1,10 @@
+{
+  "initialNativeStatsSample": true,
+  "statsInFlightAtFaults": 3,
+  "networkResetOldSshReaped": true,
+  "masterLossOldSshReaped": true,
+  "terminalExecCount": 2,
+  "gracefulExitSeconds": 0.117,
+  "appAndSshProcessesReaped": true,
+  "mutationDispatches": 0
+}

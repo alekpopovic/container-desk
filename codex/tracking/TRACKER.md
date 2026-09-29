@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T06:57:59+00:00
+Updated: 2026-09-29T07:30:08+00:00
 
-blocked: **0** | done: **40** | in_progress: **0** | pending: **20**
+blocked: **0** | done: **41** | in_progress: **0** | pending: **19**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -50,7 +50,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 038 | 04 Management | Management MVP checkpoint | high | done | codex/tracking/evidence/038.md |
 | 039 | 05 Terminal and resilience | PTY terminal transport | high | done | codex/tracking/evidence/039.md |
 | 040 | 05 Terminal and resilience | Terminal UI with bounded lifecycle | high | done | codex/tracking/evidence/040.md |
-| 041 | 05 Terminal and resilience | Sleep wake network loss and graceful shutdown | high | pending | — |
+| 041 | 05 Terminal and resilience | Sleep wake network loss and graceful shutdown | high | done | codex/tracking/evidence/041.md |
 | 042 | 05 Terminal and resilience | Cross-platform GUI launch and SSH agent behavior | high | pending | — |
 | 043 | 05 Terminal and resilience | Support diagnostics and redacted export | high | pending | — |
 | 044 | 05 Terminal and resilience | Accessibility themes and keyboard workflow | medium | pending | — |
@@ -154,3 +154,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T06:13:35+00:00 — 039: done; PASS: 137 Rust tests, clippy, 74 IPC tests, production Linux build; real direct and ProxyJump PTY echo, UID 1000, Ctrl-C, resize, exit 7, shell-less failure, permission/sequence/scope denial, child reaping and independent no-fallback/liveness oracle.
 - 2026-09-29T06:14:29+00:00 — 040: start;
 - 2026-09-29T06:57:59+00:00 — 040: done; Pinned Node 24.21/npm 11.19 npm check: 78 tests; Playwright terminal/log/container: 42 passed; Rust: 137 passed/24 ignored; clippy/fmt/build passed; actual Linux release terminal GUI and PTY over strict ProxyJump passed, independent four-command oracle and clean storage/diagnostics
+- 2026-09-29T06:58:15+00:00 — 041: start;
+- 2026-09-29T07:30:08+00:00 — 041: done; Pinned npm check: 83 passed; Rust: 140 passed; browser: 42 passed; actual native network/master/exit and PTY/fallback checkpoints: PASS, owned processes reaped in 0.117 seconds

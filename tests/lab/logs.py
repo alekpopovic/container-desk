@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--jump', action='store_true', help='Use a second owned loopback sshd as an actual ProxyJump')
     parser.add_argument('--mvp', action='store_true', help='Integrated 030 native journey; requires --stream --stats --jump')
     parser.add_argument('--stream', action='store_true')
+    parser.add_argument('--recovery', action='store_true', help='041 native connection interruption and shutdown; requires terminal/native drivers')
     parser.add_argument('--terminal', action='store_true', help='039 non-root PTY and shell-less disposable container; requires --stream')
     parser.add_argument('--compose-actions', action='store_true', help='037 verified existing Compose project actions; requires --stream --jump')
     parser.add_argument('--networks', action='store_true', help='036 dual-stack network attachments; requires --stream --jump')
@@ -42,6 +43,7 @@ def main():
     args = parser.parse_args()
     if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
         parser.error('Native driver flags require --stream and both driver paths')
+    if args.recovery and not (args.terminal and args.jump and args.native_driver): parser.error('--recovery requires --terminal --jump and native drivers')
     if args.terminal and (not args.stream or args.management or args.compose_actions or args.networks or args.stats or args.events or args.reads or args.mvp): parser.error('--terminal requires --stream and excludes other checkpoint modes')
     if args.compose_actions and (not args.stream or not args.jump or args.management or args.stats or args.events or args.reads or args.mvp or args.networks): parser.error('--compose-actions requires --stream --jump and excludes other checkpoint modes')
     if args.networks and (not args.stream or not args.jump or args.management or args.stats or args.events or args.reads or args.mvp): parser.error('--networks requires --stream --jump and excludes other checkpoint modes')
@@ -179,7 +181,8 @@ def main():
                             subprocess.run(docker + ['rm', '-f', '--', target], env=env, check=True, stdout=subprocess.DEVNULL, timeout=10)
                             removed.add(target)
                             (root / 'stats-removed').write_text('removed owned fixture')
-                        if (root / 'cut-network').exists():
+                        interrupted = args.recovery and (root/'interrupt-network').exists() and not (root/'interrupt-network-done').exists()
+                        if interrupted or (root / 'cut-network').exists():
                             # Only descendants of our exact temporary sshd; no user SSH process is targeted.
                             children = {}
                             for item in Path('/proc').iterdir():
@@ -194,17 +197,21 @@ def main():
                                 for child in children.get(pid, []): visit(child)
                                 targets.append(pid)
                             visit(server.pid)
+                            if interrupted: targets.remove(server.pid)
                             for pid in targets:
                                 try: os.kill(pid, signal.SIGKILL)
                                 except ProcessLookupError: pass
-                            return
+                            if interrupted:
+                                assert server.poll() is None and targets
+                                (root/'interrupt-network-done').write_text(str(len(targets)))
+                            else: return
                 if args.stream:
                     watcher = threading.Thread(target=cut_network, daemon=True)
                     watcher.start()
                 if args.stream and args.native_driver:
                     from native_logs import verify
                     try:
-                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[2] if args.terminal else owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions, args.terminal)
+                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[2] if args.terminal else owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions, args.terminal, args.recovery)
                     except Exception:
                         # Only bounded state fields from owned fixtures; no logs, env or generic inspect dump.
                         if args.management:
@@ -225,6 +232,12 @@ def main():
                 if checked.returncode:
                     print(checked.stderr)
                     raise RuntimeError('Native log checkpoint failed')
+                if args.recovery:
+                    fallback = subprocess.run([executables[0], 'checkpoint041_owned_fallback_health', '--ignored', '--nocapture'], env=test_env, capture_output=True, text=True, timeout=40)
+                    print(fallback.stdout, end='')
+                    if fallback.returncode:
+                        print(fallback.stderr)
+                        raise RuntimeError('Native fallback health checkpoint failed')
             if args.terminal:
                 trace=[json.loads(line) for line in (root/'pty-execs.jsonl').read_text().splitlines()]
                 assert (4<=len(trace)<=6 if args.native_driver else 2<=len(trace)<=4) and sum(row['id']==owned[3] for row in trace)==1

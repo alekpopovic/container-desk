@@ -116,6 +116,11 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
         sys.exit(completed.returncode)
     if len(operation) == 7 and operation[:6] == ['stats', '--no-stream', '--no-trunc', '--format', '{{json .}}', '--'] and operation[6] in args.owned:
         allowed = True
+        if args.control and (args.control / 'hold-stats').exists():
+            (args.control / 'stats-held').write_text(operation[6])
+            deadline = time.monotonic() + 20
+            while (args.control / 'hold-stats').exists() and time.monotonic() < deadline: time.sleep(.02)
+            if (args.control / 'hold-stats').exists(): sys.exit(124)
         if args.control and (args.control / 'remove-during-stats').exists():
             (args.control / 'stats-dispatch').write_text(operation[6])
             deadline = time.monotonic() + 10

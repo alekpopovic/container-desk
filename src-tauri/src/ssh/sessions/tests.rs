@@ -9,6 +9,7 @@ struct Controlled {
     calls: AtomicUsize,
     fail_probe: bool,
     closed: AtomicUsize,
+    lost: Semaphore,
 }
 impl Controlled {
     fn new(fail_probe: bool) -> Arc<Self> {
@@ -17,6 +18,7 @@ impl Controlled {
             calls: AtomicUsize::new(0),
             fail_probe,
             closed: AtomicUsize::new(0),
+            lost: Semaphore::new(0),
         })
     }
     fn release(&self, stage: usize) {
@@ -50,6 +52,12 @@ impl StageDriver for Controlled {
                 }
                 ConnectionStage::Probe => StageOutcome::Ready,
             }
+        })
+    }
+    fn idle(&self) -> StageFuture<'_, Option<ConnectionDiagnosticCode>> {
+        Box::pin(async {
+            self.lost.acquire().await.unwrap().forget();
+            Some(ConnectionDiagnosticCode::ConnectionLost)
         })
     }
     fn quiesce(&self) -> StageFuture<'_, ()> {
@@ -338,4 +346,44 @@ async fn changing_docker_mode_for_the_same_alias_invalidates_the_previous_attemp
     );
     assert_eq!(first.closed.load(Ordering::SeqCst), 1);
     sessions.shutdown().await;
+}
+
+#[tokio::test]
+async fn lost_connection_revokes_generation_before_recovery() {
+    let sessions = Sessions::default();
+    let driver = Controlled::new(false);
+    let first = sessions
+        .begin(selection("owned-lost"), Default::default(), || {
+            Ok(driver.clone())
+        })
+        .await
+        .unwrap();
+    for stage in 0..3 {
+        driver.release(stage);
+    }
+    wait_state(&sessions, &first.token, ConnectionState::Ready).await;
+    driver.lost.add_permits(1);
+    tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            if sessions.current().unwrap().unwrap().token != first.token {
+                break;
+            }
+            sleep(Duration::from_millis(5)).await;
+        }
+    })
+    .await
+    .unwrap();
+    let failed = sessions.current().unwrap().unwrap();
+    assert!(failed.token.session_generation > first.token.session_generation);
+    assert_eq!(failed.state, ConnectionState::Degraded);
+    assert_eq!(
+        failed.diagnostic.unwrap().code,
+        ConnectionDiagnosticCode::ConnectionLost
+    );
+    assert_eq!(
+        sessions.snapshot(&first.token).unwrap_err().code,
+        ErrorCode::StaleSession
+    );
+    sessions.disconnect(&failed.token).await.unwrap();
+    assert_eq!(driver.closed.load(Ordering::SeqCst), 1);
 }

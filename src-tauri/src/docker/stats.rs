@@ -227,6 +227,7 @@ pub(crate) async fn read(
 ) -> Result<StatsSample, AppError> {
     let result = tokio::time::timeout(Duration::from_secs(30), async {
         let (fresh, _) = super::probe::run(client, options).await;
+        super::probe::transport_ready(&fresh)?;
         if fresh.daemon_id.as_deref() != Some(request.scope.daemon_id.as_str()) {
             return Err(AppError::new(ErrorCode::StaleSession));
         }

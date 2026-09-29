@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False, recovery=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -68,7 +68,7 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                 if script(condition): return
                 time.sleep(.1)
             (artifacts / 'native-timeout.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
-            print('Native state:', script('return {terminal:document.querySelector(".terminal-status")?.textContent,terminalError:document.querySelector(".terminal-panel [role=alert]")?.textContent,terminalButtons:Array.from(document.querySelectorAll(".terminal-controls button"),b=>({text:b.textContent,disabled:b.disabled})),management:document.querySelector(".container-management")?.innerText,dialogs: document.querySelectorAll("dialog[open]").length, buttons: Array.from(document.querySelectorAll(".live-logs button"), b=>({text:b.textContent,disabled:b.disabled})), status: Array.from(document.querySelectorAll(".live-logs > p[role=status]"), p=>p.textContent)}'), flush=True)
+            print('Native state:', script('return {recovery:document.querySelector(".connection-recovery")?.textContent,connection:document.querySelector(".saved-host-details [role=status]")?.textContent,terminal:document.querySelector(".terminal-status")?.textContent,terminalError:document.querySelector(".terminal-panel [role=alert]")?.textContent,terminalButtons:Array.from(document.querySelectorAll(".terminal-controls button"),b=>({text:b.textContent,disabled:b.disabled})),management:document.querySelector(".container-management")?.innerText,dialogs: document.querySelectorAll("dialog[open]").length, buttons: Array.from(document.querySelectorAll(".live-logs button"), b=>({text:b.textContent,disabled:b.disabled})), status: Array.from(document.querySelectorAll(".live-logs > p[role=status]"), p=>p.textContent)}'), flush=True)
             raise AssertionError('Native log condition did not become true: ' + condition)
         try:
             for _ in range(100):
@@ -104,14 +104,20 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             if terminal:
                 wait('return document.querySelectorAll("[data-container-id]").length === 4')
                 click(f'//tr[@data-container-id="{live_id}"]//button')
-                from native_terminal import verify as verify_terminal
-                verify_terminal(root,artifacts,script,command,click,button,fill,wait,element,config,live_id,xdotool)
-                command('DELETE', '')
+                if recovery:
+                    from native_recovery import verify as verify_recovery
+                    verify_recovery(root,artifacts,script,command,click,button,fill,wait,element,config,live_id,xdotool)
+                    try: command('DELETE', '')
+                    except Exception: pass # Helper verified the actual native process already exited.
+                else:
+                    from native_terminal import verify as verify_terminal
+                    verify_terminal(root,artifacts,script,command,click,button,fill,wait,element,config,live_id,xdotool)
+                    command('DELETE', '')
                 session = None
                 for file in (root / 'native-data').rglob('*'):
                     if file.is_file():
-                        assert b'CD040_' not in file.read_bytes(), 'Terminal transcript persisted'
-                assert b'CD040_' not in (root / 'native-driver.log').read_bytes(), 'Terminal transcript in diagnostics'
+                        assert all(marker not in file.read_bytes() for marker in (b'CD040_',b'CD041_')), 'Terminal transcript persisted'
+                assert all(marker not in (root / 'native-driver.log').read_bytes() for marker in (b'CD040_',b'CD041_')), 'Terminal transcript in diagnostics'
                 print('PASS native terminal app storage and diagnostics contain no transcript markers.',flush=True)
                 return
             if compose_actions:
@@ -358,6 +364,11 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                     assert b'024-synthetic-live-line' not in file.read_bytes(), 'Raw synthetic log persisted by native application'
             assert b'024-synthetic-live-line' not in (root / 'native-driver.log').read_bytes()
             print('PASS native release Tauri channel: actual follow batches, event-loop stall/drop marker, bounded preview, stop, timestamp resume, route unmount; app storage/diagnostics clean.', flush=True)
+        except Exception:
+            if recovery:
+                Path('/tmp/containerdesk-041-native-driver-failure.log').write_bytes((root/'native-driver.log').read_bytes()[-65536:])
+                print('Native recovery driver exit status:',driver.poll(),flush=True)
+            raise
         finally:
             if session:
                 try: command('DELETE', '')

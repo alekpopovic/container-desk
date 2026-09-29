@@ -153,6 +153,7 @@ pub(crate) async fn read(
     scope.validate()?;
     tokio::time::timeout(Duration::from_secs(30), async {
         let (fresh, _) = super::probe::run(connection, options).await;
+        super::probe::transport_ready(&fresh)?;
         if fresh.daemon_id.as_deref() != Some(scope.daemon_id.as_str()) {
             return Err(error(scope, ErrorCode::StaleSession));
         }

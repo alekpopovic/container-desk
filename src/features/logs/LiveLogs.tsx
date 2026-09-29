@@ -36,7 +36,7 @@ export function LiveLogs({
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [dropped, setDropped] = useState(0);
   const [retained, setRetained] = useState({ lines: 0, bytes: 0, dropped: 0 });
-  const [gap, setGap] = useState(false);
+  const [gap, setGap] = useState(true);
   const [scroll, setScroll] = useState(0);
   const [copyStatus, setCopyStatus] = useState("");
   const [exportLines, setExportLines] = useState<string[] | null>(null);
@@ -111,7 +111,7 @@ export function LiveLogs({
     alive.current = controller;
     setRunning(true);
     setStatus("Starting…");
-    setGap(buffer.current.snapshot().length > 0);
+    setGap(true); // Every explicit start is a new observation; intervening history can be missing.
     try {
       await followContainerLogs(
         { scope, containerId: id, tail: 100, since: resume.current },

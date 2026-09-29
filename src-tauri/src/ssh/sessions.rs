@@ -202,6 +202,7 @@ impl StageDriver for NativeDriver {
                     return Err(AppError::new(ErrorCode::ContainerNotRunning));
                 }
                 let (fresh, _) = crate::docker::probe::run(&client, &self.docker_options).await;
+                crate::docker::probe::transport_ready(&fresh)?;
                 if fresh.daemon_id.as_deref() != Some(request.scope.daemon_id.as_str()) {
                     return Err(AppError::new(ErrorCode::StaleSession));
                 }
@@ -680,6 +681,7 @@ impl StageDriver for NativeDriver {
                     .cloned()
                     .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
                 let (fresh, _) = crate::docker::probe::run(&client, &self.docker_options).await;
+                crate::docker::probe::transport_ready(&fresh)?;
                 if fresh.daemon_id.as_deref() != Some(request.scope.daemon_id.as_str()) {
                     return Err(AppError::new(ErrorCode::StaleSession));
                 }
@@ -720,6 +722,7 @@ impl StageDriver for NativeDriver {
                     .cloned()
                     .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
                 let (fresh, _) = crate::docker::probe::run(&client, &self.docker_options).await;
+                crate::docker::probe::transport_ready(&fresh)?;
                 if fresh.daemon_id.as_deref() != Some(request.scope.daemon_id.as_str()) {
                     return Err(AppError::new(ErrorCode::StaleSession));
                 }
@@ -1533,15 +1536,24 @@ async fn drive(
             tokio::select! { biased; _ = &mut cancelled => None, code = driver.idle() => code };
         if let Some(code) = diagnostic
             && let Ok(mut state) = state.lock()
-            && let Some(current) = &mut state.snapshot
-            && current.token == initial.token
+            && state
+                .snapshot
+                .as_ref()
+                .is_some_and(|s| s.token == initial.token)
         {
-            current.state = ConnectionState::Degraded;
-            current.diagnostic = Some(ConnectionDiagnostic {
-                stage: ConnectionStage::Probe,
-                code,
-            });
-            current.transport_mode = SshTransportMode::Unconnected;
+            // Keep the failed host/diagnosis visible while revoking its old generation immediately.
+            state.generation = state.generation.saturating_add(1);
+            let generation = state.generation;
+            if let Some(current) = &mut state.snapshot {
+                current.token.session_generation = generation;
+                current.state = ConnectionState::Degraded;
+                current.diagnostic = Some(ConnectionDiagnostic {
+                    stage: ConnectionStage::Probe,
+                    code,
+                });
+                current.transport_mode = SshTransportMode::Unconnected;
+                current.docker = None;
+            }
         }
     }
     // Dropped stage futures cancel Runner Jobs. Hold the native gate until their owners reap.

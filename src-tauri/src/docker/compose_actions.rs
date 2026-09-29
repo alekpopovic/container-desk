@@ -179,6 +179,7 @@ pub(crate) async fn verify(
     }
     tokio::time::timeout(Duration::from_secs(30), async {
         let (fresh, _) = super::probe::run(client, options).await;
+        super::probe::transport_ready(&fresh)?;
         if fresh.daemon_id.as_deref() != Some(scope.daemon_id.as_str()) {
             return Err(error(scope, ErrorCode::StaleSession));
         }
@@ -265,6 +266,7 @@ pub(crate) async fn run(
         }
         current()?;
         let (fresh, _) = super::probe::run(client, options).await;
+        super::probe::transport_ready(&fresh)?;
         if fresh.daemon_id.as_deref() != Some(request.scope.daemon_id.as_str()) {
             return Err(error(&request.scope, ErrorCode::StaleSession));
         }

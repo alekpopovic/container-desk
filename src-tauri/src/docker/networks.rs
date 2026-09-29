@@ -285,6 +285,7 @@ async fn execute(
     op: ReadOperation,
 ) -> Result<Vec<u8>, AppError> {
     let (report, _) = super::probe::run(client, options).await;
+    super::probe::transport_ready(&report)?;
     if report.daemon_id.as_deref() != Some(scope.daemon_id.as_str()) {
         return Err(err(scope, ErrorCode::StaleSession));
     }

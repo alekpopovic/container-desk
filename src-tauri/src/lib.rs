@@ -82,10 +82,25 @@ pub fn run() {
         ])
         .build(tauri::generate_context!())
         .expect("failed to build ContainerDesk")
-        .run(|app, event| {
-            if matches!(event, tauri::RunEvent::Exit) {
+        .run(|app, event| match event {
+            tauri::RunEvent::ExitRequested { api, code, .. }
+                if !app.state::<backend::Backend>().shutdown_complete() =>
+            {
+                api.prevent_exit();
+                if !app.state::<backend::Backend>().begin_shutdown() {
+                    return;
+                }
+                let handle = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    handle.state::<backend::Backend>().shutdown().await;
+                    handle.exit(code.unwrap_or(0));
+                });
+            }
+            tauri::RunEvent::Exit if !app.state::<backend::Backend>().shutdown_complete() => {
+                // Some runtime exit paths do not emit ExitRequested. Keep the same bounded backstop.
                 tauri::async_runtime::block_on(app.state::<backend::Backend>().shutdown());
             }
+            _ => (),
         });
 }
 

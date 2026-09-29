@@ -1,3 +1,5 @@
+import { HostRecovery } from "./recovery";
+import { watchReadRecovery } from "../../lib/reads/recovery";
 import { isTauri } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
 import * as native from "../../lib/ipc/client";
@@ -20,10 +22,13 @@ const blank = (): HostDraft => ({
 export function HostInventory({
   mode,
   onChange,
+  onRecovery,
 }: {
   mode: WorkspaceMode;
   onChange: (value: Inventory) => void;
+  onRecovery?: (message: string | null) => void;
 }) {
+  const [recovery] = useState(() => new HostRecovery());
   const available = isTauri() || mode === "demo";
   const bridge = isTauri() ? native : demoBridge;
   const [inventory, setInventory] = useState<Inventory | null>(null);
@@ -46,8 +51,12 @@ export function HostInventory({
     mounted.current = true;
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let reading = false;
     const refresh = async () => {
-      if (active && !working.current && available) {
+      if (!active || reading) return;
+      clearTimeout(timer);
+      reading = true;
+      if (!working.current && available) {
         const serial = sequence.current;
         try {
           const value = await bridge.getHostInventory(mode);
@@ -55,6 +64,53 @@ export function HostInventory({
             latest.current = value;
             setInventory(value);
             onChange(value);
+            const next = recovery.observe(value, Date.now(), !document.hidden);
+            onRecovery?.(next.message);
+            if (next.connect) {
+              working.current = true;
+              setBusy(true);
+              const attempt = ++sequence.current;
+              try {
+                const result = await bridge.connectInventoryHost({
+                  mode,
+                  hostId: next.connect,
+                });
+                recovery.acceptedAttempt();
+                if (active && mounted.current && sequence.current === attempt) {
+                  latest.current = result;
+                  setInventory(result);
+                  onChange(result);
+                } else if (result.connection) {
+                  // A late connection owns only its returned token, never a later user selection.
+                  await bridge.disconnectInventoryHost({
+                    mode,
+                    hostId: next.connect,
+                    token: result.connection.token,
+                  });
+                }
+              } catch (cause) {
+                if (
+                  cause instanceof native.IpcError &&
+                  [
+                    "resource_limit",
+                    "transport_unavailable",
+                    "disconnected",
+                    "operation_timed_out",
+                  ].includes(cause.code)
+                )
+                  recovery.failedAttempt();
+                else recovery.reset();
+                if (active)
+                  setError(
+                    cause instanceof native.IpcError
+                      ? cause.message
+                      : "Connection recovery failed.",
+                  );
+              } finally {
+                working.current = false;
+                if (active) setBusy(false);
+              }
+            }
           }
         } catch (cause) {
           if (active && mounted.current && sequence.current === serial)
@@ -65,21 +121,30 @@ export function HostInventory({
             );
         }
       }
+      reading = false;
       if (active)
         timer = setTimeout(() => {
           void refresh();
         }, 1000);
     };
+    const stopRecovery = watchReadRecovery(() => {
+      void refresh();
+    });
     void refresh();
     return () => {
       active = false;
       mounted.current = false;
       sequence.current += 1;
       clearTimeout(timer);
+      stopRecovery();
+      recovery.reset();
+      onRecovery?.(null);
     };
-  }, [available, bridge, mode, onChange]);
+  }, [available, bridge, mode, onChange, onRecovery, recovery]);
   async function action(run: () => Promise<Inventory>, chooseSaved = false) {
     if (working.current || !available) return;
+    recovery.reset();
+    onRecovery?.(null);
     working.current = true;
     setBusy(true);
     setError(null);

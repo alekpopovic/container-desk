@@ -124,6 +124,7 @@ const scenarioNames: Record<DemoScenario, string> = {
 
 export function WorkspaceShell({
   state,
+  connectionNotice,
   preferences,
   settingsExtra,
   hostsExtra,
@@ -136,6 +137,7 @@ export function WorkspaceShell({
   demo,
 }: {
   state: WorkspaceState;
+  connectionNotice?: string | null;
   preferences?: WorkspacePreferences | undefined;
   settingsExtra?: ReactNode;
   hostsExtra?: ReactNode;
@@ -378,6 +380,11 @@ export function WorkspaceShell({
                 : state.host.alias}
             </span>
           </div>
+          {connectionNotice && (
+            <p className="connection-recovery" role="status">
+              {connectionNotice}
+            </p>
+          )}
           <div hidden={route !== "hosts"}>{hostsExtra}</div>
           {route === "hosts" ? null : route === "settings" ? (
             <section

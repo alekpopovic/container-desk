@@ -77,11 +77,13 @@ impl fmt::Debug for Captured {
 #[derive(Clone)]
 pub struct Runner {
     slots: Arc<Semaphore>,
+    shutdown: tokio::sync::watch::Sender<bool>,
 }
 impl Default for Runner {
     fn default() -> Self {
         Self {
             slots: Arc::new(Semaphore::new(4)),
+            shutdown: tokio::sync::watch::channel(false).0,
         }
     }
 }
@@ -106,6 +108,9 @@ impl Job {
     }
 }
 impl Runner {
+    pub(crate) fn cancel_all(&self) {
+        self.shutdown.send_replace(true);
+    }
     pub(crate) async fn wait_idle(&self) {
         // Snapshot owners retain slots until child/group cleanup and reaping finish.
         let permit = self.slots.acquire_many(4).await;
@@ -185,8 +190,9 @@ impl Runner {
             .map_err(|_| RunError::Busy)?;
         let (cancel, cancelled) = oneshot::channel();
         let (result, receive) = oneshot::channel();
+        let shutdown = self.shutdown.subscribe();
         tokio::spawn(async move {
-            let outcome = execute(executable, args, limits, cancelled, session).await;
+            let outcome = execute(executable, args, limits, cancelled, session, shutdown).await;
             drop(resource);
             drop(permit); // Capacity becomes available only after cleanup, before acknowledgment.
             let _ = result.send(outcome);
@@ -268,7 +274,11 @@ async fn execute(
     limits: Limits,
     mut cancel: oneshot::Receiver<()>,
     mut session: Option<tokio::sync::watch::Receiver<bool>>,
+    mut shutdown: tokio::sync::watch::Receiver<bool>,
 ) -> Result<Captured, RunError> {
+    if *shutdown.borrow() {
+        return Err(RunError::Cancelled);
+    }
     match cancel.try_recv() {
         Ok(()) | Err(oneshot::error::TryRecvError::Closed) => return Err(RunError::Cancelled),
         Err(oneshot::error::TryRecvError::Empty) => (),
@@ -287,6 +297,7 @@ async fn execute(
     let outcome = tokio::select! {
         biased;
         _ = &mut cancel => Err(RunError::Cancelled),
+        _ = shutdown.wait_for(|stopped| *stopped) => Err(RunError::Cancelled),
         _ = async {
             if let Some(receiver) = &mut session {
                 while !*receiver.borrow() {

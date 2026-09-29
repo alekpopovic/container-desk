@@ -352,14 +352,42 @@ impl Client {
             return false;
         }
         if self.mode == SshTransportMode::DirectFallback {
-            return !*self.shutdown.borrow();
+            let Ok(marker) =
+                super::quoting::command(&["printf".into(), "containerdesk-access-ok".into()])
+            else {
+                return false;
+            };
+            let Ok(args) = self.channel_arguments(marker, false) else {
+                return false;
+            };
+            return match self.control.start_owned(
+                &self.executable,
+                args,
+                Limits {
+                    deadline: Duration::from_secs(5),
+                    stdout_bytes: 1024,
+                    stderr_bytes: 4096,
+                },
+                Box::new(self.policy.clone()),
+            ) {
+                Ok(job) => job.wait().await.is_ok_and(|output| {
+                    output.status.success() && output.stdout == b"containerdesk-access-ok"
+                }),
+                Err(RunError::Busy) => true, // Defer admission; never mistake local pressure for network loss.
+                Err(_) => false,
+            };
         }
         self.policy.runtime.owns_socket()
             && control_command(&self.control, &self.executable, &self.policy, "check").await
     }
     pub async fn wait_lost(&self) {
         loop {
-            tokio::time::sleep(Duration::from_millis(500)).await;
+            tokio::time::sleep(if self.mode == SshTransportMode::DirectFallback {
+                Duration::from_secs(5)
+            } else {
+                Duration::from_millis(500)
+            })
+            .await;
             let idle = self.activity.lock().is_ok_and(|state| {
                 state.active == 0
                     && state.last.elapsed()
@@ -374,6 +402,7 @@ impl Client {
                 return;
             }
             if !self.healthy().await {
+                self.shutdown.send_replace(true);
                 return;
             }
         }

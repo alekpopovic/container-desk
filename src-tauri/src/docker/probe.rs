@@ -76,12 +76,21 @@ pub(crate) struct VerifiedDocker {
     config: DockerCommandConfig,
     report: DockerProbeReport,
 }
+/// Missing transport evidence is not evidence of a changed daemon identity.
+pub(crate) fn transport_ready(report: &DockerProbeReport) -> Result<(), AppError> {
+    match report.status {
+        DockerProbeStatus::ConnectionFailed => Err(AppError::new(ErrorCode::Disconnected)),
+        DockerProbeStatus::TimedOut => Err(AppError::new(ErrorCode::OperationTimedOut)),
+        _ => Ok(()),
+    }
+}
 impl VerifiedDocker {
     pub fn prepare(
         &self,
         plan: CommandPlan,
         observed: &DockerProbeReport,
     ) -> Result<PreparedCommand, AppError> {
+        transport_ready(observed)?;
         if observed.status != DockerProbeStatus::Ready
             || observed.daemon_id != self.report.daemon_id
             || observed.endpoint != self.report.endpoint
