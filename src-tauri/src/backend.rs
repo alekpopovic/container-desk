@@ -575,19 +575,38 @@ impl Backend {
         }
         Ok(detail)
     }
-    pub fn container_logs(&self, request: ContainerLogsRequest) -> Result<LogSnapshot, AppError> {
+    pub async fn container_logs(
+        &self,
+        request: ContainerLogsRequest,
+    ) -> Result<LogSnapshot, AppError> {
+        let _permit = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
         self.policy
             .lock()
             .map_err(|_| AppError::new(ErrorCode::Internal))?
             .authorize_read(
                 &request.scope,
                 &ReadOperation::ContainerLogs {
-                    container_id: request.container_id,
+                    container_id: request.container_id.clone(),
                     tail: request.tail,
                     timeout_seconds: request.timeout_seconds,
+                    since: request.since.clone(),
+                    until: request.until.clone(),
                 },
             )?;
-        Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
+        self.require_session(&request.scope)?;
+        if self.workspace_mode()?.mode != WorkspaceMode::Live {
+            return Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope));
+        }
+        let result = self.sessions.logs(&request).await;
+        self.require_session(&request.scope)?;
+        let result = result?;
+        if result.scope != request.scope || result.container_id != request.container_id {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(result)
     }
     pub fn prepare_confirmation(
         &self,

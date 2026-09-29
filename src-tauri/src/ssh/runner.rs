@@ -136,6 +136,37 @@ impl Runner {
         session: Option<tokio::sync::watch::Receiver<bool>>,
     ) -> Result<Job, RunError> {
         limits.validate()?;
+        self.start_validated_for_session(executable, args, limits, resource, session)
+    }
+    /// Only log snapshots treat stderr as data. Ordinary diagnostics retain their 256 KiB cap.
+    pub(crate) fn start_log_snapshot_for_session(
+        &self,
+        executable: &str,
+        args: Vec<OsString>,
+        deadline: Duration,
+        resource: Box<dyn Send>,
+        session: Option<tokio::sync::watch::Receiver<bool>>,
+    ) -> Result<Job, RunError> {
+        let limits = Limits {
+            deadline,
+            stdout_bytes: 8 * 1024 * 1024,
+            stderr_bytes: 8 * 1024 * 1024,
+        };
+        Limits {
+            stderr_bytes: 0,
+            ..limits
+        }
+        .validate()?;
+        self.start_validated_for_session(executable, args, limits, resource, session)
+    }
+    fn start_validated_for_session(
+        &self,
+        executable: &str,
+        args: Vec<OsString>,
+        limits: Limits,
+        resource: Box<dyn Send>,
+        session: Option<tokio::sync::watch::Receiver<bool>>,
+    ) -> Result<Job, RunError> {
         if args.len() > 64
             || args
                 .iter()

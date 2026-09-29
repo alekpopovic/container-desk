@@ -225,6 +225,25 @@ impl Client {
     pub fn start_fixed(&self, encoded: String, limits: Limits) -> Result<Job, AppError> {
         self.start_channel(encoded, limits, false)
     }
+    pub(crate) fn start_log_snapshot(
+        &self,
+        encoded: String,
+        deadline: Duration,
+    ) -> Result<Job, AppError> {
+        let args = self.channel_arguments(encoded, false)?;
+        self.channels
+            .start_log_snapshot_for_session(
+                &self.executable,
+                args,
+                deadline,
+                Box::new(ChannelLease::new(
+                    self.policy.clone(),
+                    self.activity.clone(),
+                )),
+                Some(self.shutdown.subscribe()),
+            )
+            .map_err(map_start)
+    }
     fn start_channel(
         &self,
         encoded: String,

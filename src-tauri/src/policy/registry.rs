@@ -27,6 +27,8 @@ pub enum ReadOperation {
         container_id: ContainerId,
     },
     ContainerLogs {
+        since: Option<String>,
+        until: Option<String>,
         container_id: ContainerId,
         tail: i32,
         timeout_seconds: i32,
@@ -118,26 +120,70 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
             container_id,
             tail,
             timeout_seconds,
+            since,
+            until,
         } => {
             container_id.validate()?;
-            limits(*tail, 0, 20000)?;
+            limits(*tail, 1, 20000)?;
             let timeout = limits(*timeout_seconds, 1, 30)?;
-            plan(
-                &[
-                    "docker",
-                    "logs",
-                    "--timestamps",
-                    "--tail",
-                    &tail.to_string(),
-                    "--",
-                    &container_id.0,
-                ],
-                OperationCategory::Read,
-                ResponseKind::LogSnapshot,
-                timeout,
-            )
+            validate_log_range(since.as_deref(), until.as_deref())?;
+            let mut args = vec![
+                "docker".into(),
+                "logs".into(),
+                "--timestamps".into(),
+                "--tail".into(),
+                tail.to_string(),
+            ];
+            if let Some(value) = since {
+                args.extend(["--since".into(), value.clone()]);
+            }
+            if let Some(value) = until {
+                args.extend(["--until".into(), value.clone()]);
+            }
+            args.extend(["--".into(), container_id.0.clone()]);
+            CommandPlan {
+                args,
+                category: OperationCategory::Read,
+                response: ResponseKind::LogSnapshot,
+                timeout_seconds: timeout,
+            }
         }
     })
+}
+/// UTC Unix seconds only; no relative dates, local timezone interpretation or shell fragments.
+pub(crate) fn validate_log_range(since: Option<&str>, until: Option<&str>) -> Result<(), AppError> {
+    fn epoch(s: &str) -> Option<(u64, u32)> {
+        if s.len() > 22 {
+            return None;
+        }
+        let (seconds, fraction) = s.split_once('.').map_or((s, ""), |(a, b)| (a, b));
+        if seconds.is_empty()
+            || seconds.len() > 12
+            || !seconds.bytes().all(|b| b.is_ascii_digit())
+            || fraction.len() > 9
+            || !fraction.bytes().all(|b| b.is_ascii_digit())
+            || s.ends_with('.')
+        {
+            return None;
+        }
+        let seconds = seconds.parse::<u64>().ok()?;
+        if seconds > 253402300799 {
+            return None;
+        }
+        let nanos = if fraction.is_empty() {
+            0
+        } else {
+            fraction.parse::<u32>().ok()? * 10u32.pow(9 - fraction.len() as u32)
+        };
+        Some((seconds, nanos))
+    }
+    let invalid = || AppError::new(ErrorCode::InvalidLimits);
+    let from = since.map(|s| epoch(s).ok_or_else(invalid)).transpose()?;
+    let to = until.map(|s| epoch(s).ok_or_else(invalid)).transpose()?;
+    if from.zip(to).is_some_and(|(a, b)| a > b) {
+        return Err(invalid());
+    }
+    Ok(())
 }
 pub fn confirmation(operation: &ConfirmationOperation) -> Result<CommandPlan, AppError> {
     Ok(match operation {
@@ -211,9 +257,11 @@ mod tests {
     #[test]
     fn numeric_limits_ids_and_supported_variants_are_checked_before_building() {
         let id = ContainerId("a".repeat(64));
-        for tail in [-1, 20001, i32::MAX] {
+        for tail in [-1, 0, 20001, i32::MAX] {
             assert_eq!(
                 read(&ReadOperation::ContainerLogs {
+                    since: None,
+                    until: None,
                     container_id: id.clone(),
                     tail,
                     timeout_seconds: 30
@@ -226,8 +274,10 @@ mod tests {
         for timeout_seconds in [-1, 0, 31] {
             assert_eq!(
                 read(&ReadOperation::ContainerLogs {
+                    since: None,
+                    until: None,
                     container_id: id.clone(),
-                    tail: 0,
+                    tail: 1,
                     timeout_seconds
                 })
                 .unwrap_err()
@@ -248,6 +298,8 @@ mod tests {
         assert!(serde_json::from_value::<ConfirmationOperation>(extra).is_err());
         assert!(serde_json::from_str::<TerminalShell>("\"sh -c anything\"").is_err());
         let command = read(&ReadOperation::ContainerLogs {
+            since: None,
+            until: None,
             container_id: id,
             tail: 20000,
             timeout_seconds: 30,

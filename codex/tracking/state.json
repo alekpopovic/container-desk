@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T23:34:41+00:00",
+  "updated_at": "2026-09-29T00:01:34+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -749,6 +749,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-28T23:35:41+00:00",
+      "id": "023",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T00:01:34+00:00",
+      "id": "023",
+      "action": "done",
+      "note": "Rust 92 passed, 12 lab ignores; clippy/fmt and IPC 35 passed; native log checkpoint passed with independent real Docker CLI match; desktop build passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-28T23:35:41+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1044,12 +1078,14 @@
       "note": ""
     },
     "023": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-28T23:35:41+00:00",
+      "finished_at": "2026-09-29T00:01:34+00:00",
+      "evidence": "codex/tracking/evidence/023.md",
+      "evidence_sha256": "bfddd19f59c7b5d2064ac71eee51aecf1fee73dcead8eb6b04322027055d8ef8",
+      "checks": [
+        "Rust 92 passed, 12 lab ignores; clippy/fmt and IPC 35 passed; native log checkpoint passed with independent real Docker CLI match; desktop build passed"
+      ],
       "commit": "",
       "note": ""
     },

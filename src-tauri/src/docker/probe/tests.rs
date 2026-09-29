@@ -68,6 +68,8 @@ async fn rootless_context_compose_absence_and_all_operation_categories_keep_the_
         })
         .unwrap(),
         registry::read(&ReadOperation::ContainerLogs {
+            since: None,
+            until: None,
             container_id: id.clone(),
             tail: 10,
             timeout_seconds: 10,

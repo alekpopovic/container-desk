@@ -679,3 +679,128 @@ async fn checkpoint021_live_inspect_redacts_reveals_and_rejects_disconnected_sco
     }
     backend.shutdown().await;
 }
+
+#[tokio::test]
+#[ignore = "requires owned loopback SSH and exact labelled native Docker log fixtures"]
+async fn checkpoint023_owned_logs_match_native_cli_and_remain_transient() {
+    use std::os::unix::process::ExitStatusExt;
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest)
+        .parent()
+        .unwrap()
+        .join("app-data");
+    let backend = Backend::new(&root, "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    let connected = ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id.clone(),
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    let request = ContainerLogsRequest {
+        scope: scope.clone(),
+        container_id: ContainerId(lab["containerId"].as_str().unwrap().into()),
+        tail: 100,
+        timeout_seconds: 30,
+        since: None,
+        until: None,
+    };
+    let snapshot = backend.container_logs(request.clone()).await.unwrap();
+    let oracle = crate::docker::logs::decode(
+        &request,
+        crate::ssh::runner::Captured {
+            status: std::process::ExitStatus::from_raw(0),
+            stdout: std::fs::read(lab["oracleStdout"].as_str().unwrap()).unwrap(),
+            stderr: std::fs::read(lab["oracleStderr"].as_str().unwrap()).unwrap(),
+        },
+    )
+    .unwrap();
+    assert_eq!(snapshot, oracle);
+    assert_eq!(snapshot.records[0].text, "023-stdout-one");
+    assert_eq!(snapshot.records[1].text, "023-stderr-two");
+    assert_eq!(snapshot.records[1].channel, LogChannel::StderrAmbiguous);
+    assert_eq!(snapshot.records[2].text, "023-stdout-three");
+    // json-file normalizes invalid input before the CLI emits it; raw-invalid transport is covered by parser fixtures.
+    assert!(
+        snapshot
+            .records
+            .iter()
+            .any(|r| r.text.contains("\u{fffd}023-invalid"))
+    );
+    let raw_stderr = std::fs::read(lab["oracleStderr"].as_str().unwrap()).unwrap();
+    let oversized = raw_stderr
+        .split(|b| *b == b'\n')
+        .any(|line| line.len() > 256 * 1024 + 31);
+    assert_eq!(snapshot.truncated, oversized);
+    assert!(snapshot.records.iter().all(|r| r.text.len() <= 256 * 1024));
+    assert!(!format!("{snapshot:?}").contains("023-synthetic-log-private"));
+    let mut range = request.clone();
+    range.until = Some("1".into());
+    assert!(
+        backend
+            .container_logs(range)
+            .await
+            .unwrap()
+            .records
+            .is_empty()
+    );
+    let mut unsupported = request.clone();
+    unsupported.container_id = ContainerId(lab["unsupportedId"].as_str().unwrap().into());
+    assert_eq!(
+        backend.container_logs(unsupported).await.unwrap_err().code,
+        ErrorCode::LogDriverUnsupported
+    );
+    let mut invalid = request.clone();
+    invalid.tail = 0;
+    assert_eq!(
+        backend.container_logs(invalid).await.unwrap_err().code,
+        ErrorCode::InvalidLimits
+    );
+    backend
+        .disconnect_inventory_host(InventoryDisconnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id,
+            token: connected.token,
+        })
+        .await
+        .unwrap();
+    assert!(backend.container_logs(request).await.is_err());
+    assert_eq!(backend.read_slots.available_permits(), 4);
+    for entry in std::fs::read_dir(&root).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_file() {
+            assert!(
+                !String::from_utf8_lossy(&std::fs::read(path).unwrap())
+                    .contains("023-synthetic-log-private")
+            );
+        }
+    }
+    backend.shutdown().await;
+    println!(
+        "PASS real owned logs: exact independent CLI comparison, stdout/stderr order, exited container, unsupported driver, Engine-normalized UTF-8, actual CLI line bounds, range, stale scope and no persisted raw logs; PATH excludes client tools"
+    );
+}

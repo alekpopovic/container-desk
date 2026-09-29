@@ -156,6 +156,8 @@ fn invalid_ids_contexts_paths_and_limits_fail_before_any_shell_command() {
     }
     assert!(
         registry::read(&ReadOperation::ContainerLogs {
+            since: None,
+            until: None,
             container_id: ContainerId("a".repeat(64)),
             tail: -1,
             timeout_seconds: 30

@@ -317,11 +317,11 @@ pub async fn inspect_container(
     backend.inspect_container(request).await
 }
 #[tauri::command]
-pub fn container_logs(
+pub async fn container_logs(
     backend: tauri::State<'_, Backend>,
     request: ContainerLogsRequest,
 ) -> Result<LogSnapshot, AppError> {
-    backend.container_logs(request)
+    backend.container_logs(request).await
 }
 #[tauri::command]
 pub fn prepare_confirmation(

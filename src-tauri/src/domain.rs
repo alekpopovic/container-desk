@@ -118,6 +118,7 @@ pub enum ErrorCode {
     InvalidGeneration,
     HostNotFound,
     ContainerNotFound,
+    LogDriverUnsupported,
     SessionNotFound,
     StaleSession,
     SubscriptionNotFound,
@@ -156,6 +157,9 @@ impl AppError {
         let message = match code {
             ErrorCode::InvalidId => "Invalid resource identifier.",
             ErrorCode::InvalidGeneration => "Invalid session or selection generation.",
+            ErrorCode::LogDriverUnsupported => {
+                "This container logging driver does not support reading logs."
+            }
             ErrorCode::ContainerNotFound => {
                 "The container no longer exists. Refresh the inventory."
             }
@@ -686,6 +690,9 @@ pub struct InspectContainerRequest {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 #[cfg_attr(test, derive(ts_rs::TS))]
 pub struct ContainerLogsRequest {
+    /// UTC Unix seconds with optional fractional nanoseconds, validated before dispatch.
+    pub since: Option<String>,
+    pub until: Option<String>,
     pub scope: SessionScope,
     pub container_id: ContainerId,
     pub tail: i32,
@@ -697,8 +704,37 @@ pub struct ContainerLogsRequest {
 pub struct LogSnapshot {
     pub scope: SessionScope,
     pub container_id: ContainerId,
-    pub text: String,
+    /// Timestamp order when available; ties retain channel order, not guaranteed transport order.
+    pub records: Vec<LogRecord>,
     pub truncated: bool,
+    pub dropped_records: u32,
+    pub stderr_ambiguous: bool,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum LogChannel {
+    Stdout,
+    StderrAmbiguous,
+}
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct LogRecord {
+    pub text: String,
+    pub timestamp: Option<String>,
+    pub channel: LogChannel,
+    pub truncated: bool,
+    pub invalid_utf8: bool,
+}
+impl std::fmt::Debug for LogRecord {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LogRecord")
+            .field("bytes", &self.text.len())
+            .field("channel", &self.channel)
+            .field("truncated", &self.truncated)
+            .finish_non_exhaustive()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

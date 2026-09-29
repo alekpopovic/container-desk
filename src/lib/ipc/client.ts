@@ -26,6 +26,8 @@ const messages: Record<ErrorCode, string> = {
   invalid_config_path:
     "Choose an absolute local SSH config path or use the default.",
   invalid_generation: "Invalid session or selection generation.",
+  log_driver_unsupported:
+    "This container logging driver does not support reading logs.",
   container_not_found: "The container no longer exists. Refresh the inventory.",
   host_not_found: "Saved host does not exist.",
   session_not_found: "Connection session does not exist.",
@@ -1068,4 +1070,45 @@ export async function inspectContainer(
   )
     throw new IpcError("invalid_response");
   return result as import("./generated.ts").ContainerDetail;
+}
+
+export async function containerLogs(
+  request: import("./generated.ts").ContainerLogsRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").LogSnapshot> {
+  const result = await call("container_logs", request, () =>
+    sameScope(request.scope, current()),
+  );
+  if (
+    !record(result) ||
+    !scope(result.scope) ||
+    !sameScope(result.scope, request.scope) ||
+    result.containerId !== request.containerId ||
+    typeof result.truncated !== "boolean" ||
+    typeof result.stderrAmbiguous !== "boolean" ||
+    !Number.isSafeInteger(result.droppedRecords) ||
+    Number(result.droppedRecords) < 0 ||
+    !Array.isArray(result.records) ||
+    result.records.length > 20000
+  )
+    throw new IpcError("invalid_response");
+  let retained = 0;
+  const encoder = new TextEncoder();
+  for (const row of result.records) {
+    if (
+      !record(row) ||
+      !text(row.text, 262144) ||
+      (row.timestamp !== null && !text(row.timestamp, 30)) ||
+      !["stdout", "stderr_ambiguous"].includes(String(row.channel)) ||
+      typeof row.truncated !== "boolean" ||
+      typeof row.invalidUtf8 !== "boolean"
+    )
+      throw new IpcError("invalid_response");
+    const length = encoder.encode(row.text).length;
+    if (length > 262144) throw new IpcError("invalid_response");
+    retained +=
+      length + (typeof row.timestamp === "string" ? row.timestamp.length : 0);
+    if (retained > 8 * 1024 * 1024) throw new IpcError("invalid_response");
+  }
+  return result as import("./generated.ts").LogSnapshot;
 }

@@ -172,6 +172,30 @@
     "scenario": null,
     "scope": null
   },
+  "logs": {
+    "containerId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "droppedRecords": 0,
+    "records": [
+      {
+        "channel": "stderr_ambiguous",
+        "invalidUtf8": false,
+        "text": "synthetic-fixture-output",
+        "timestamp": "2026-01-01T00:00:00.000000001Z",
+        "truncated": false
+      }
+    ],
+    "scope": {
+      "daemonId": "fixture-daemon",
+      "selection": {
+        "hostId": "h_11111111111111111111111111111111",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    },
+    "stderrAmbiguous": true,
+    "truncated": false
+  },
   "mutationRequest": {
     "intentId": "i_ffffffffffffffffffffffffffffffff",
     "scope": {
