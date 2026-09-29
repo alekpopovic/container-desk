@@ -27,11 +27,19 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
     if operation[:2] == ['--host', 'unix:///var/run/docker.sock']:
         operation = operation[2:]
     allowed = (len(operation) == 3 and operation[0] in ('version', 'info') and operation[1] == '--format') or (len(operation) == 4 and operation[:3] == ['context', 'inspect', '--format']) or operation in (['compose', 'version'], ['compose', 'version', '--format', 'json'])
+    if operation[:3] == ['logs', '--follow', '--timestamps']:
+        operation = [operation[0]] + operation[2:]
     if operation[:2] == ['logs', '--timestamps'] and operation[-2:-1] == ['--'] and operation[-1] in args.owned:
         options = operation[2:-2]
         allowed = len(options) in (2, 4, 6) and options[0] == '--tail'
         for index in range(0, len(options), 2):
             allowed = allowed and options[index] in ('--tail', '--since', '--until') and all(c in '0123456789.' for c in options[index + 1])
+    if operation == ['ps', '--all', '--no-trunc', '--format', '{{json .}}']:
+        allowed = True
+        for ident in args.owned: words.extend(['--filter', 'id=' + ident])
+        original = 'exec ' + ' '.join("'" + word.replace("'", "'\\''") + "'" for word in words)
+    if len(operation) == 5 and operation[:4] == ['inspect', '--type', 'container', '--'] and operation[4] in args.owned:
+        allowed = True
 if not allowed:
     sys.exit(126)
 # Exercise the real remote POSIX parser after checking the canonical escaped arguments.

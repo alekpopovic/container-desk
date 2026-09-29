@@ -15,6 +15,8 @@
     "allow-set-ssh-executable",
     "allow-inspect-container",
     "allow-container-logs",
+    "allow-follow-container-logs",
+    "allow-ack-container-logs",
     "allow-get-workspace-mode",
     "allow-switch-workspace",
     "allow-get-ssh-config-path",

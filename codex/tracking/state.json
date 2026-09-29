@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T00:01:34+00:00",
+  "updated_at": "2026-09-29T00:24:08+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -783,6 +783,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T00:02:27+00:00",
+      "id": "024",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T00:24:08+00:00",
+      "id": "024",
+      "action": "done",
+      "note": "Rust 96 passed, 13 lab ignores including actual 30-second expiry; IPC 39 passed; UI 36 passed; native release channel stall/drop/restart and actual SSH server-loss checkpoint passed; clippy and build passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T00:02:27+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1090,12 +1124,14 @@
       "note": ""
     },
     "024": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T00:02:27+00:00",
+      "finished_at": "2026-09-29T00:24:08+00:00",
+      "evidence": "codex/tracking/evidence/024.md",
+      "evidence_sha256": "883997f42fd43fb1404cde1ceade98f40bfc2dd9054265d79d43512f99d33ccf",
+      "checks": [
+        "Rust 96 passed, 13 lab ignores including actual 30-second expiry; IPC 39 passed; UI 36 passed; native release channel stall/drop/restart and actual SSH server-loss checkpoint passed; clippy and build passed"
+      ],
       "commit": "",
       "note": ""
     },

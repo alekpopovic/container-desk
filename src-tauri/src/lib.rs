@@ -38,6 +38,8 @@ pub fn run() {
             commands::set_ssh_executable,
             commands::inspect_container,
             commands::container_logs,
+            commands::follow_container_logs,
+            commands::ack_container_logs,
             commands::prepare_confirmation,
             commands::mutate_container,
             commands::open_container_terminal,

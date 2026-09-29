@@ -103,6 +103,9 @@ export type LogSnapshot = { scope: SessionScope, containerId: ContainerId,
 records: Array<LogRecord>, truncated: boolean, droppedRecords: number, stderrAmbiguous: boolean, };
 export type LogChannel = "stdout" | "stderr_ambiguous";
 export type LogRecord = { text: string, timestamp: string | null, channel: LogChannel, truncated: boolean, invalidUtf8: boolean, };
+export type FollowLogsRequest = { scope: SessionScope, containerId: ContainerId, tail: number, since: string | null, };
+export type AckLogsRequest = { scope: SessionScope, subscriptionId: SubscriptionId, sequence: number, };
+export type LogBatch = { scope: SessionScope, containerId: ContainerId, subscriptionId: SubscriptionId, sequence: number, records: Array<LogRecord>, droppedRecords: number, gap: boolean, ended: boolean, error: ErrorCode | null, };
 export type ContainerPort = { hostIp: string | null, publicPort: number | null, privatePort: number, protocol: string, };
 export type ComposeLabels = { project: string, service: string | null, };
 export type WorkspaceMode = "live" | "demo";

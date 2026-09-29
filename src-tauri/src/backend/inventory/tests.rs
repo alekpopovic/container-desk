@@ -1,4 +1,5 @@
 use super::*;
+use std::time::Duration;
 fn draft(alias: &str, config: &str) -> HostDraft {
     HostDraft {
         ssh: SshSelection {
@@ -802,5 +803,150 @@ async fn checkpoint023_owned_logs_match_native_cli_and_remain_transient() {
     backend.shutdown().await;
     println!(
         "PASS real owned logs: exact independent CLI comparison, stdout/stderr order, exited container, unsupported driver, Engine-normalized UTF-8, actual CLI line bounds, range, stale scope and no persisted raw logs; PATH excludes client tools"
+    );
+}
+
+#[tokio::test]
+#[ignore = "requires owned native SSH stream lab and explicit server-loss controller"]
+async fn checkpoint024_owned_stream_bounds_stop_and_network_loss() {
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest).parent().unwrap();
+    let backend = Backend::new(&root.join("stream-app-data"), "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id,
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    let request = FollowLogsRequest {
+        scope: scope.clone(),
+        container_id: ContainerId(lab["liveId"].as_str().unwrap().into()),
+        tail: 100,
+        since: None,
+    };
+    let (sender, mut receiver) = tokio::sync::mpsc::channel(2);
+    let response = backend
+        .follow_container_logs(
+            request.clone(),
+            Arc::new(move |batch| sender.try_send(batch).map_err(|_| ())),
+        )
+        .await
+        .unwrap();
+    let ack = |sequence| AckLogsRequest {
+        scope: scope.clone(),
+        subscription_id: response.subscription_id.clone(),
+        sequence,
+    };
+    backend.ack_container_logs(ack(0)).unwrap();
+    let first = tokio::time::timeout(Duration::from_secs(5), receiver.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        first
+            .records
+            .iter()
+            .any(|r| r.text == "024-synthetic-live-line")
+    );
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    assert!(
+        receiver.try_recv().is_err(),
+        "no second IPC batch before ACK"
+    );
+    backend.ack_container_logs(ack(first.sequence)).unwrap();
+    let next = tokio::time::timeout(Duration::from_secs(5), receiver.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(next.gap && next.dropped_records > 0);
+    println!(
+        "Native paused consumer: explicit drop marker = {} records, max IPC batch = {} records",
+        next.dropped_records,
+        next.records.len()
+    );
+    tokio::time::timeout(
+        Duration::from_secs(3),
+        backend.cancel_subscription(CancelSubscriptionRequest {
+            scope: scope.clone(),
+            subscription_id: response.subscription_id,
+        }),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(backend.read_slots.available_permits(), 4);
+    // A second actual SSH stream loses its owned sshd/connection under heavy output.
+    let (sender, mut receiver) = tokio::sync::mpsc::channel(2);
+    let response = backend
+        .follow_container_logs(
+            request,
+            Arc::new(move |batch| sender.try_send(batch).map_err(|_| ())),
+        )
+        .await
+        .unwrap();
+    backend
+        .ack_container_logs(AckLogsRequest {
+            scope: scope.clone(),
+            subscription_id: response.subscription_id.clone(),
+            sequence: 0,
+        })
+        .unwrap();
+    tokio::time::timeout(Duration::from_secs(5), receiver.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    std::fs::write(root.join("cut-network"), b"owned-server-only").unwrap();
+    let started = std::time::Instant::now();
+    while backend.read_slots.available_permits() != 4 {
+        assert!(
+            started.elapsed() < Duration::from_secs(6),
+            "network loss must reap owned stream and release permit without renderer ACK"
+        );
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    let result = backend
+        .cancel_subscription(CancelSubscriptionRequest {
+            scope,
+            subscription_id: response.subscription_id,
+        })
+        .await;
+    assert!(result.is_ok() || result.unwrap_err().code == ErrorCode::SubscriptionNotFound);
+    backend.shutdown().await;
+    for entry in std::fs::read_dir(root.join("stream-app-data")).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_file() {
+            assert!(
+                !String::from_utf8_lossy(&std::fs::read(path).unwrap())
+                    .contains("024-synthetic-live-line")
+            );
+        }
+    }
+    println!(
+        "PASS native stream: bounded ACK delivery, visible dropped count, explicit stop after reaping, actual server loss under load releases permits without ACK; no raw log persistence"
     );
 }

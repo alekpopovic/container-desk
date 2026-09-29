@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import type {
   AppError,
   ErrorCode,
@@ -115,12 +115,13 @@ async function call(
   command: string,
   request?: unknown,
   isCurrent = () => true,
+  extra: Record<string, unknown> = {},
 ): Promise<unknown> {
   let result: unknown;
   try {
     result = await invoke<unknown>(
       command,
-      request === undefined ? {} : { request },
+      request === undefined ? extra : { request, ...extra },
     );
   } catch (error) {
     if (!isCurrent()) throw new IpcError("stale_session");
@@ -1092,9 +1093,13 @@ export async function containerLogs(
     result.records.length > 20000
   )
     throw new IpcError("invalid_response");
+  validateLogRecords(result.records);
+  return result as import("./generated.ts").LogSnapshot;
+}
+function validateLogRecords(records: unknown[], maxBytes = 8 * 1024 * 1024) {
   let retained = 0;
   const encoder = new TextEncoder();
-  for (const row of result.records) {
+  for (const row of records) {
     if (
       !record(row) ||
       !text(row.text, 262144) ||
@@ -1108,7 +1113,135 @@ export async function containerLogs(
     if (length > 262144) throw new IpcError("invalid_response");
     retained +=
       length + (typeof row.timestamp === "string" ? row.timestamp.length : 0);
-    if (retained > 8 * 1024 * 1024) throw new IpcError("invalid_response");
+    if (retained > maxBytes) throw new IpcError("invalid_response");
   }
-  return result as import("./generated.ts").LogSnapshot;
+}
+
+export async function followContainerLogs(
+  request: import("./generated.ts").FollowLogsRequest,
+  current: () => SessionScope | null,
+  consume: (batch: import("./generated.ts").LogBatch) => void | Promise<void>,
+  failed: (error: IpcError) => void,
+  signal: AbortSignal,
+): Promise<{ stop: () => Promise<void> }> {
+  if (signal.aborted || !sameScope(request.scope, current()))
+    throw new IpcError("stale_session");
+  let subscriptionId: string | null = null;
+  let sequence = 0;
+  let stopped = false;
+  let consuming = false;
+  const channel = new Channel<unknown>();
+  const stop = async () => {
+    if (stopped) return;
+    stopped = true;
+    signal.removeEventListener("abort", abort);
+    if (subscriptionId) {
+      try {
+        await call("cancel_subscription", {
+          scope: request.scope,
+          subscriptionId,
+        });
+      } catch (e) {
+        if (!(e instanceof IpcError && e.code === "subscription_not_found"))
+          throw e;
+      }
+    }
+  };
+  const abort = () => {
+    void stop().catch(() => {});
+  };
+  channel.onmessage = (value) => {
+    void (async () => {
+      if (stopped) return;
+      if (signal.aborted || !sameScope(request.scope, current())) {
+        await stop().catch(() => {});
+        return;
+      }
+      let holdsConsumption = false;
+      try {
+        if (
+          consuming ||
+          !record(value) ||
+          !scope(value.scope) ||
+          !sameScope(value.scope, request.scope) ||
+          value.containerId !== request.containerId ||
+          value.subscriptionId !== subscriptionId ||
+          value.sequence !== sequence + 1 ||
+          !Number.isSafeInteger(value.sequence) ||
+          !Array.isArray(value.records) ||
+          value.records.length > 128 ||
+          !Number.isSafeInteger(value.droppedRecords) ||
+          Number(value.droppedRecords) < 0 ||
+          typeof value.gap !== "boolean" ||
+          typeof value.ended !== "boolean" ||
+          (value.error !== null &&
+            (typeof value.error !== "string" ||
+              !Object.hasOwn(messages, value.error)))
+        )
+          throw new IpcError("invalid_response");
+        validateLogRecords(value.records, 262174);
+        consuming = true;
+        holdsConsumption = true;
+        sequence += 1;
+        const batch = value as import("./generated.ts").LogBatch;
+        await consume(batch);
+        consuming = false;
+        holdsConsumption = false;
+        if (batch.ended) {
+          stopped = true;
+          signal.removeEventListener("abort", abort);
+          return;
+        }
+        if (signal.aborted || !sameScope(request.scope, current())) {
+          await stop();
+          return;
+        }
+        if (!stopped)
+          await call("ack_container_logs", {
+            scope: request.scope,
+            subscriptionId,
+            sequence,
+          });
+      } catch (error) {
+        const report =
+          error instanceof IpcError
+            ? error
+            : new IpcError("transport_unavailable");
+        await stop().catch(() => {});
+        if (!signal.aborted && sameScope(request.scope, current()))
+          failed(report);
+      } finally {
+        if (holdsConsumption) consuming = false;
+      }
+    })();
+  };
+  // Do not discard a late successful start before its owned ID can be cancelled.
+  const result = await call("follow_container_logs", request, () => true, {
+    onBatch: channel,
+  });
+  if (
+    !record(result) ||
+    !scope(result.scope) ||
+    !sameScope(result.scope, request.scope) ||
+    typeof result.subscriptionId !== "string" ||
+    !/^sub_[a-f0-9]{32}$/.test(result.subscriptionId)
+  )
+    throw new IpcError("invalid_response");
+  subscriptionId = result.subscriptionId;
+  signal.addEventListener("abort", abort, { once: true });
+  if (signal.aborted || !sameScope(request.scope, current())) {
+    await stop();
+    throw new IpcError("stale_session");
+  }
+  try {
+    await call("ack_container_logs", {
+      scope: request.scope,
+      subscriptionId,
+      sequence: 0,
+    });
+  } catch (error) {
+    await stop().catch(() => {});
+    throw error;
+  }
+  return { stop };
 }

@@ -1,3 +1,4 @@
+import { LogsFixture } from "./logs-fixture";
 import { InspectFixture } from "./inspect-fixture";
 import { ContainerFixture } from "./container-fixture";
 import { createRoot } from "react-dom/client";
@@ -26,7 +27,9 @@ if (kind === "error")
 const root = document.getElementById("root");
 if (!root) throw new Error("Fixture root missing");
 createRoot(root).render(
-  kind === "inspect" ? (
+  kind === "logs" ? (
+    <LogsFixture />
+  ) : kind === "inspect" ? (
     <InspectFixture />
   ) : kind === "containers" ? (
     <ContainerFixture />

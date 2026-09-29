@@ -95,6 +95,9 @@ impl Job {
             let _ = sender.send(());
         }
     }
+    pub async fn finished(&mut self) -> Result<Captured, RunError> {
+        (&mut self.result).await.unwrap_or(Err(RunError::Io))
+    }
     pub async fn wait(self) -> Result<Captured, RunError> {
         let Self { cancel, result } = self;
         let result = result.await.unwrap_or(Err(RunError::Io));
@@ -233,23 +236,7 @@ async fn capture(
         bytes.extend_from_slice(&buffer[..length]);
     }
 }
-async fn execute(
-    executable: PathBuf,
-    args: Vec<OsString>,
-    limits: Limits,
-    mut cancel: oneshot::Receiver<()>,
-    mut session: Option<tokio::sync::watch::Receiver<bool>>,
-) -> Result<Captured, RunError> {
-    match cancel.try_recv() {
-        Ok(()) | Err(oneshot::error::TryRecvError::Closed) => return Err(RunError::Cancelled),
-        Err(oneshot::error::TryRecvError::Empty) => (),
-    }
-    if session
-        .as_ref()
-        .is_some_and(|receiver| *receiver.borrow() || receiver.has_changed().is_err())
-    {
-        return Err(RunError::Cancelled);
-    }
+fn owned_command(executable: PathBuf, args: Vec<OsString>) -> Command {
     let mut command = Command::new(executable);
     command
         .args(args)
@@ -273,6 +260,26 @@ async fn execute(
             }
         });
     }
+    command
+}
+async fn execute(
+    executable: PathBuf,
+    args: Vec<OsString>,
+    limits: Limits,
+    mut cancel: oneshot::Receiver<()>,
+    mut session: Option<tokio::sync::watch::Receiver<bool>>,
+) -> Result<Captured, RunError> {
+    match cancel.try_recv() {
+        Ok(()) | Err(oneshot::error::TryRecvError::Closed) => return Err(RunError::Cancelled),
+        Err(oneshot::error::TryRecvError::Empty) => (),
+    }
+    if session
+        .as_ref()
+        .is_some_and(|receiver| *receiver.borrow() || receiver.has_changed().is_err())
+    {
+        return Err(RunError::Cancelled);
+    }
+    let mut command = owned_command(executable, args);
     let child = command.spawn().map_err(|_| RunError::Unavailable)?;
     let mut owned = OwnedChild(child);
     let stdout = owned.0.stdout.take().expect("piped stdout");
@@ -337,3 +344,5 @@ pub fn structured_arguments(
 }
 #[cfg(test)]
 mod tests;
+
+pub(crate) mod streaming;

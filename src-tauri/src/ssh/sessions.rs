@@ -50,6 +50,13 @@ pub(crate) trait StageDriver: Send + Sync {
             Err(AppError::new(ErrorCode::FeatureUnavailable).in_scope(&request.scope))
         })
     }
+    fn follow_logs<'a>(
+        &'a self,
+        _request: &'a FollowLogsRequest,
+        _sink: super::runner::streaming::LineSink,
+    ) -> StageFuture<'a, Result<super::runner::Job, AppError>> {
+        Box::pin(async { Err(AppError::new(ErrorCode::FeatureUnavailable)) })
+    }
     fn quiesce(&self) -> StageFuture<'_, ()>;
 }
 pub(crate) struct NativeDriver {
@@ -232,6 +239,46 @@ impl StageDriver for NativeDriver {
                 .cloned()
                 .ok_or_else(|| AppError::new(ErrorCode::Disconnected).in_scope(&request.scope))?;
             crate::docker::logs::read(&client, &self.docker_options, &binding, request).await
+        })
+    }
+    fn follow_logs<'a>(
+        &'a self,
+        request: &'a FollowLogsRequest,
+        sink: super::runner::streaming::LineSink,
+    ) -> StageFuture<'a, Result<super::runner::Job, AppError>> {
+        Box::pin(async move {
+            tokio::time::timeout(std::time::Duration::from_secs(30), async {
+                let client = self
+                    .connection
+                    .lock()
+                    .await
+                    .as_ref()
+                    .map(|owner| owner.client())
+                    .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+                let binding = self
+                    .docker_binding
+                    .lock()
+                    .await
+                    .as_ref()
+                    .cloned()
+                    .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+                let (fresh, _) = crate::docker::probe::run(&client, &self.docker_options).await;
+                if fresh.daemon_id.as_deref() != Some(request.scope.daemon_id.as_str()) {
+                    return Err(AppError::new(ErrorCode::StaleSession));
+                }
+                let plan = crate::policy::registry::read(
+                    &crate::policy::registry::ReadOperation::FollowLogs {
+                        container_id: request.container_id.clone(),
+                        tail: request.tail,
+                        since: request.since.clone(),
+                    },
+                )?;
+                let command = binding.prepare(plan, &fresh)?;
+                client.start_log_stream(command.encoded().into(), sink)
+            })
+            .await
+            .map_err(|_| AppError::new(ErrorCode::OperationTimedOut))?
+            .map_err(|e| e.in_scope(&request.scope))
         })
     }
     fn quiesce(&self) -> StageFuture<'_, ()> {
@@ -487,6 +534,35 @@ impl Sessions {
                 .disconnect(&ConnectionToken {
                     session_id: scope.session_id.clone(),
                     session_generation: scope.session_generation,
+                })
+                .await;
+        }
+        result
+    }
+    pub(crate) async fn follow_logs(
+        &self,
+        request: &FollowLogsRequest,
+        sink: super::runner::streaming::LineSink,
+    ) -> Result<super::runner::Job, AppError> {
+        self.require_scope(&request.scope)?;
+        let driver = self
+            .control
+            .try_lock()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?
+            .as_ref()
+            .and_then(|w| w.driver.upgrade())
+            .ok_or_else(|| AppError::new(ErrorCode::Disconnected))?;
+        let result = driver.follow_logs(request, sink).await;
+        self.require_scope(&request.scope)?;
+        if result
+            .as_ref()
+            .is_err_and(|error| error.code == ErrorCode::StaleSession)
+        {
+            drop(driver);
+            let _ = self
+                .disconnect(&ConnectionToken {
+                    session_id: request.scope.session_id.clone(),
+                    session_generation: request.scope.session_generation,
                 })
                 .await;
         }

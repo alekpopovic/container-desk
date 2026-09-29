@@ -14,6 +14,7 @@ import socket
 import subprocess
 import tempfile
 import time
+import threading
 from ssh_auth import BASE
 REPO = Path(__file__).resolve().parents[2]
 
@@ -21,7 +22,13 @@ REPO = Path(__file__).resolve().parents[2]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sshd-root', type=Path, required=True, help='Extracted Ubuntu openssh-server package root; no system install')
+    parser.add_argument('--stream', action='store_true')
+    parser.add_argument('--native-driver', type=Path)
+    parser.add_argument('--webkit-driver', type=Path)
+    parser.add_argument('--native-artifacts', type=Path)
     args = parser.parse_args()
+    if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
+        parser.error('Native driver flags require --stream and both driver paths')
     with tempfile.TemporaryDirectory(prefix='containerdesk-logs-lab-') as directory:
         root = Path(directory)
         config = root / 'docker-config'
@@ -33,15 +40,20 @@ def main():
         docker = ['/usr/bin/docker', '--config', str(config), '--host', 'unix:///var/run/docker.sock']
         owned = []
         server = None
+        watcher = None
+        finished = threading.Event()
         try:
             sequence = "printf '023-stdout-one\\n'; sleep 0.1; printf '023-stderr-two\\n' >&2; sleep 0.1; printf '023-stdout-three\\n'; printf '\\377023-invalid\\n'; printf '023-synthetic-log-private\\n'; awk 'BEGIN { for (i=0; i<300000; i++) printf \"z\"; printf \"\\n\" }' >&2"
-            for driver in ('json-file', 'none'):
+            for driver in (('json-file', 'none', 'live') if args.stream else ('json-file', 'none')):
                 name = root.name + '-' + driver
-                created = subprocess.run(docker + ['create', '--name', name, '--label', 'dev.containerdesk.lab=023', '--network', 'none', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--pids-limit', '32', '--memory', '32m', '--log-driver', driver, BASE, '/bin/sh', '-c', sequence], env=env, check=True, capture_output=True, text=True, timeout=30)
+                workload = sequence if driver != 'live' else "while true; do awk 'BEGIN { for (i=0; i<5000; i++) print \"024-synthetic-live-line\" }'; sleep 0.1; done"
+                created = subprocess.run(docker + ['create', '--name', name, '--label', 'dev.containerdesk.lab=023', '--network', 'none', '--read-only', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--pids-limit', '32', '--memory', '32m', '--log-driver', 'json-file' if driver == 'live' else driver] + (['--log-opt', 'max-size=2m', '--log-opt', 'max-file=1'] if driver == 'live' else []) + [BASE, '/bin/sh', '-c', workload], env=env, check=True, capture_output=True, text=True, timeout=30)
                 ident = created.stdout.strip()
                 assert len(ident) == 64 and all(c in '0123456789abcdef' for c in ident)
                 owned.append(ident)
                 subprocess.run(docker + ['start', ident], env=env, check=True, stdout=subprocess.DEVNULL, timeout=10)
+                if driver == 'live':
+                    continue
                 waited = subprocess.run(docker + ['wait', ident], env=env, check=True, capture_output=True, text=True, timeout=15)
                 assert waited.stdout.strip() == '0', 'Owned log workload must exit successfully'
             oracle = subprocess.run(docker + ['logs', '--timestamps', '--tail', '100', '--', owned[0]], env=env, check=True, capture_output=True, timeout=10)
@@ -77,22 +89,52 @@ def main():
                     print((root / 'server.log').read_text())
                     raise RuntimeError('Owned SSH gate did not execute the marker')
                 manifest = root / 'manifest.json'
-                manifest.write_text(json.dumps({'config': str(ssh_config), 'containerId': owned[0], 'unsupportedId': owned[1], 'oracleStdout': str(root / 'oracle.stdout'), 'oracleStderr': str(root / 'oracle.stderr')}))
+                manifest.write_text(json.dumps({'config': str(ssh_config), 'containerId': owned[0], 'unsupportedId': owned[1], 'oracleStdout': str(root / 'oracle.stdout'), 'oracleStderr': str(root / 'oracle.stderr'), 'liveId': owned[-1] if args.stream else None}))
+                if args.stream and args.native_driver:
+                    from native_logs import verify
+                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts)
+                def cut_network():
+                    while not finished.wait(.05):
+                        if (root / 'cut-network').exists():
+                            # Only descendants of our exact temporary sshd; no user SSH process is targeted.
+                            children = {}
+                            for item in Path('/proc').iterdir():
+                                if item.name.isdigit():
+                                    try:
+                                        status = (item / 'status').read_text()
+                                        parent = int(next(line.split()[1] for line in status.splitlines() if line.startswith('PPid:')))
+                                        children.setdefault(parent, []).append(int(item.name))
+                                    except (OSError, StopIteration, ValueError): pass
+                            targets = []
+                            def visit(pid):
+                                for child in children.get(pid, []): visit(child)
+                                targets.append(pid)
+                            visit(server.pid)
+                            for pid in targets:
+                                try: os.kill(pid, signal.SIGKILL)
+                                except ProcessLookupError: pass
+                            return
+                if args.stream:
+                    watcher = threading.Thread(target=cut_network, daemon=True)
+                    watcher.start()
+                checkpoint = 'checkpoint024_owned_stream' if args.stream else 'checkpoint023_owned_logs'
                 result = subprocess.run(['cargo', 'test', '--manifest-path', str(REPO / 'src-tauri/Cargo.toml'), '--locked', '--no-run', '--message-format=json'], env=env, capture_output=True, text=True, check=True, timeout=180)
                 executables = [json.loads(line)['executable'] for line in result.stdout.splitlines() if line.startswith('{') and json.loads(line).get('reason') == 'compiler-artifact' and json.loads(line).get('executable') and json.loads(line).get('target', {}).get('name') == 'containerdesk_lib' and json.loads(line).get('profile', {}).get('test') is True]
                 assert len(executables) == 1
                 test_env = {**env, 'PATH': '/nonexistent', 'CONTAINERDESK_LOG_LAB_MANIFEST': str(manifest)}
-                listed = subprocess.run([executables[0], 'checkpoint023_owned_logs', '--ignored', '--list'], env=test_env, capture_output=True, text=True, check=True, timeout=10)
+                listed = subprocess.run([executables[0], checkpoint, '--ignored', '--list'], env=test_env, capture_output=True, text=True, check=True, timeout=10)
                 assert sum(line.endswith(': test') for line in listed.stdout.splitlines()) == 1
-                checked = subprocess.run([executables[0], 'checkpoint023_owned_logs', '--ignored', '--nocapture'], env=test_env, capture_output=True, text=True, timeout=60)
-                assert '023-synthetic-log-private' not in checked.stdout + checked.stderr, 'Synthetic raw log entered application diagnostics'
+                checked = subprocess.run([executables[0], checkpoint, '--ignored', '--nocapture'], env=test_env, capture_output=True, text=True, timeout=60)
+                assert all(marker not in checked.stdout + checked.stderr for marker in ('023-synthetic-log-private', '024-synthetic-live-line')), 'Synthetic raw log entered application diagnostics'
                 print(checked.stdout, end='')
                 if checked.returncode:
                     print(checked.stderr)
                     raise RuntimeError('Native log checkpoint failed')
             assert hashlib.sha256(known.read_bytes()).hexdigest() == before
-            print('PASS: real exited fixture logs match independent native Docker CLI; unsupported driver, UTF-8/line bounds; no raw synthetic log in app diagnostics; strict client trust unchanged.')
+            print('PASS: native streaming/cancellation/network-loss checkpoint; strict client trust unchanged.' if args.stream else 'PASS: real exited fixture logs match independent native Docker CLI; unsupported driver, UTF-8/line bounds; no raw synthetic log in app diagnostics; strict client trust unchanged.')
         finally:
+            finished.set()
+            if watcher: watcher.join(timeout=2)
             if server is not None:
                 if server.poll() is None:
                     os.killpg(server.pid, signal.SIGTERM)

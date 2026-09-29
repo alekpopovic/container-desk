@@ -25,11 +25,11 @@ pub async fn list_containers(
     backend.list_containers(request).await
 }
 #[tauri::command]
-pub fn cancel_subscription(
+pub async fn cancel_subscription(
     backend: tauri::State<'_, Backend>,
     request: CancelSubscriptionRequest,
 ) -> Result<CancelSubscriptionResponse, AppError> {
-    backend.cancel_subscription(request)
+    backend.cancel_subscription(request).await
 }
 
 #[cfg(test)]
@@ -450,4 +450,25 @@ pub async fn disconnect_inventory_host(
     request: InventoryDisconnectRequest,
 ) -> Result<HostInventory, AppError> {
     backend.disconnect_inventory_host(request).await
+}
+
+#[tauri::command]
+pub async fn follow_container_logs(
+    backend: tauri::State<'_, Backend>,
+    request: FollowLogsRequest,
+    on_batch: tauri::ipc::Channel<LogBatch>,
+) -> Result<CancelSubscriptionResponse, AppError> {
+    backend
+        .follow_container_logs(
+            request,
+            std::sync::Arc::new(move |batch| on_batch.send(batch).map_err(|_| ())),
+        )
+        .await
+}
+#[tauri::command]
+pub fn ack_container_logs(
+    backend: tauri::State<'_, Backend>,
+    request: AckLogsRequest,
+) -> Result<(), AppError> {
+    backend.ack_container_logs(request)
 }

@@ -14,6 +14,7 @@ pub enum ResponseKind {
     ContainerDetail,
     ImageDetail,
     LogSnapshot,
+    LogStream,
     Mutation,
     TerminalSession,
 }
@@ -25,6 +26,11 @@ pub enum ReadOperation {
     },
     InspectContainer {
         container_id: ContainerId,
+    },
+    FollowLogs {
+        container_id: ContainerId,
+        tail: i32,
+        since: Option<String>,
     },
     ContainerLogs {
         since: Option<String>,
@@ -115,6 +121,22 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
                 ResponseKind::ContainerDetail,
                 30,
             )
+        }
+        ReadOperation::FollowLogs {
+            container_id,
+            tail,
+            since,
+        } => {
+            let mut plan = read(&ReadOperation::ContainerLogs {
+                container_id: container_id.clone(),
+                tail: *tail,
+                since: since.clone(),
+                until: None,
+                timeout_seconds: 30,
+            })?;
+            plan.args.insert(2, "--follow".into());
+            plan.response = ResponseKind::LogStream;
+            plan
         }
         ReadOperation::ContainerLogs {
             container_id,

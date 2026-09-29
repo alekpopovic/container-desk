@@ -14,7 +14,7 @@ pub const MAX_RETAINED_BYTES: usize = 8 * 1024 * 1024;
 fn err(scope: &SessionScope, code: ErrorCode) -> AppError {
     AppError::new(code).in_scope(scope)
 }
-fn size(record: &LogRecord) -> usize {
+pub(super) fn size(record: &LogRecord) -> usize {
     record.text.len() + record.timestamp.as_ref().map_or(0, String::len)
 }
 fn timestamp(line: &[u8]) -> Option<&str> {
@@ -40,7 +40,7 @@ fn timestamp(line: &[u8]) -> Option<&str> {
     }
     Some(&stamp[..30])
 }
-fn channel(bytes: &[u8], origin: LogChannel) -> (VecDeque<LogRecord>, u32) {
+pub(super) fn channel(bytes: &[u8], origin: LogChannel) -> (VecDeque<LogRecord>, u32) {
     let mut records = VecDeque::new();
     let mut retained = 0;
     let mut dropped = 0;

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { LiveLogs } from "../logs/LiveLogs";
 import { ContainerDetails } from "./ContainerDetails";
 import type { ContainerSummary } from "../../lib/ipc/generated";
 import {
@@ -364,6 +365,13 @@ export function ContainerInventory({
             {inspectEnabled && !view.stale && view.scope && (
               <ContainerDetails
                 key={JSON.stringify([view.scope, chosen.id, view.updatedAt])}
+                scope={view.scope}
+                id={chosen.id}
+              />
+            )}
+            {inspectEnabled && !view.stale && view.scope && (
+              <LiveLogs
+                key={JSON.stringify([view.scope, chosen.id])}
                 scope={view.scope}
                 id={chosen.id}
               />

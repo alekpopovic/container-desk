@@ -976,3 +976,20 @@ legend {
 .inspect-warning {
   color: var(--danger);
 }
+
+.live-logs {
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+  min-width: 0;
+}
+.log-preview {
+  max-height: 320px;
+  overflow: auto;
+  max-width: 100%;
+}
+.log-preview pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.75rem;
+}

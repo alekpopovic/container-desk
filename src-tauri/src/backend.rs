@@ -12,14 +12,15 @@ pub struct Backend {
     inventory_control: tokio::sync::Mutex<()>,
     demo_inventory: Mutex<Preferences>,
     process_runner: crate::ssh::runner::Runner,
-    sessions: crate::ssh::sessions::Sessions,
+    sessions: Arc<crate::ssh::sessions::Sessions>,
+    log_streams: crate::docker::live_logs::Subscriptions,
     shutting_down: std::sync::atomic::AtomicBool,
     config_home: std::path::PathBuf,
-    policy: Mutex<PolicyEngine>,
+    policy: Arc<Mutex<PolicyEngine>>,
     settings: Mutex<Result<SettingsStore, AppError>>,
     diagnostic_slot: Arc<tokio::sync::Semaphore>,
     workspace: Mutex<WorkspaceTransport>,
-    read_slots: tokio::sync::Semaphore,
+    read_slots: Arc<tokio::sync::Semaphore>,
 }
 impl Backend {
     pub fn new(app_data: &std::path::Path, config_home: std::path::PathBuf) -> Self {
@@ -30,20 +31,22 @@ impl Backend {
             inventory_control: Default::default(),
             demo_inventory: Mutex::new(Preferences::default()),
             process_runner: crate::ssh::runner::Runner::default(),
-            sessions: crate::ssh::sessions::Sessions::default(),
+            sessions: Arc::new(crate::ssh::sessions::Sessions::default()),
+            log_streams: Default::default(),
             shutting_down: std::sync::atomic::AtomicBool::new(false),
             config_home,
-            policy: Mutex::new(PolicyEngine::default()),
+            policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(settings),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             workspace: Mutex::new(WorkspaceTransport::default()),
-            read_slots: tokio::sync::Semaphore::new(4),
+            read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
         }
     }
     pub async fn shutdown(&self) {
         self.shutting_down
             .store(true, std::sync::atomic::Ordering::SeqCst);
         self.sessions.shutdown().await;
+        self.log_streams.shutdown().await;
     }
     pub fn config_path(&self, path: Option<&str>) -> Result<SshConfigPath, AppError> {
         let preferences = self.preferences()?;
@@ -651,13 +654,63 @@ impl Backend {
         self.policy.lock().unwrap().register(scope).unwrap();
     }
 
-    pub fn cancel_subscription(
+    pub async fn follow_container_logs(
+        &self,
+        request: FollowLogsRequest,
+        sink: crate::docker::live_logs::BatchSink,
+    ) -> Result<CancelSubscriptionResponse, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(
+                &request.scope,
+                &ReadOperation::FollowLogs {
+                    container_id: request.container_id.clone(),
+                    tail: request.tail,
+                    since: request.since.clone(),
+                },
+            )?;
+        self.require_session(&request.scope)?;
+        let read = self
+            .read_slots
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let stream = self.log_streams.reserve()?;
+        let queue = Arc::new(Mutex::new(crate::docker::live_logs::LogQueue::default()));
+        let job = self
+            .sessions
+            .follow_logs(&request, crate::docker::live_logs::line_sink(queue.clone()))
+            .await?;
+        self.require_session(&request.scope)?;
+        let sessions = self.sessions.clone();
+        let policy = self.policy.clone();
+        let scope = request.scope.clone();
+        let current = Arc::new(move || {
+            policy
+                .lock()
+                .map_err(|_| AppError::new(ErrorCode::Internal))?
+                .require_session(&scope)?;
+            sessions.require_scope(&scope)
+        });
+        self.log_streams
+            .start(request, job, queue, sink, current, (read, stream))
+    }
+    pub fn ack_container_logs(&self, request: AckLogsRequest) -> Result<(), AppError> {
+        self.require_session(&request.scope)?;
+        self.log_streams.ack(&request)
+    }
+    pub async fn cancel_subscription(
         &self,
         request: CancelSubscriptionRequest,
     ) -> Result<CancelSubscriptionResponse, AppError> {
-        request.subscription_id.validate()?;
-        self.require_session(&request.scope)?;
-        Err(AppError::new(ErrorCode::SubscriptionNotFound).in_scope(&request.scope))
+        // Exact owned scope authorizes cleanup even after that session was invalidated.
+        self.log_streams.cancel(&request).await?;
+        Ok(CancelSubscriptionResponse {
+            scope: request.scope,
+            subscription_id: request.subscription_id,
+        })
     }
 }
 
@@ -668,14 +721,15 @@ impl Default for Backend {
             inventory_control: Default::default(),
             demo_inventory: Mutex::new(Preferences::default()),
             process_runner: crate::ssh::runner::Runner::default(),
-            sessions: crate::ssh::sessions::Sessions::default(),
+            sessions: Arc::new(crate::ssh::sessions::Sessions::default()),
+            log_streams: Default::default(),
             shutting_down: std::sync::atomic::AtomicBool::new(false),
             config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
-            policy: Mutex::new(PolicyEngine::default()),
+            policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             workspace: Mutex::new(WorkspaceTransport::default()),
-            read_slots: tokio::sync::Semaphore::new(4),
+            read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
         }
     }
 }
@@ -1220,9 +1274,10 @@ mod tests {
                         scope: stale,
                         subscription_id: SubscriptionId(format!("sub_{}", "a".repeat(32)))
                     })
+                    .await
                     .unwrap_err()
                     .code,
-                ErrorCode::StaleSession
+                ErrorCode::SubscriptionNotFound
             );
         }
         assert_eq!(

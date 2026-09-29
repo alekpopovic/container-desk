@@ -1119,3 +1119,35 @@ pub struct HostInventory {
     pub saved: PreferencesSnapshot,
     pub connection: Option<ConnectionSnapshot>,
 }
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FollowLogsRequest {
+    pub scope: SessionScope,
+    pub container_id: ContainerId,
+    pub tail: i32,
+    pub since: Option<String>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct AckLogsRequest {
+    pub scope: SessionScope,
+    pub subscription_id: SubscriptionId,
+    pub sequence: u32,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct LogBatch {
+    pub scope: SessionScope,
+    pub container_id: ContainerId,
+    pub subscription_id: SubscriptionId,
+    pub sequence: u32,
+    pub records: Vec<LogRecord>,
+    pub dropped_records: u32,
+    pub gap: bool,
+    pub ended: bool,
+    pub error: Option<ErrorCode>,
+}

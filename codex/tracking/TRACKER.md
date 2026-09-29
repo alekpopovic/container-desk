@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T00:01:34+00:00
+Updated: 2026-09-29T00:24:08+00:00
 
-blocked: **0** | done: **23** | in_progress: **0** | pending: **37**
+blocked: **0** | done: **24** | in_progress: **0** | pending: **36**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -33,7 +33,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 021 | 03 Read-only MVP | Container inspect adapter and details | high | done | codex/tracking/evidence/021.md |
 | 022 | 03 Read-only MVP | Health, ports, mounts and environment panels | medium | done | codex/tracking/evidence/022.md |
 | 023 | 03 Read-only MVP | Bounded log snapshot retrieval | high | done | codex/tracking/evidence/023.md |
-| 024 | 03 Read-only MVP | Live log subscriptions and cancellation | high | pending | — |
+| 024 | 03 Read-only MVP | Live log subscriptions and cancellation | high | done | codex/tracking/evidence/024.md |
 | 025 | 03 Read-only MVP | Log viewer usability and export | medium | pending | — |
 | 026 | 03 Read-only MVP | Container resource statistics | high | pending | — |
 | 027 | 03 Read-only MVP | Docker event stream and inventory invalidation | high | pending | — |
@@ -119,3 +119,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-28T23:34:41+00:00 — 022: done; PASS 87 Rust, 32 IPC, 18 UI checks; actual direct/ProxyJump native tabs, exposure/health fields, clipboard paste and redaction; no persisted synthetic values
 - 2026-09-28T23:35:41+00:00 — 023: start;
 - 2026-09-29T00:01:34+00:00 — 023: done; Rust 92 passed, 12 lab ignores; clippy/fmt and IPC 35 passed; native log checkpoint passed with independent real Docker CLI match; desktop build passed
+- 2026-09-29T00:02:27+00:00 — 024: start;
+- 2026-09-29T00:24:08+00:00 — 024: done; Rust 96 passed, 13 lab ignores including actual 30-second expiry; IPC 39 passed; UI 36 passed; native release channel stall/drop/restart and actual SSH server-loss checkpoint passed; clippy and build passed
