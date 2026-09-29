@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.0",
+  "sourceCommit": "4c4caa812229797fb75046c1deb68a638746c998",
+  "sourceDirty": false,
+  "target": "x86_64-unknown-linux-gnu",
+  "os": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "toolchains": {
+    "node": "24.21.0",
+    "npm": "11.19.0",
+    "rustc": "1.98.1",
+    "cargo": "1.98.1"
+  },
+  "runId": "36558542207",
+  "runAttempt": "1",
+  "event": "push",
+  "verificationReportSha256": "ead069434d3761513c736b0ebde9ee69948945b60abd71825f75ac96ddd1d6aa",
+  "package": {
+    "file": "containerdesk-0.1.0-x86_64-unknown-linux-gnu.deb",
+    "bytes": 4980574,
+    "sha256": "8163b011de0ab2ddd6d4d9bc938d1f7bdb765e4ef0b00aad61e1f7e83630c0f7"
+  },
+  "executableSha256BeforeBundle": "132ca52d5e55fb7b4197ec5d84feb9ded02b017c93e272a083e6adaad88ab890",
+  "executableSha256AfterBundle": "132ca52d5e55fb7b4197ec5d84feb9ded02b017c93e272a083e6adaad88ab890",
+  "signing": "disabled",
+  "notarization": "not_requested",
+  "runtimeAcceptance": "not_run",
+  "releaseApproved": false,
+  "locks": {
+    "package-lock.json": "c97594c24a111f62f30564654859db0a0ba74f38e3e132e105c083edadf2e534",
+    "src-tauri/Cargo.lock": "3923711cb33de8a5e3b8df4a690b966cf37d6a02519fad168bc2ed8e608088ef"
+  }
+}

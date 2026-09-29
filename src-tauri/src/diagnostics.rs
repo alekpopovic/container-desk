@@ -199,17 +199,22 @@ pub async fn inspect_agent(path: Option<&Path>) -> AgentDiagnostic {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::os::unix::{fs::PermissionsExt, net::UnixListener};
+    use std::os::unix::{
+        fs::{DirBuilderExt, PermissionsExt},
+        net::UnixListener,
+    };
     struct Dir(PathBuf);
     impl Dir {
         fn new() -> Self {
-            let path = std::env::temp_dir().join(format!(
+            Self::new_in(&std::env::temp_dir())
+        }
+        fn new_in(root: &Path) -> Self {
+            let path = root.join(format!(
                 "containerdesk-diagnostics-{}-{}",
                 std::process::id(),
                 crate::test_directory_suffix()
             ));
-            fs::create_dir(&path).unwrap();
-            fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
+            fs::DirBuilder::new().mode(0o700).create(&path).unwrap();
             Self(path)
         }
         fn executable(&self, contents: &str) -> String {
@@ -272,7 +277,9 @@ mod tests {
     }
     #[tokio::test]
     async fn agent_probe_checks_socket_without_sending_protocol_or_reading_keys() {
-        let dir = Dir::new();
+        // macOS TMPDIR can exceed sockaddr_un limits before adding our fixture name.
+        // Use an exclusively created private directory under the short Unix tmp root.
+        let dir = Dir::new_in(Path::new("/tmp"));
         assert_eq!(inspect_agent(None).await.status, AgentStatus::Unset);
         assert_eq!(
             inspect_agent(Some(&dir.0.join("missing"))).await.status,

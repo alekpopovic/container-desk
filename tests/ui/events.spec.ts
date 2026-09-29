@@ -3,8 +3,8 @@ test("event bursts stay bounded; snapshots determine deletion, gap reconnect rea
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
-  // Installation alone keeps time running; pause before mounting the fixture.
-  await page.clock.pauseAt(new Date("2026-01-01T00:00:01Z"));
+  // Pause well ahead of setup latency, before mounting any application timers.
+  await page.clock.pauseAt(new Date("2026-01-02T00:00:00Z"));
   await page.goto("/tests/ui/fixture.html?state=events");
   await expect(page.getByLabel("Starts", { exact: true })).toHaveText("1");
   await page.clock.runFor(600);
@@ -38,8 +38,8 @@ test("foreground/network recovery coalesces and suspended clock requests a fresh
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
-  // Installation alone keeps time running; pause before mounting the fixture.
-  await page.clock.pauseAt(new Date("2026-01-01T00:00:01Z"));
+  // Pause well ahead of setup latency, before mounting any application timers.
+  await page.clock.pauseAt(new Date("2026-01-02T00:00:00Z"));
   await page.goto("/tests/ui/fixture.html?state=events");
   await expect(page.getByLabel("Starts", { exact: true })).toHaveText("1");
   await page.clock.runFor(600);

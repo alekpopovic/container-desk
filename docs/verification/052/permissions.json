@@ -12,5 +12,9 @@
   "publicationSteps": 0,
   "persistCredentials": false,
   "sharedDependencyCache": false,
-  "eventBoundary": "pull_request / main push / manual dispatch all use the same read-only job; no privileged workflow exists"
+  "eventBoundary": "pull_request / main push / manual dispatch all use the same read-only job; no privileged workflow exists",
+  "actualMainPushTokenPermissions": [
+    "Contents: read",
+    "Metadata: read"
+  ]
 }

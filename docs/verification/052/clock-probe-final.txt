@@ -1,0 +1,2 @@
+{"paused":false,"setupDelayMilliseconds":0,"realDelayMilliseconds":2300,"afterRealDelay":"3","afterControlledAdvance":"3"}
+{"paused":true,"setupDelayMilliseconds":1500,"realDelayMilliseconds":2300,"afterRealDelay":"2","afterControlledAdvance":"3"}

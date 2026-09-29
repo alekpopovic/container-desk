@@ -1,0 +1,3 @@
+Intel macOS: 347 browser tests passed; one fixture setup failed: clock.pauseAt could not fast-forward into the past after setup took more than one second.
+Apple Silicon: 348 browser tests and both Clippy configurations passed; Rust 150 passed, 1 failed, 29 ignored. Agent probe fixture bind failed: path must be shorter than SUN_LEN.
+Linux Ubuntu 24.04: all 13 standard checks passed, deb package and metadata uploaded and downloaded checksums independently matched.

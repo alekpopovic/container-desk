@@ -1,0 +1,3 @@
+Local Ubuntu 26.04.1 x86_64: all four diagnostics Rust tests passed.
+Agent socket test also passed with an explicitly selected TMPDIR path 161 bytes long. Fixture uses a separately owned, exclusively created mode-0700 directory under /tmp.
+Default all-target Clippy passed with -D warnings. No production diagnostics or SSH logic changed.
