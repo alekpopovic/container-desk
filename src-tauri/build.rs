@@ -19,6 +19,7 @@ fn main() {
             "container_logs",
             "follow_container_logs",
             "ack_container_logs",
+            "export_container_logs",
             "prepare_confirmation",
             "mutate_container",
             "open_container_terminal",

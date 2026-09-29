@@ -26,6 +26,8 @@ const messages: Record<ErrorCode, string> = {
   invalid_config_path:
     "Choose an absolute local SSH config path or use the default.",
   invalid_generation: "Invalid session or selection generation.",
+  export_failed:
+    "The selected log file could not be saved. Choose a writable regular file location.",
   log_driver_unsupported:
     "This container logging driver does not support reading logs.",
   container_not_found: "The container no longer exists. Refresh the inventory.",
@@ -1244,4 +1246,20 @@ export async function followContainerLogs(
     throw error;
   }
   return { stop };
+}
+
+export async function exportContainerLogs(
+  request: import("./generated.ts").ExportLogsRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").ExportLogsResponse> {
+  const result = await call("export_container_logs", request, () =>
+    sameScope(request.scope, current()),
+  );
+  if (
+    !record(result) ||
+    typeof result.saved !== "boolean" ||
+    result.lineCount !== (result.saved ? request.lines.length : 0)
+  )
+    throw new IpcError("invalid_response");
+  return result as import("./generated.ts").ExportLogsResponse;
 }

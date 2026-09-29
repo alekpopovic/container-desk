@@ -369,13 +369,6 @@ export function ContainerInventory({
                 id={chosen.id}
               />
             )}
-            {inspectEnabled && !view.stale && view.scope && (
-              <LiveLogs
-                key={JSON.stringify([view.scope, chosen.id])}
-                scope={view.scope}
-                id={chosen.id}
-              />
-            )}
             {view.stale && (
               <p>These details are from the last successful snapshot.</p>
             )}
@@ -387,6 +380,14 @@ export function ContainerInventory({
           </div>
         )}
       </aside>
+      {chosen && inspectEnabled && !view.stale && view.scope && (
+        <LiveLogs
+          key={JSON.stringify([view.scope, chosen.id])}
+          scope={view.scope}
+          id={chosen.id}
+          source={`${host?.name ?? "Selected host"} / ${chosen.name}`}
+        />
+      )}
     </div>
   );
 }

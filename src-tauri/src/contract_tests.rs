@@ -101,6 +101,8 @@ fn generated_contract_is_current() {
         FollowLogsRequest,
         AckLogsRequest,
         LogBatch,
+        ExportLogsRequest,
+        ExportLogsResponse,
         ContainerPort,
         ComposeLabels,
         WorkspaceMode,

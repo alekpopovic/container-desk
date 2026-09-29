@@ -472,3 +472,12 @@ pub fn ack_container_logs(
 ) -> Result<(), AppError> {
     backend.ack_container_logs(request)
 }
+
+#[tauri::command]
+pub async fn export_container_logs(
+    window: tauri::WebviewWindow,
+    backend: tauri::State<'_, Backend>,
+    request: ExportLogsRequest,
+) -> Result<ExportLogsResponse, AppError> {
+    backend.export_logs(window, request).await
+}

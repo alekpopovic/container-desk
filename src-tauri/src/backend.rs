@@ -19,6 +19,7 @@ pub struct Backend {
     policy: Arc<Mutex<PolicyEngine>>,
     settings: Mutex<Result<SettingsStore, AppError>>,
     diagnostic_slot: Arc<tokio::sync::Semaphore>,
+    export_slot: tokio::sync::Semaphore,
     workspace: Mutex<WorkspaceTransport>,
     read_slots: Arc<tokio::sync::Semaphore>,
 }
@@ -38,6 +39,7 @@ impl Backend {
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(settings),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
+            export_slot: tokio::sync::Semaphore::new(1),
             workspace: Mutex::new(WorkspaceTransport::default()),
             read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
         }
@@ -654,6 +656,56 @@ impl Backend {
         self.policy.lock().unwrap().register(scope).unwrap();
     }
 
+    pub async fn export_logs(
+        &self,
+        window: tauri::WebviewWindow,
+        request: ExportLogsRequest,
+    ) -> Result<ExportLogsResponse, AppError> {
+        use tauri_plugin_dialog::DialogExt;
+        self.require_live_mode()?;
+        self.require_session(&request.scope)?;
+        crate::log_export::validate(&request)?;
+        let _permit = self
+            .export_slot
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        window
+            .dialog()
+            .file()
+            .set_parent(&window)
+            .set_title("Save selected container logs")
+            .set_file_name(format!(
+                "container-{}-logs.txt",
+                &request.container_id.0[..12]
+            ))
+            .add_filter("Plain text logs", &["txt", "log"])
+            .save_file(move |chosen| {
+                let _ = sender.send(chosen);
+            });
+        let chosen = receiver
+            .await
+            .map_err(|_| AppError::new(ErrorCode::ExportFailed))?;
+        let Some(chosen) = chosen else {
+            return Ok(ExportLogsResponse {
+                saved: false,
+                line_count: 0,
+            });
+        };
+        self.require_session(&request.scope)?;
+        let path = chosen
+            .into_path()
+            .map_err(|_| AppError::new(ErrorCode::ExportFailed))?;
+        let line_count = request.lines.len() as u32;
+        // A blocking filesystem operation owns only the explicit frozen export until completion.
+        tokio::task::spawn_blocking(move || crate::log_export::write(&path, &request.lines))
+            .await
+            .map_err(|_| AppError::new(ErrorCode::ExportFailed))??;
+        Ok(ExportLogsResponse {
+            saved: true,
+            line_count,
+        })
+    }
     pub async fn follow_container_logs(
         &self,
         request: FollowLogsRequest,
@@ -728,6 +780,7 @@ impl Default for Backend {
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
+            export_slot: tokio::sync::Semaphore::new(1),
             workspace: Mutex::new(WorkspaceTransport::default()),
             read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
         }

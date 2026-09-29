@@ -119,6 +119,7 @@ pub enum ErrorCode {
     HostNotFound,
     ContainerNotFound,
     LogDriverUnsupported,
+    ExportFailed,
     SessionNotFound,
     StaleSession,
     SubscriptionNotFound,
@@ -157,6 +158,9 @@ impl AppError {
         let message = match code {
             ErrorCode::InvalidId => "Invalid resource identifier.",
             ErrorCode::InvalidGeneration => "Invalid session or selection generation.",
+            ErrorCode::ExportFailed => {
+                "The selected log file could not be saved. Choose a writable regular file location."
+            }
             ErrorCode::LogDriverUnsupported => {
                 "This container logging driver does not support reading logs."
             }
@@ -1150,4 +1154,29 @@ pub struct LogBatch {
     pub gap: bool,
     pub ended: bool,
     pub error: Option<ErrorCode>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ExportLogsRequest {
+    pub scope: SessionScope,
+    pub container_id: ContainerId,
+    pub lines: Vec<String>,
+    pub secrets_acknowledged: bool,
+}
+impl std::fmt::Debug for ExportLogsRequest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ExportLogsRequest")
+            .field("container_id", &self.container_id)
+            .field("line_count", &self.lines.len())
+            .finish_non_exhaustive()
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ExportLogsResponse {
+    pub saved: bool,
+    pub line_count: u32,
 }

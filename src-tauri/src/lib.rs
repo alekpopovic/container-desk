@@ -1,5 +1,6 @@
 mod diagnostics;
 pub mod docker;
+mod log_export;
 pub mod policy;
 pub mod ssh;
 mod storage;
@@ -13,6 +14,7 @@ pub mod domain;
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             app.manage(backend::Backend::new(
                 &app.path().app_data_dir()?,
@@ -40,6 +42,7 @@ pub fn run() {
             commands::container_logs,
             commands::follow_container_logs,
             commands::ack_container_logs,
+            commands::export_container_logs,
             commands::prepare_confirmation,
             commands::mutate_container,
             commands::open_container_terminal,

@@ -10,11 +10,17 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
-    env.update(XDG_DATA_HOME=str(root / 'native-data'), GDK_BACKEND='x11', PATH='/nonexistent')
+    # Ubuntu 26.04 GTK's glycin icon loader needs the system bwrap helper on PATH.
+    # Keep Docker, Node, Python and Cargo absent from the application's executable search path.
+    native_bin = root / 'native-bin'
+    native_bin.mkdir(mode=0o700)
+    if export_id:
+        (native_bin / 'bwrap').symlink_to('/usr/bin/bwrap')
+    env.update(XDG_DATA_HOME=str(root / 'native-data'), GDK_BACKEND='x11', PATH=str(native_bin))
     artifacts = artifacts or root / 'native-artifacts'
     artifacts.mkdir(parents=True, exist_ok=True)
     port, native_port = unused_port(), unused_port()
@@ -33,7 +39,11 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts):
         def element(xpath):
             return command('POST', '/element', {'using': 'xpath', 'value': xpath})[ELEMENT]
         def click(xpath):
-            command('POST', f'/element/{element(xpath)}/click', {})
+            node = element(xpath)
+            # Settle WebKit's viewport after transient clipboard fields/virtualized rows.
+            script('arguments[0].scrollIntoView({block: "center", behavior: "instant"})', {ELEMENT: node})
+            time.sleep(.15)
+            command('POST', f'/element/{node}/click', {})
         def button(name): click(f'//button[normalize-space(.)="{name}"]')
         def fill(label, value):
             node = element(f'//label[normalize-space(text())="{label}"]/input')
@@ -44,6 +54,8 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts):
             while time.monotonic() < end:
                 if script(condition): return
                 time.sleep(.1)
+            (artifacts / 'native-timeout.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
+            print('Native state:', script('return {dialogs: document.querySelectorAll("dialog[open]").length, buttons: Array.from(document.querySelectorAll(".live-logs button"), b=>({text:b.textContent,disabled:b.disabled})), status: Array.from(document.querySelectorAll(".live-logs > p[role=status]"), p=>p.textContent)}'), flush=True)
             raise AssertionError('Native log condition did not become true: ' + condition)
         try:
             for _ in range(100):
@@ -81,6 +93,79 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts):
             # Start resumes with the displayed timestamp; renderer still explains possible gaps/duplicates.
             button('Start logs')
             wait('return document.querySelector(".live-logs")?.innerText.includes("Following")')
+            if export_id:
+                button('Pause display')
+                wait('return Array.from(document.querySelectorAll("button")).some(b => b.textContent === "Resume display" && b.getAttribute("aria-pressed") === "true")')
+                # Native clicks return before React's commit and queued scroll events settle.
+                time.sleep(.15)
+                frozen = script('return Array.from(document.querySelectorAll(".log-preview pre"), p=>p.textContent)')
+                time.sleep(.4)
+                assert frozen == script('return Array.from(document.querySelectorAll(".log-preview pre"), p=>p.textContent)'), 'Paused native display changed'
+                button('Resume display')
+                button('Stop logs')
+                click(f'//tr[@data-container-id="{export_id}"]//button')
+                button('Start logs')
+                wait('return document.querySelector(".live-logs")?.innerText.includes("Stream ended")')
+                fill('Search logs', '023-stdout')
+                button('Select matching lines')
+                expected = script('return Array.from(document.querySelectorAll(".log-preview pre"), p=>p.textContent).join("\\n")')
+                assert '023-stdout-one' in expected and '023-stdout-three' in expected
+                assert '023-stderr' not in expected and '024-synthetic' not in expected
+                # Actual native clipboard write and keyboard paste into an external-test textarea.
+                button('Copy selected lines')
+                script('const field=document.createElement("textarea"); field.id="native-clipboard-check"; document.body.append(field)')
+                paste = element('//*[@id="native-clipboard-check"]')
+                command('POST', f'/element/{paste}/click', {})
+                command('POST', '/actions', {'actions': [{'type': 'key', 'id': 'log-clipboard', 'actions': [{'type': 'keyDown', 'value': '\ue009'}, {'type': 'keyDown', 'value': 'v'}, {'type': 'keyUp', 'value': 'v'}, {'type': 'keyUp', 'value': '\ue009'}]}]})
+                assert script('return document.querySelector("#native-clipboard-check").value') == expected
+                script('document.querySelector("#native-clipboard-check").remove()')
+                button('Export selected lines')
+                wait('return document.querySelector("dialog[open]")?.innerText.includes("Logs may contain application secrets")')
+                (artifacts / 'native-export-review.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
+                button('Save selected logs…')
+                def tool(*args):
+                    return subprocess.run([str(xdotool), *map(str, args)], env=env, capture_output=True, text=True, check=True, timeout=10).stdout.strip()
+                def save_window():
+                    deadline = time.monotonic() + 15
+                    while time.monotonic() < deadline:
+                        result = subprocess.run([str(xdotool), 'search', '--onlyvisible', '--name', '^Save selected container logs$'], env=env, capture_output=True, text=True, timeout=5)
+                        ids = result.stdout.split()
+                        if len(ids) == 1:
+                            pid = tool('getwindowpid', ids[0])
+                            assert (f'XDG_DATA_HOME={root}/native-data'.encode() in Path('/proc', pid, 'environ').read_bytes().split(b'\x00')), 'Save dialog must belong to this owned native app'
+                            return ids[0]
+                        time.sleep(.1)
+                    print('Native driver diagnostics:', (root / 'native-driver.log').read_text()[-5000:], flush=True)
+                    raise AssertionError('Owned native Save dialog did not appear')
+                dialog_window = save_window()
+                destination = root / 'selected-native-log-export.txt'
+                tool('windowfocus', '--sync', dialog_window)
+                time.sleep(.2)
+                subprocess.run(['/usr/bin/import', '-window', dialog_window, str(artifacts / 'native-save-dialog.png')], env=env, check=True, timeout=10)
+                tool('key', '--clearmodifiers', 'ctrl+l')
+                time.sleep(.3)
+                # GTK initially selects only the basename, leaving .txt unselected.
+                tool('key', '--clearmodifiers', 'ctrl+a')
+                tool('type', '--clearmodifiers', '--delay', '3', str(destination))
+                time.sleep(.3)
+                subprocess.run(['/usr/bin/import', '-window', dialog_window, str(artifacts / 'native-save-entered.png')], env=env, check=True, timeout=10)
+                tool('key', '--clearmodifiers', 'Return')
+                deadline = time.monotonic() + 15
+                while not destination.exists() and time.monotonic() < deadline: time.sleep(.1)
+                if not destination.exists():
+                    subprocess.run(['/usr/bin/import', '-window', dialog_window, str(artifacts / 'native-save-after-keys.png')], env=env, timeout=10)
+                    print('Native export status:', script('return Array.from(document.querySelectorAll(\".live-logs > p[role=status]\"), p=>p.innerText).join(\" | \")'), flush=True)
+                assert destination.read_text() == expected, 'Native file must exactly equal selected visible lines in order'
+                assert destination.stat().st_mode & 0o777 == 0o600
+                wait('return document.querySelector(".live-logs")?.innerText.includes("Saved 2 selected lines.")')
+                button('Export selected lines')
+                button('Save selected logs…')
+                dialog_window = save_window()
+                tool('windowfocus', '--sync', dialog_window)
+                tool('key', '--clearmodifiers', 'Escape')
+                wait('return document.querySelector(".live-logs")?.innerText.includes("Export cancelled.")')
+                assert destination.read_text() == expected
+                print('PASS native selected export: secret review, real GTK Save and Cancel, exact ordered 2-line UTF-8 file, mode 0600, no unrelated container data, clipboard exact visible text.', flush=True)
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
             wait('return !document.querySelector(".live-logs")')
             time.sleep(.5)

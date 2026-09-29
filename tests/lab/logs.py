@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--native-driver', type=Path)
     parser.add_argument('--webkit-driver', type=Path)
     parser.add_argument('--native-artifacts', type=Path)
+    parser.add_argument('--export-xdotool', type=Path)
     args = parser.parse_args()
     if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
         parser.error('Native driver flags require --stream and both driver paths')
@@ -92,7 +93,7 @@ def main():
                 manifest.write_text(json.dumps({'config': str(ssh_config), 'containerId': owned[0], 'unsupportedId': owned[1], 'oracleStdout': str(root / 'oracle.stdout'), 'oracleStderr': str(root / 'oracle.stderr'), 'liveId': owned[-1] if args.stream else None}))
                 if args.stream and args.native_driver:
                     from native_logs import verify
-                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts)
+                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool)
                 def cut_network():
                     while not finished.wait(.05):
                         if (root / 'cut-network').exists():

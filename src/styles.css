@@ -978,18 +978,76 @@ legend {
 }
 
 .live-logs {
-  border-top: 1px solid var(--border);
-  margin-top: 1rem;
-  padding-top: 1rem;
+  grid-column: 1 / -1;
   min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.live-logs p {
+  margin: 8px 0;
+}
+.log-source {
+  overflow-wrap: anywhere;
+}
+.log-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.live-logs .log-tools label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.log-tools input[type="search"] {
+  width: 180px;
 }
 .log-preview {
-  max-height: 320px;
+  height: 320px;
   overflow: auto;
   max-width: 100%;
+  border: 1px solid var(--border);
 }
-.log-preview pre {
+.log-table {
+  border-collapse: collapse;
+  min-width: 100%;
+}
+.live-logs .log-table td {
+  padding: 0;
+  border: 0;
+  height: 24px;
+}
+.live-logs .log-table td:first-child {
+  width: 28px;
+  padding: 0 4px;
+}
+.log-table pre {
+  margin: 0;
+  white-space: pre;
+  height: 24px;
+  line-height: 24px;
+  font-size: 12px;
+  tab-size: 4;
+}
+.log-export {
+  max-width: min(720px, 90vw);
+  max-height: 85vh;
+  overflow: auto;
+  padding: 24px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.log-export::backdrop {
+  background: #0009;
+}
+.log-export pre {
+  max-height: 240px;
+  overflow: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font-size: 0.75rem;
 }
