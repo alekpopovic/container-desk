@@ -8,6 +8,7 @@ pub mod ssh;
 mod storage;
 mod support;
 pub mod transport;
+mod webview_policy;
 use tauri::Manager;
 mod backend;
 mod commands;
@@ -24,6 +25,11 @@ pub fn run() {
                 &app.path().app_data_dir()?,
                 app.path().home_dir()?,
             ));
+            tauri::WebviewWindowBuilder::from_config(app, &app.config().app.windows[0])?
+                .on_navigation(webview_policy::navigation_allowed)
+                .on_new_window(|_, _| tauri::webview::NewWindowResponse::Deny)
+                .on_download(|_, _| false)
+                .build()?;
             tauri::async_runtime::spawn(ssh::runtime::recover());
             Ok(())
         })

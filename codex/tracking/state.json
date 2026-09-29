@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T09:14:45+00:00",
+  "updated_at": "2026-09-29T09:29:19+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1582,6 +1582,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T09:15:21+00:00",
+      "id": "047",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T09:29:19+00:00",
+      "id": "047",
+      "action": "done",
+      "note": "PASS real native external-UI baseline reproduced and fixed with zero HTTP probes; strict IPC/CSP and seeded support redaction; normal binary no TCP listener; 150 Rust, 86 Node, 21 browser tests; release build, clippy, audit triage passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T09:15:21+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2165,12 +2199,14 @@
       "note": ""
     },
     "047": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T09:15:21+00:00",
+      "finished_at": "2026-09-29T09:29:19+00:00",
+      "evidence": "codex/tracking/evidence/047.md",
+      "evidence_sha256": "144eed414ec509e719e55e5505c662f2f663d06b85c49a93f8671499a026c50c",
+      "checks": [
+        "PASS real native external-UI baseline reproduced and fixed with zero HTTP probes; strict IPC/CSP and seeded support redaction; normal binary no TCP listener; 150 Rust, 86 Node, 21 browser tests; release build, clippy, audit triage passed"
+      ],
       "commit": "",
       "note": ""
     },

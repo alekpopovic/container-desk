@@ -1,0 +1,8 @@
+{
+  "baselineBinary": "046",
+  "standaloneTcpListeners": 0,
+  "remoteUiLoaded": true,
+  "ownedHttpRequests": [
+    "/navigate"
+  ]
+}
