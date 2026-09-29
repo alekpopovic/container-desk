@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T07:37:40+00:00",
+  "updated_at": "2026-09-29T07:56:37+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1446,6 +1446,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T07:38:06+00:00",
+      "id": "043",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T07:56:37+00:00",
+      "id": "043",
+      "action": "done",
+      "note": "85 Node and 147 Rust tests passed; 12 browser checks plus six final dialog checks; actual native GTK Save/Cancel and clear passed with exact private JSON and unchanged SSH-file hashes",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T07:38:06+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1981,12 +2015,14 @@
       "note": ""
     },
     "043": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T07:38:06+00:00",
+      "finished_at": "2026-09-29T07:56:37+00:00",
+      "evidence": "codex/tracking/evidence/043.md",
+      "evidence_sha256": "33814c3de3c95c99e81341df63bf069a0854088e8769be105f0c764030011cd8",
+      "checks": [
+        "85 Node and 147 Rust tests passed; 12 browser checks plus six final dialog checks; actual native GTK Save/Cancel and clear passed with exact private JSON and unchanged SSH-file hashes"
+      ],
       "commit": "",
       "note": ""
     },

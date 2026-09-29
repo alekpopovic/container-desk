@@ -1,3 +1,4 @@
+import { SupportDiagnostics } from "./components/SupportDiagnostics";
 import { NetworkInventory } from "./features/networks/NetworkInventory";
 import { VolumeInventory } from "./features/volumes/VolumeInventory";
 import { ImageInventory } from "./features/images/ImageInventory";
@@ -245,6 +246,10 @@ export default function App() {
           <DependencyDiagnostics
             preferences={snapshot}
             onSaved={setSnapshot}
+            demo={workspace.mode.mode === "demo"}
+          />
+          <SupportDiagnostics
+            key={workspace.mode.mode}
             demo={workspace.mode.mode === "demo"}
           />
           <SshDiscovery demo={workspace.mode.mode === "demo"} />

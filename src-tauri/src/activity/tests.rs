@@ -615,3 +615,36 @@ fn compose_intent_uses_same_host_lock_and_persists_all_unknown_before_one_dispat
         )
         .unwrap();
 }
+
+#[test]
+fn clearing_never_releases_a_live_operation_and_failed_clear_preserves_history() {
+    let disk = MemoryStorage::default();
+    let fail = Arc::new(AtomicBool::new(false));
+    let activity = Activities::load(Box::new(Failing {
+        disk: disk.clone(),
+        fail: fail.clone(),
+    }))
+    .unwrap();
+    let mut policy = managed();
+    let req = request(&mut policy);
+    let owner = activity.begin(&mut policy, req).unwrap();
+    assert_eq!(activity.clear().unwrap_err().code, ErrorCode::ResourceLimit);
+    drop(owner);
+    let before = activity.records().unwrap();
+    fail.store(true, Ordering::SeqCst);
+    assert_eq!(
+        activity.clear().unwrap_err().code,
+        ErrorCode::StorageUnavailable
+    );
+    assert_eq!(activity.records().unwrap(), before);
+    fail.store(false, Ordering::SeqCst);
+    activity.clear().unwrap();
+    assert!(activity.records().unwrap().is_empty());
+    assert!(
+        Activities::load(Box::new(disk))
+            .unwrap()
+            .records()
+            .unwrap()
+            .is_empty()
+    );
+}

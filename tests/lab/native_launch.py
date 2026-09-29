@@ -42,7 +42,7 @@ def close_window(window):
         x.XCloseDisplay(display)
 
 
-def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, *_unused):
+def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, *_unused, support=False):
     artifacts = artifacts or root / 'launch-artifacts'
     artifacts.mkdir(parents=True, exist_ok=True)
     owned_home = root / 'Korisnik Željko 日本語'
@@ -63,10 +63,21 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, *_
     with socket.socket(socket.AF_UNIX) as agent:
         agent.bind(str(stale))
     data = owned_home / 'Podaci aplikacije'
+    if support:
+        # Synthetic history only: no remote mutation is executed by this test.
+        history=data/'dev.containerdesk.app/activity'
+        history.mkdir(parents=True,mode=0o700)
+        (history/'history.json').write_text(json.dumps({'schemaVersion':2,'records':[{'id':'i_'+'1'*32,'hostId':'h_'+'2'*32,'action':'stop','targets':['a'*64],'startedAtMs':1000,'updatedAtMs':1399,'outcome':'failed','results':[{'containerId':'a'*64,'outcome':'failed','dispatched':True,'error':'operation_timed_out'}]}]}))
+        for name in ('id_ed25519','known_hosts'):
+            (config_dir/name).write_text('SYNTHETIC_043_SECRET_'+name)
+        native_bin=root/'desktop-bin'
+        native_bin.mkdir(mode=0o700)
+        (native_bin/'bwrap').symlink_to('/usr/bin/bwrap')
     # A deliberately minimal launch environment, not a modified copy of the developer shell.
     env = {'HOME': str(owned_home), 'XDG_DATA_HOME': str(data), 'PATH': '/nonexistent',
            'LANG': 'C.UTF-8', 'DISPLAY': os.environ['DISPLAY'], 'GDK_BACKEND': 'x11',
            'LIBGL_ALWAYS_SOFTWARE': '1', 'SSH_AUTH_SOCK': str(stale)}
+    if support: env['PATH']=str(native_bin)
     if 'XAUTHORITY' in os.environ:
         env['XAUTHORITY'] = os.environ['XAUTHORITY']
 
@@ -86,18 +97,26 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, *_
                 while time.monotonic()<end:
                     if script(condition): return
                     time.sleep(.1)
+                screenshot('native-launch-timeout.png')
+                print('Native support state:',script('return {support:document.querySelector(".support-panel > [role=status]")?.textContent,buttons:Array.from(document.querySelectorAll(".support-panel button"),b=>({text:b.textContent,disabled:b.disabled})),click:window.__launchClick}'),flush=True)
                 raise AssertionError('Native launch condition failed: '+condition)
             def element(xpath): return command('POST','/element',{'using':'xpath','value':xpath})[ELEMENT]
             def click(xpath):
                 node=element(xpath)
                 command('POST','/execute/sync',{'script':'arguments[0].scrollIntoView({block:"center",behavior:"instant"})','args':[{ELEMENT:node}]})
                 time.sleep(.2)
-                command('POST',f'/element/{node}/click',{})
+                command('POST','/execute/sync',{'script':'const target=arguments[0]; window.__launchClick=null; document.addEventListener("click",event=>window.__launchClick={trusted:event.isTrusted,matched:target.contains(event.target)},{capture:true,once:true})','args':[{ELEMENT:node}]})
+                for _ in range(3):
+                    command('POST','/execute/async',{'script':'const done=arguments[arguments.length-1];requestAnimationFrame(()=>requestAnimationFrame(()=>done(true)));','args':[]})
+                    command('POST',f'/element/{node}/click',{})
+                    delivered=script('return window.__launchClick')
+                    if delivered is not None: break
+                assert delivered and delivered['trusted'] and delivered['matched'], 'Native click was not delivered to '+xpath
             def button(name):
-                wait('return Array.from(document.querySelectorAll("button")).some(b=>b.textContent.trim()==='+json.dumps(name)+' && !b.disabled)')
-                click('//button[normalize-space(.)='+json.dumps(name)+']')
+                wait('return Array.from(document.querySelectorAll("button")).some(b=>b.textContent.trim()==='+json.dumps(name,ensure_ascii=False)+' && !b.disabled)')
+                click('//button[normalize-space(.)='+json.dumps(name,ensure_ascii=False)+']')
             def fill(label,value):
-                node=element('//label[normalize-space(text())='+json.dumps(label)+']/input')
+                node=element('//label[normalize-space(text())='+json.dumps(label,ensure_ascii=False)+']/input')
                 command('POST',f'/element/{node}/clear',{})
                 command('POST',f'/element/{node}/value',{'text':value})
             def settings(): click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Settings"]')
@@ -112,6 +131,12 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, *_
                     wait('return document.body.innerText.includes("Local settings are unavailable")')
                     settings()
                     assert script('return document.querySelector("#ssh-executable").disabled')
+                    if support:
+                        button('Prepare support preview')
+                        wait('return !!document.querySelector(".support-preview")')
+                        report=json.loads(script('return document.querySelector(".support-preview").value'))
+                        assert report['transport']['executable']=='unavailable'
+                        assert {'source':'preferences','code':'storage_unavailable'} in report['sourceErrors']
                     screenshot('native-denied-storage.png')
                     print('PASS native permission-denied settings lock: explicit storage notice, saving disabled, original retained, no fallback settings writes.',flush=True)
                     return
@@ -143,6 +168,9 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, *_
                     button('Disconnect saved host')
                     wait('return document.querySelector(".saved-host-details")?.innerText.includes("Disconnected · SSH session")')
                     print('PASS native minimal desktop environment: '+alias+'; configured absolute SSH, Unicode config/home/data, real Engine identity when authenticated.',flush=True)
+                if support:
+                    from native_support import verify as verify_support
+                    verify_support(root,artifacts,environment,data,config_dir,engine,script,command,click,button,wait,settings,screenshot)
             finally:
                 if session:
                     try: request('DELETE',f'/session/{session}')
@@ -178,7 +206,7 @@ def verify(root, tauri_driver, webkit_driver, config, engine, artifacts=None, *_
             time.sleep(.1)
         assert len(owned)==1
         window,pid,environ=owned[0]
-        assert b'PATH=/nonexistent' in environ
+        assert ('PATH='+env['PATH']).encode() in environ
         assert ('HOME='+str(owned_home)).encode() in environ
         time.sleep(2)
         subprocess.run(['/usr/bin/import','-window',window,str(artifacts/'native-desktop-launcher.png')],env=env,check=True,timeout=10)

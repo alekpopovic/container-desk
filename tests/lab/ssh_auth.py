@@ -33,6 +33,7 @@ def native_test(executable, name, env):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--support", action="store_true", help="043 native support report Save/Cancel and local clearing; requires --launch")
     parser.add_argument("--launch", action="store_true", help="042 minimal-environment GUI/desktop launch; requires --engine and native drivers")
     parser.add_argument("--engine", action="store_true", help="Run a real isolated empty Docker Engine in the SSH target")
     parser.add_argument("--listing", action="store_true", help="Seed two metadata-only containers in the private Engine for listing checks")
@@ -45,6 +46,8 @@ def main():
     parser.add_argument("--native-driver", type=Path, help="Optional external tauri-driver executable for the real native UI journey")
     parser.add_argument("--webkit-driver", type=Path, help="WebKitWebDriver executable, required with --native-driver")
     args = parser.parse_args()
+    if args.support and not args.launch:
+        parser.error("--support requires --launch")
     if args.launch and not (args.engine and args.native_driver and args.webkit_driver):
         parser.error("--launch requires --engine and native drivers")
     if args.volumes and not args.inventory:
@@ -316,7 +319,7 @@ def main():
                     from native_launch import verify
                 else:
                     from native_ssh import verify
-                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect, args.compose, args.images, args.volumes)
+                verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect, args.compose, args.images, args.volumes, **({"support":args.support} if args.launch else {}))
             assert not marker.exists()
             assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}
             print(f"PASS: {len(cases)} native SSH cases; config/trust hashes unchanged; no askpass invoked", flush=True)

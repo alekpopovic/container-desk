@@ -667,3 +667,25 @@ pub async fn close_terminal(
 ) -> Result<(), AppError> {
     backend.close_terminal(request).await
 }
+
+#[tauri::command]
+pub fn prepare_support_report(
+    backend: tauri::State<'_, Backend>,
+) -> Result<SupportPreview, AppError> {
+    backend.prepare_support_report()
+}
+#[tauri::command]
+pub async fn save_support_report(
+    window: tauri::WebviewWindow,
+    backend: tauri::State<'_, Backend>,
+    request: SaveSupportRequest,
+) -> Result<bool, AppError> {
+    backend.save_support_report(window, request).await
+}
+#[tauri::command]
+pub fn clear_support_data(
+    backend: tauri::State<'_, Backend>,
+    request: ClearSupportRequest,
+) -> Result<(), AppError> {
+    backend.clear_support_data(request)
+}

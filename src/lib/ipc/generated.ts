@@ -1,4 +1,7 @@
 // Generated from src-tauri/src/domain.rs with ts-rs. Do not edit.
+export type SupportPreview = { id: string, report: string, expiresInSeconds: number, };
+export type SaveSupportRequest = { previewId: string, };
+export type ClearSupportRequest = { confirmed: boolean, };
 export type HostId = string;
 export type SessionId = string;
 export type ContainerId = string;

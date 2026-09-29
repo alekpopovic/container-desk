@@ -28,7 +28,7 @@ const messages: Record<ErrorCode, string> = {
     "Choose an absolute local SSH config path or use the default.",
   invalid_generation: "Invalid session or selection generation.",
   export_failed:
-    "The selected log file could not be saved. Choose a writable regular file location.",
+    "The selected export file could not be saved. Choose a writable regular file location.",
   log_driver_unsupported:
     "This container logging driver does not support reading logs.",
   container_not_found: "The container no longer exists. Refresh the inventory.",
@@ -2307,4 +2307,35 @@ export async function resizeTerminal(
     sameScope(request.scope, current()),
   );
   if (value !== null) throw new IpcError("invalid_response");
+}
+
+export async function prepareSupportReport(): Promise<
+  import("./generated.ts").SupportPreview
+> {
+  const value = await call("prepare_support_report");
+  if (
+    !record(value) ||
+    Object.keys(value).sort().join(",") !== "expiresInSeconds,id,report" ||
+    typeof value.id !== "string" ||
+    !/^[a-f0-9]{32}$/.test(value.id) ||
+    !text(value.report, 65536) ||
+    new TextEncoder().encode(value.report).length > 65536 ||
+    value.expiresInSeconds !== 300
+  )
+    throw new IpcError("invalid_response");
+  try {
+    JSON.parse(value.report);
+  } catch {
+    throw new IpcError("invalid_response");
+  }
+  return value as unknown as import("./generated.ts").SupportPreview;
+}
+export async function saveSupportReport(previewId: string): Promise<boolean> {
+  if (!/^[a-f0-9]{32}$/.test(previewId)) throw new IpcError("invalid_intent");
+  const value = await call("save_support_report", { previewId });
+  if (typeof value !== "boolean") throw new IpcError("invalid_response");
+  return value;
+}
+export async function clearSupportData(): Promise<void> {
+  await call("clear_support_data", { confirmed: true });
 }

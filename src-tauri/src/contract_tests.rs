@@ -39,6 +39,9 @@ fn generated_contract_is_current() {
         output.push_str("export "); output.push_str(&<$type>::decl(&config).lines().map(str::trim_end).collect::<Vec<_>>().join("\n")); output.push('\n');
     )* }; }
     export!(
+        SupportPreview,
+        SaveSupportRequest,
+        ClearSupportRequest,
         HostId,
         SessionId,
         ContainerId,

@@ -7,6 +7,7 @@ use crate::{
 use std::sync::{Arc, Mutex};
 mod compose_actions;
 mod inventory;
+mod support;
 mod terminal;
 
 /// Resource operations remain behind identity gates. Local version probes are separately bounded.
@@ -27,6 +28,7 @@ pub struct Backend {
     settings: Mutex<Result<SettingsStore, AppError>>,
     diagnostic_slot: Arc<tokio::sync::Semaphore>,
     export_slot: tokio::sync::Semaphore,
+    support_preview: Mutex<crate::support::PreviewStore>,
     stats_slots: crate::docker::stats::Slots,
     read_hosts: crate::ssh::read_limits::Slots,
     workspace: Mutex<WorkspaceTransport>,
@@ -54,6 +56,7 @@ impl Backend {
             compose_verified: Default::default(),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             export_slot: tokio::sync::Semaphore::new(1),
+            support_preview: Mutex::new(Default::default()),
             stats_slots: Default::default(),
             read_hosts: crate::ssh::read_limits::Slots::new(2),
             workspace: Mutex::new(WorkspaceTransport::default()),
@@ -1263,6 +1266,7 @@ impl Default for Backend {
             >::default()),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             export_slot: tokio::sync::Semaphore::new(1),
+            support_preview: Mutex::new(Default::default()),
             stats_slots: Default::default(),
             read_hosts: crate::ssh::read_limits::Slots::new(2),
             workspace: Mutex::new(WorkspaceTransport::default()),

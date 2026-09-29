@@ -3,6 +3,9 @@ fn main() {
         tauri_build::AppManifest::new().commands(&[
             "app_version",
             "get_activity",
+            "prepare_support_report",
+            "save_support_report",
+            "clear_support_data",
             "set_management",
             "get_management",
             "cancel_mutation",

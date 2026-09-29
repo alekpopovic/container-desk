@@ -5,6 +5,7 @@ mod log_export;
 pub mod policy;
 pub mod ssh;
 mod storage;
+mod support;
 pub mod transport;
 use tauri::Manager;
 mod backend;
@@ -27,6 +28,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::app_version,
             commands::get_activity,
+            commands::prepare_support_report,
+            commands::save_support_report,
+            commands::clear_support_data,
             commands::set_management,
             commands::get_management,
             commands::cancel_mutation,

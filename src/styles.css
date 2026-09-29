@@ -1032,7 +1032,8 @@ legend {
   font-size: 12px;
   tab-size: 4;
 }
-.log-export {
+.log-export,
+.support-confirmation {
   max-width: min(720px, 90vw);
   max-height: 85vh;
   overflow: auto;
@@ -1042,7 +1043,8 @@ legend {
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
-.log-export::backdrop {
+.log-export::backdrop,
+.support-confirmation::backdrop {
   background: #0009;
 }
 .log-export pre {
@@ -1456,4 +1458,33 @@ legend {
 }
 .terminal-status {
   font-weight: 600;
+}
+
+.support-panel {
+  margin-block: 2rem;
+}
+.support-panel > p {
+  margin-block: 1rem;
+}
+.support-preview {
+  width: 100%;
+  resize: vertical;
+  max-height: 28rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.support-confirmation {
+  margin: auto;
+}
+.support-confirmation p {
+  margin-block: 1rem;
+}
+.support-confirmation button + button {
+  margin-inline-start: 0.5rem;
+  margin-block-start: 0.5rem;
 }

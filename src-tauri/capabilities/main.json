@@ -6,6 +6,9 @@
   "permissions": [
     "allow-app-version",
     "allow-get-activity",
+    "allow-prepare-support-report",
+    "allow-save-support-report",
+    "allow-clear-support-data",
     "allow-set-management",
     "allow-get-management",
     "allow-cancel-mutation",

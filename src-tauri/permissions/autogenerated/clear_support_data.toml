@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-clear-support-data"
+description = "Enables the clear_support_data command without any pre-configured scope."
+commands.allow = ["clear_support_data"]
+
+[[permission]]
+identifier = "deny-clear-support-data"
+description = "Denies the clear_support_data command without any pre-configured scope."
+commands.deny = ["clear_support_data"]

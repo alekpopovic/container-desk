@@ -248,6 +248,18 @@ impl Activities {
             })),
         })
     }
+    pub fn clear(&self) -> Result<(), AppError> {
+        let mut state = self.state.lock().map_err(|_| storage_error())?;
+        if !state.active.is_empty() {
+            return Err(AppError::new(ErrorCode::ResourceLimit));
+        }
+        state.persist(History {
+            schema_version: 2,
+            records: vec![],
+        })?;
+        state.persistence_failed = false;
+        Ok(())
+    }
     pub fn records(&self) -> Result<Vec<ActivityRecord>, AppError> {
         Ok(self
             .state

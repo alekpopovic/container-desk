@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T07:37:40+00:00
+Updated: 2026-09-29T07:56:37+00:00
 
-blocked: **0** | done: **42** | in_progress: **0** | pending: **18**
+blocked: **0** | done: **43** | in_progress: **0** | pending: **17**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -52,7 +52,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 040 | 05 Terminal and resilience | Terminal UI with bounded lifecycle | high | done | codex/tracking/evidence/040.md |
 | 041 | 05 Terminal and resilience | Sleep wake network loss and graceful shutdown | high | done | codex/tracking/evidence/041.md |
 | 042 | 05 Terminal and resilience | Cross-platform GUI launch and SSH agent behavior | high | done | codex/tracking/evidence/042.md |
-| 043 | 05 Terminal and resilience | Support diagnostics and redacted export | high | pending | — |
+| 043 | 05 Terminal and resilience | Support diagnostics and redacted export | high | done | codex/tracking/evidence/043.md |
 | 044 | 05 Terminal and resilience | Accessibility themes and keyboard workflow | medium | pending | — |
 | 045 | 05 Terminal and resilience | Large inventories and stream pressure | high | pending | — |
 | 046 | 05 Terminal and resilience | Feature-complete desktop checkpoint | high | pending | — |
@@ -158,3 +158,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T07:30:08+00:00 — 041: done; Pinned npm check: 83 passed; Rust: 140 passed; browser: 42 passed; actual native network/master/exit and PTY/fallback checkpoints: PASS, owned processes reaped in 0.117 seconds
 - 2026-09-29T07:30:28+00:00 — 042: start;
 - 2026-09-29T07:37:40+00:00 — 042: done; 83 Node and 141 Rust tests passed; actual Linux gio launch, Unicode paths, settings permission denial, 16 SSH auth cases and real Engine/native agent journey passed; macOS explicitly pending
+- 2026-09-29T07:38:06+00:00 — 043: start;
+- 2026-09-29T07:56:37+00:00 — 043: done; 85 Node and 147 Rust tests passed; 12 browser checks plus six final dialog checks; actual native GTK Save/Cancel and clear passed with exact private JSON and unchanged SSH-file hashes

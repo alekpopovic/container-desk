@@ -216,7 +216,7 @@ impl AppError {
             ErrorCode::InvalidId => "Invalid resource identifier.",
             ErrorCode::InvalidGeneration => "Invalid session or selection generation.",
             ErrorCode::ExportFailed => {
-                "The selected log file could not be saved. Choose a writable regular file location."
+                "The selected export file could not be saved. Choose a writable regular file location."
             }
             ErrorCode::LogDriverUnsupported => {
                 "This container logging driver does not support reading logs."
@@ -1800,4 +1800,25 @@ impl std::fmt::Debug for TerminalOutput {
             .field("bytes", &self.bytes.len())
             .finish_non_exhaustive()
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SupportPreview {
+    pub id: String,
+    pub report: String,
+    pub expires_in_seconds: u32,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct SaveSupportRequest {
+    pub preview_id: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ClearSupportRequest {
+    pub confirmed: bool,
 }
