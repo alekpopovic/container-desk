@@ -39,7 +39,7 @@ test("shortcuts and accessible paging survive 200 percent text and reduced motio
   await page.evaluate(() => {
     document.documentElement.style.fontSize = "175%";
   });
-  await page.keyboard.press("Control+f");
+  await page.keyboard.press("ControlOrMeta+f");
   await expect(
     page.getByRole("searchbox", { name: "Search containers" }),
   ).toBeFocused();
@@ -77,7 +77,7 @@ test("shortcuts and accessible paging survive 200 percent text and reduced motio
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.keyboard.press("Control+r");
+  await page.keyboard.press("ControlOrMeta+r");
   await expect(
     page.getByRole("button", { name: "Refresh containers" }),
   ).toBeEnabled();

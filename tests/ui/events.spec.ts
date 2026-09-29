@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 test("event bursts stay bounded; snapshots determine deletion, gap reconnect reads again and scope disposal stops", async ({
   page,
 }) => {
-  await page.clock.install();
+  await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
+  // Installation alone keeps time running; pause before mounting the fixture.
+  await page.clock.pauseAt(new Date("2026-01-01T00:00:01Z"));
   await page.goto("/tests/ui/fixture.html?state=events");
   await expect(page.getByLabel("Starts", { exact: true })).toHaveText("1");
   await page.clock.runFor(600);
@@ -35,7 +37,9 @@ test("event bursts stay bounded; snapshots determine deletion, gap reconnect rea
 test("foreground/network recovery coalesces and suspended clock requests a fresh snapshot", async ({
   page,
 }) => {
-  await page.clock.install();
+  await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
+  // Installation alone keeps time running; pause before mounting the fixture.
+  await page.clock.pauseAt(new Date("2026-01-01T00:00:01Z"));
   await page.goto("/tests/ui/fixture.html?state=events");
   await expect(page.getByLabel("Starts", { exact: true })).toHaveText("1");
   await page.clock.runFor(600);

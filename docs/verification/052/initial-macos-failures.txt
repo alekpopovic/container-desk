@@ -1,0 +1,20 @@
+    Expected: focused
+    Received: inactive
+    Expected: focused
+    Received: inactive
+    Expected: focused
+    Received: inactive
+    Expected: "3"
+    Received: "4"
+    Expected: focused
+    Received: inactive
+    Expected: "3"
+    Received: "4"
+    Expected: focused
+    Received: inactive
+    Expected: "3"
+    Received: "4"
+    Expected: focused
+    Received: inactive
+  9 failed
+  339 passed (3.9m)

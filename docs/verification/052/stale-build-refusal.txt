@@ -1,0 +1,8 @@
+Mismatched production SHA-256 report: nonzero exit; no artifact output created.
+Traceback (most recent call last):
+  File "/home/popac/containerdesk/scripts/package_ci.py", line 107, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/home/popac/containerdesk/scripts/package_ci.py", line 62, in main
+    raise ValueError('Production build differs from verification; run checks again')
+ValueError: Production build differs from verification; run checks again
