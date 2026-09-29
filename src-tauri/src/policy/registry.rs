@@ -11,6 +11,8 @@ pub enum OperationCategory {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ResponseKind {
     ContainerList,
+    ContainerStats,
+    StatsState,
     ContainerDetail,
     ImageDetail,
     LogSnapshot,
@@ -21,6 +23,12 @@ pub enum ResponseKind {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReadOperation {
     ListContainers,
+    ContainerStats {
+        container_id: ContainerId,
+    },
+    StatsState {
+        container_id: ContainerId,
+    },
     InspectImage {
         image_id: ImageId,
     },
@@ -97,6 +105,42 @@ pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
             ResponseKind::ContainerList,
             30,
         ),
+        ReadOperation::ContainerStats { container_id } => {
+            container_id.validate()?;
+            plan(
+                &[
+                    "docker",
+                    "stats",
+                    "--no-stream",
+                    "--no-trunc",
+                    "--format",
+                    "{{json .}}",
+                    "--",
+                    &container_id.0,
+                ],
+                OperationCategory::Read,
+                ResponseKind::ContainerStats,
+                30,
+            )
+        }
+        ReadOperation::StatsState { container_id } => {
+            container_id.validate()?;
+            plan(
+                &[
+                    "docker",
+                    "inspect",
+                    "--type",
+                    "container",
+                    "--format",
+                    r#"{"running":{{json .State.Running}},"startedAt":{{json .State.StartedAt}}}"#,
+                    "--",
+                    &container_id.0,
+                ],
+                OperationCategory::Read,
+                ResponseKind::StatsState,
+                30,
+            )
+        }
         ReadOperation::InspectImage { image_id } => {
             image_id.validate()?;
             plan(

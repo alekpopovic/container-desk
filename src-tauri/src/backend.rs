@@ -20,6 +20,7 @@ pub struct Backend {
     settings: Mutex<Result<SettingsStore, AppError>>,
     diagnostic_slot: Arc<tokio::sync::Semaphore>,
     export_slot: tokio::sync::Semaphore,
+    stats_slots: crate::docker::stats::Slots,
     workspace: Mutex<WorkspaceTransport>,
     read_slots: Arc<tokio::sync::Semaphore>,
 }
@@ -40,6 +41,7 @@ impl Backend {
             settings: Mutex::new(settings),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             export_slot: tokio::sync::Semaphore::new(1),
+            stats_slots: Default::default(),
             workspace: Mutex::new(WorkspaceTransport::default()),
             read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
         }
@@ -613,6 +615,34 @@ impl Backend {
         }
         Ok(result)
     }
+    pub async fn container_stats(
+        &self,
+        request: ContainerStatsRequest,
+    ) -> Result<StatsSample, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(
+                &request.scope,
+                &ReadOperation::ContainerStats {
+                    container_id: request.container_id.clone(),
+                },
+            )?;
+        self.require_session(&request.scope)?;
+        let _host = self.stats_slots.acquire(&request.scope.selection.host_id)?;
+        let _read = self
+            .read_slots
+            .try_acquire()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let result = self.sessions.stats(&request).await;
+        self.require_session(&request.scope)?;
+        let sample = result?;
+        if sample.scope != request.scope || sample.container_id != request.container_id {
+            return Err(AppError::new(ErrorCode::InvalidResponse).in_scope(&request.scope));
+        }
+        Ok(sample)
+    }
     pub fn prepare_confirmation(
         &self,
         request: PrepareConfirmationRequest,
@@ -781,6 +811,7 @@ impl Default for Backend {
             settings: Mutex::new(Ok(crate::storage::tests::memory_store())),
             diagnostic_slot: Arc::new(tokio::sync::Semaphore::new(1)),
             export_slot: tokio::sync::Semaphore::new(1),
+            stats_slots: Default::default(),
             workspace: Mutex::new(WorkspaceTransport::default()),
             read_slots: Arc::new(tokio::sync::Semaphore::new(4)),
         }

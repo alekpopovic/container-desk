@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T01:13:43+00:00",
+  "updated_at": "2026-09-29T01:34:18+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -868,6 +868,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T01:14:13+00:00",
+      "id": "026",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T01:34:18+00:00",
+      "id": "026",
+      "action": "done",
+      "note": "PASS: 102 Rust, 45 IPC, 54 browser checks; clippy/fmt and Linux build; actual native stats charts/pause, SSH/Docker running/stopped/disappearance/concurrency/disconnect tests",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T01:14:13+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1199,12 +1233,14 @@
       "note": ""
     },
     "026": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T01:14:13+00:00",
+      "finished_at": "2026-09-29T01:34:18+00:00",
+      "evidence": "codex/tracking/evidence/026.md",
+      "evidence_sha256": "c60a836076579383a5975ca2a3b2202b0365964df4a29c0b2474d713605f23c4",
+      "checks": [
+        "PASS: 102 Rust, 45 IPC, 54 browser checks; clippy/fmt and Linux build; actual native stats charts/pause, SSH/Docker running/stopped/disappearance/concurrency/disconnect tests"
+      ],
       "commit": "",
       "note": ""
     },

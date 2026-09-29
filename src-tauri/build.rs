@@ -17,6 +17,7 @@ fn main() {
             "set_ssh_executable",
             "inspect_container",
             "container_logs",
+            "container_stats",
             "follow_container_logs",
             "ack_container_logs",
             "export_container_logs",

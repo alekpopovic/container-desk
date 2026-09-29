@@ -23,13 +23,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--sshd-root', type=Path, required=True, help='Extracted Ubuntu openssh-server package root; no system install')
     parser.add_argument('--stream', action='store_true')
+    parser.add_argument('--stats', action='store_true', help='Check stats with the same owned workloads; requires --stream')
     parser.add_argument('--native-driver', type=Path)
     parser.add_argument('--webkit-driver', type=Path)
     parser.add_argument('--native-artifacts', type=Path)
     parser.add_argument('--export-xdotool', type=Path)
+    parser.add_argument('--focus-xdotool', type=Path, help='Focus only the owned test window on an isolated X11 display')
     args = parser.parse_args()
     if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
         parser.error('Native driver flags require --stream and both driver paths')
+    if args.stats and not args.stream: parser.error('--stats requires --stream')
     with tempfile.TemporaryDirectory(prefix='containerdesk-logs-lab-') as directory:
         root = Path(directory)
         config = root / 'docker-config'
@@ -40,6 +43,7 @@ def main():
                 env.pop(key, None)
         docker = ['/usr/bin/docker', '--config', str(config), '--host', 'unix:///var/run/docker.sock']
         owned = []
+        removed = set()
         server = None
         watcher = None
         finished = threading.Event()
@@ -72,7 +76,7 @@ def main():
             # This fixture-only gate prevents tests from reading unrelated host resources or changing state.
             gate = REPO / 'tests/lab/logs_gate.py'
             server_config = root / 'sshd_config'
-            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY no\nForceCommand /usr/bin/python3 {gate} --config {config} --owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
+            server_config.write_text(f'ListenAddress 127.0.0.1\nPort {port}\nHostKey {root}/host\nPidFile {root}/pid\nAuthorizedKeysFile {root}/authorized_keys\nStrictModes no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nUsePAM no\nAllowUsers {user}\nAllowTcpForwarding no\nPermitTTY no\nForceCommand /usr/bin/python3 {gate} --config {config} --control {root} --owned {" ".join(owned)}\nSshdSessionPath {args.sshd_root}/usr/lib/openssh/sshd-session\nSshdAuthPath {args.sshd_root}/usr/lib/openssh/sshd-auth\n')
             public = (root / 'host.pub').read_text().split()
             known = root / 'known_hosts'
             known.write_text(f'[127.0.0.1]:{port} {public[0]} {public[1]}\n')
@@ -93,9 +97,15 @@ def main():
                 manifest.write_text(json.dumps({'config': str(ssh_config), 'containerId': owned[0], 'unsupportedId': owned[1], 'oracleStdout': str(root / 'oracle.stdout'), 'oracleStderr': str(root / 'oracle.stderr'), 'liveId': owned[-1] if args.stream else None}))
                 if args.stream and args.native_driver:
                     from native_logs import verify
-                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool)
+                    verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats)
                 def cut_network():
                     while not finished.wait(.05):
+                        if args.stats and (root / 'stats-dispatch').exists() and not (root / 'stats-removed').exists():
+                            target = (root / 'stats-dispatch').read_text()
+                            assert target == owned[-1], 'Removal controller only admits the owned live fixture'
+                            subprocess.run(docker + ['rm', '-f', '--', target], env=env, check=True, stdout=subprocess.DEVNULL, timeout=10)
+                            removed.add(target)
+                            (root / 'stats-removed').write_text('removed owned fixture')
                         if (root / 'cut-network').exists():
                             # Only descendants of our exact temporary sshd; no user SSH process is targeted.
                             children = {}
@@ -118,7 +128,7 @@ def main():
                 if args.stream:
                     watcher = threading.Thread(target=cut_network, daemon=True)
                     watcher.start()
-                checkpoint = 'checkpoint024_owned_stream' if args.stream else 'checkpoint023_owned_logs'
+                checkpoint = 'checkpoint026_owned_stats' if args.stats else 'checkpoint024_owned_stream' if args.stream else 'checkpoint023_owned_logs'
                 result = subprocess.run(['cargo', 'test', '--manifest-path', str(REPO / 'src-tauri/Cargo.toml'), '--locked', '--no-run', '--message-format=json'], env=env, capture_output=True, text=True, check=True, timeout=180)
                 executables = [json.loads(line)['executable'] for line in result.stdout.splitlines() if line.startswith('{') and json.loads(line).get('reason') == 'compiler-artifact' and json.loads(line).get('executable') and json.loads(line).get('target', {}).get('name') == 'containerdesk_lib' and json.loads(line).get('profile', {}).get('test') is True]
                 assert len(executables) == 1
@@ -132,7 +142,7 @@ def main():
                     print(checked.stderr)
                     raise RuntimeError('Native log checkpoint failed')
             assert hashlib.sha256(known.read_bytes()).hexdigest() == before
-            print('PASS: native streaming/cancellation/network-loss checkpoint; strict client trust unchanged.' if args.stream else 'PASS: real exited fixture logs match independent native Docker CLI; unsupported driver, UTF-8/line bounds; no raw synthetic log in app diagnostics; strict client trust unchanged.')
+            print('PASS: stats running/stopped/disappeared/concurrent/disconnect checks; strict client trust unchanged.' if args.stats else 'PASS: native streaming/cancellation/network-loss checkpoint; strict client trust unchanged.' if args.stream else 'PASS: real exited fixture logs match independent native Docker CLI; unsupported driver, UTF-8/line bounds; no raw synthetic log in app diagnostics; strict client trust unchanged.')
         finally:
             finished.set()
             if watcher: watcher.join(timeout=2)
@@ -141,6 +151,7 @@ def main():
                     os.killpg(server.pid, signal.SIGTERM)
                 server.wait(timeout=10)
             for ident in reversed(owned):
+                if ident in removed: continue
                 subprocess.run(docker + ['rm', '-f', '--', ident], env=env, check=True, stdout=subprocess.DEVNULL, timeout=10)
             print('Cleaned only owned log containers, loopback sshd and temporary keys/data.')
 

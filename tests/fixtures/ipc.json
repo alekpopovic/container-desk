@@ -241,6 +241,39 @@
     },
     "writable": true
   },
+  "stats": {
+    "availability": "available",
+    "capturedAtMs": 1770000000000.0,
+    "containerId": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "raw": {
+      "block": "4KiB / 5B",
+      "cpu": "234.5%",
+      "memory": "2MiB / 64MiB",
+      "memoryPercent": "3.125%",
+      "network": "1.2kB / 3MB",
+      "pids": "7"
+    },
+    "scope": {
+      "daemonId": "fixture-daemon",
+      "selection": {
+        "hostId": "h_11111111111111111111111111111111",
+        "selectionGeneration": 7
+      },
+      "sessionGeneration": 3,
+      "sessionId": "s_22222222222222222222222222222222"
+    },
+    "values": {
+      "blockReadBytes": 4096.0,
+      "blockWriteBytes": 5.0,
+      "cpuPercent": 234.5,
+      "memoryLimitBytes": 67108864.0,
+      "memoryPercent": 3.125,
+      "memoryUsageBytes": 2097152.0,
+      "networkRxBytes": 1200.0,
+      "networkTxBytes": 3000000.0,
+      "pids": 7
+    }
+  },
   "success": {
     "containers": [
       {

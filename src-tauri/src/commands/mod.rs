@@ -481,3 +481,11 @@ pub async fn export_container_logs(
 ) -> Result<ExportLogsResponse, AppError> {
     backend.export_logs(window, request).await
 }
+
+#[tauri::command]
+pub async fn container_stats(
+    backend: tauri::State<'_, Backend>,
+    request: ContainerStatsRequest,
+) -> Result<StatsSample, AppError> {
+    backend.container_stats(request).await
+}

@@ -1263,3 +1263,77 @@ export async function exportContainerLogs(
     throw new IpcError("invalid_response");
   return result as import("./generated.ts").ExportLogsResponse;
 }
+
+export async function containerStats(
+  request: import("./generated.ts").ContainerStatsRequest,
+  current: () => SessionScope | null,
+): Promise<import("./generated.ts").StatsSample> {
+  const result = await call("container_stats", request, () =>
+    sameScope(request.scope, current()),
+  );
+  if (
+    !record(result) ||
+    !scope(result.scope) ||
+    !sameScope(request.scope, result.scope) ||
+    result.containerId !== request.containerId ||
+    typeof result.capturedAtMs !== "number" ||
+    !Number.isSafeInteger(result.capturedAtMs) ||
+    result.capturedAtMs <= 0 ||
+    !["available", "stopped", "missing", "unavailable"].includes(
+      String(result.availability),
+    ) ||
+    !record(result.values) ||
+    !record(result.raw)
+  )
+    throw new IpcError("invalid_response");
+  for (const field of [
+    "cpuPercent",
+    "memoryUsageBytes",
+    "memoryLimitBytes",
+    "memoryPercent",
+    "networkRxBytes",
+    "networkTxBytes",
+    "blockReadBytes",
+    "blockWriteBytes",
+    "pids",
+  ]) {
+    const value = result.values[field];
+    const max =
+      field === "pids"
+        ? 0xffffffff
+        : field.endsWith("Percent")
+          ? 1_000_000
+          : Number.MAX_SAFE_INTEGER;
+    if (
+      value !== null &&
+      (typeof value !== "number" ||
+        !Number.isFinite(value) ||
+        value < 0 ||
+        value > max ||
+        (field === "pids" && !Number.isInteger(value)))
+    )
+      throw new IpcError("invalid_response");
+    if (result.availability !== "available" && value !== null)
+      throw new IpcError("invalid_response");
+  }
+  for (const field of [
+    "cpu",
+    "memory",
+    "memoryPercent",
+    "network",
+    "block",
+    "pids",
+  ]) {
+    const raw = result.raw[field];
+    if (
+      raw !== null &&
+      (!text(raw, 128) ||
+        [...raw].some((char) => {
+          const code = char.codePointAt(0) ?? 0;
+          return code < 32 || (code >= 127 && code <= 159);
+        }))
+    )
+      throw new IpcError("invalid_response");
+  }
+  return result as import("./generated.ts").StatsSample;
+}

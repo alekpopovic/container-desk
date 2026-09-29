@@ -101,6 +101,11 @@ export type LogSnapshot = { scope: SessionScope, containerId: ContainerId,
  * Timestamp order when available; ties retain channel order, not guaranteed transport order.
  */
 records: Array<LogRecord>, truncated: boolean, droppedRecords: number, stderrAmbiguous: boolean, };
+export type ContainerStatsRequest = { scope: SessionScope, containerId: ContainerId, };
+export type StatsAvailability = "available" | "stopped" | "missing" | "unavailable";
+export type StatsValues = { cpuPercent: number | null, memoryUsageBytes: number | null, memoryLimitBytes: number | null, memoryPercent: number | null, networkRxBytes: number | null, networkTxBytes: number | null, blockReadBytes: number | null, blockWriteBytes: number | null, pids: number | null, };
+export type StatsRaw = { cpu: string | null, memory: string | null, memoryPercent: string | null, network: string | null, block: string | null, pids: string | null, };
+export type StatsSample = { scope: SessionScope, containerId: ContainerId, capturedAtMs: number, availability: StatsAvailability, values: StatsValues, raw: StatsRaw, };
 export type LogChannel = "stdout" | "stderr_ambiguous";
 export type LogRecord = { text: string, timestamp: string | null, channel: LogChannel, truncated: boolean, invalidUtf8: boolean, };
 export type FollowLogsRequest = { scope: SessionScope, containerId: ContainerId, tail: number, since: string | null, };

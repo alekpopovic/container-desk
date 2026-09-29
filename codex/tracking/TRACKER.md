@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T01:13:43+00:00
+Updated: 2026-09-29T01:34:18+00:00
 
-blocked: **0** | done: **25** | in_progress: **0** | pending: **35**
+blocked: **0** | done: **26** | in_progress: **0** | pending: **34**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -35,7 +35,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 023 | 03 Read-only MVP | Bounded log snapshot retrieval | high | done | codex/tracking/evidence/023.md |
 | 024 | 03 Read-only MVP | Live log subscriptions and cancellation | high | done | codex/tracking/evidence/024.md |
 | 025 | 03 Read-only MVP | Log viewer usability and export | medium | done | codex/tracking/evidence/025.md |
-| 026 | 03 Read-only MVP | Container resource statistics | high | pending | — |
+| 026 | 03 Read-only MVP | Container resource statistics | high | done | codex/tracking/evidence/026.md |
 | 027 | 03 Read-only MVP | Docker event stream and inventory invalidation | high | pending | — |
 | 028 | 03 Read-only MVP | Read refresh scheduling and stale data | high | pending | — |
 | 029 | 03 Read-only MVP | Compose project discovery and read views | high | pending | — |
@@ -124,3 +124,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T00:24:53+00:00 — 025: start;
 - 2026-09-29T01:02:05+00:00 — 025: start;
 - 2026-09-29T01:13:43+00:00 — 025: done; PASS: 98 Rust, 42 IPC/buffer, 48 browser checks, Linux release build and clippy/fmt; real native GTK Save/Cancel, exact ordered selected file/clipboard, private permissions and owned SSH cleanup
+- 2026-09-29T01:14:13+00:00 — 026: start;
+- 2026-09-29T01:34:18+00:00 — 026: done; PASS: 102 Rust, 45 IPC, 54 browser checks; clippy/fmt and Linux build; actual native stats charts/pause, SSH/Docker running/stopped/disappearance/concurrency/disconnect tests

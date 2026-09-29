@@ -1180,3 +1180,61 @@ pub struct ExportLogsResponse {
     pub saved: bool,
     pub line_count: u32,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ContainerStatsRequest {
+    pub scope: SessionScope,
+    pub container_id: ContainerId,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum StatsAvailability {
+    Available,
+    Stopped,
+    Missing,
+    Unavailable,
+}
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct StatsValues {
+    pub cpu_percent: Option<f64>,
+    pub memory_usage_bytes: Option<f64>,
+    pub memory_limit_bytes: Option<f64>,
+    pub memory_percent: Option<f64>,
+    pub network_rx_bytes: Option<f64>,
+    pub network_tx_bytes: Option<f64>,
+    pub block_read_bytes: Option<f64>,
+    pub block_write_bytes: Option<f64>,
+    pub pids: Option<u32>,
+}
+#[derive(Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct StatsRaw {
+    pub cpu: Option<String>,
+    pub memory: Option<String>,
+    pub memory_percent: Option<String>,
+    pub network: Option<String>,
+    pub block: Option<String>,
+    pub pids: Option<String>,
+}
+impl std::fmt::Debug for StatsRaw {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("StatsRaw { transient metric strings omitted }")
+    }
+}
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct StatsSample {
+    pub scope: SessionScope,
+    pub container_id: ContainerId,
+    pub captured_at_ms: f64,
+    pub availability: StatsAvailability,
+    pub values: StatsValues,
+    pub raw: StatsRaw,
+}

@@ -9,6 +9,7 @@ pub(crate) mod inspect;
 pub mod listing;
 pub(crate) mod logs;
 pub(crate) mod probe;
+pub(crate) mod stats;
 
 #[derive(Clone, Debug, Default)]
 pub struct DockerCommandConfig {

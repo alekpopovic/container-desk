@@ -1,4 +1,6 @@
 import { useMemo, useRef, useState } from "react";
+import { ContainerStats } from "../stats/ContainerStats";
+import { StatsHistory } from "../stats/sampling";
 import { LiveLogs } from "../logs/LiveLogs";
 import { ContainerDetails } from "./ContainerDetails";
 import type { ContainerSummary } from "../../lib/ipc/generated";
@@ -68,6 +70,7 @@ export function ContainerInventory({
   select: (id: string) => void;
   inspectEnabled?: boolean;
 }) {
+  const [statsHistory] = useState(() => new StatsHistory());
   const [search, setSearch] = useState("");
   const [state, setState] = useState("all");
   const [sort, setSort] = useState<{ column: Column; ascending: boolean }>({
@@ -380,6 +383,14 @@ export function ContainerInventory({
           </div>
         )}
       </aside>
+      {chosen && inspectEnabled && !view.stale && view.scope && (
+        <ContainerStats
+          key={JSON.stringify([view.scope, chosen.id])}
+          scope={view.scope}
+          id={chosen.id}
+          history={statsHistory}
+        />
+      )}
       {chosen && inspectEnabled && !view.stale && view.scope && (
         <LiveLogs
           key={JSON.stringify([view.scope, chosen.id])}

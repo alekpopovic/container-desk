@@ -15,6 +15,7 @@
     "allow-set-ssh-executable",
     "allow-inspect-container",
     "allow-container-logs",
+    "allow-container-stats",
     "allow-follow-container-logs",
     "allow-ack-container-logs",
     "allow-export-container-logs",

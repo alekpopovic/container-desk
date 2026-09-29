@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -66,6 +66,15 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             result = request('POST', '/session', {'capabilities': {'alwaysMatch': {'browserName': 'wry', 'tauri:options': {'application': str(REPO / 'src-tauri/target/release/containerdesk')}}}})
             session = result['sessionId']
             command('POST', '/timeouts', {'implicit': 5000, 'script': 5000, 'pageLoad': 15000})
+            if stats and xdotool:
+                found = subprocess.run([str(xdotool), 'search', '--onlyvisible', '--name', '^ContainerDesk$'], env=env, capture_output=True, text=True, check=True, timeout=10).stdout.split()
+                owned_windows = []
+                for window in found:
+                    pid = subprocess.run([str(xdotool), 'getwindowpid', window], env=env, capture_output=True, text=True, check=True, timeout=10).stdout.strip()
+                    if f'XDG_DATA_HOME={root}/native-data'.encode() in Path('/proc', pid, 'environ').read_bytes().split(b'\x00'):
+                        owned_windows.append(window)
+                assert len(owned_windows) == 1
+                subprocess.run([str(xdotool), 'windowfocus', '--sync', owned_windows[0]], env=env, check=True, timeout=10)
             button('Add host')
             button('New host')
             fill('Host SSH config path', str(config))
@@ -78,6 +87,20 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Containers"]')
             wait('return document.querySelectorAll("[data-container-id]").length === 3')
             click(f'//tr[@data-container-id="{live_id}"]//button')
+            if stats:
+                wait('return document.querySelector(".container-stats")?.innerText.includes("Sample received")')
+                assert script('return document.querySelectorAll(".stats-chart polyline").length') == 2
+                script('document.querySelector(".container-stats").scrollIntoView({block:"center"})')
+                time.sleep(.2)
+                (artifacts / 'native-statistics.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
+                button('Pause statistics')
+                wait('return document.querySelector(".container-stats")?.innerText.includes("Statistics paused.")')
+                count = script('return document.querySelector(".stats-samples").textContent')
+                time.sleep(5.5)
+                assert count == script('return document.querySelector(".stats-samples").textContent')
+                button('Resume statistics')
+                wait('return document.querySelector(".stats-samples").textContent !== ' + json.dumps(count))
+                print('PASS native stats: real selected-container IPC values/charts and explicit polling pause.', flush=True)
             button('Start logs')
             wait('return document.querySelector(".log-preview")?.innerText.includes("024-synthetic-live-line")')
             wait('return document.querySelector(".live-logs")?.innerText.includes("Following")')

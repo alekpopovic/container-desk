@@ -950,3 +950,128 @@ async fn checkpoint024_owned_stream_bounds_stop_and_network_loss() {
         "PASS native stream: bounded ACK delivery, visible dropped count, explicit stop after reaping, actual server loss under load releases permits without ACK; no raw log persistence"
     );
 }
+
+#[tokio::test]
+#[ignore = "requires owned native stats SSH/Docker lab and disappearance controller"]
+async fn checkpoint026_owned_stats_running_stopped_disappeared_and_disconnect() {
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest)
+        .parent()
+        .unwrap()
+        .join("stats-app-data");
+    let backend = Backend::new(&root, "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    let connected = ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id.clone(),
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+
+    let request = ContainerStatsRequest {
+        scope: scope.clone(),
+        container_id: ContainerId(lab["liveId"].as_str().unwrap().into()),
+    };
+    let (first, second) = tokio::join!(
+        backend.container_stats(request.clone()),
+        backend.container_stats(request.clone())
+    );
+    let sample = match (first, second) {
+        (Ok(s), Err(e)) | (Err(e), Ok(s)) => {
+            assert_eq!(e.code, ErrorCode::ResourceLimit);
+            s
+        }
+        other => panic!("one host permits only one sample: {other:?}"),
+    };
+    assert_eq!(sample.availability, StatsAvailability::Available);
+    assert!(sample.values.memory_limit_bytes.is_some_and(|n| n > 0.0));
+    assert!(sample.values.cpu_percent.is_some());
+    let stopped = backend
+        .container_stats(ContainerStatsRequest {
+            scope: scope.clone(),
+            container_id: ContainerId(lab["containerId"].as_str().unwrap().into()),
+        })
+        .await
+        .unwrap();
+    assert_eq!(stopped.availability, StatsAvailability::Stopped);
+    assert_eq!(stopped.values, StatsValues::default());
+    let pending = backend.container_stats(request.clone());
+    let stop = async {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        backend
+            .disconnect_inventory_host(InventoryDisconnectRequest {
+                mode: WorkspaceMode::Live,
+                host_id: id.clone(),
+                token: connected.token,
+            })
+            .await
+            .unwrap();
+    };
+    let began = std::time::Instant::now();
+    let (read, ()) = tokio::join!(pending, stop);
+    assert!(read.is_err());
+    assert!(began.elapsed() < std::time::Duration::from_secs(5));
+    assert_eq!(backend.read_slots.available_permits(), 4);
+    assert!(backend.container_stats(request).await.is_err());
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let next = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id,
+                selection_generation: 2,
+            },
+        })
+        .unwrap()
+        .scope;
+    let request = ContainerStatsRequest {
+        scope: next,
+        container_id: ContainerId(lab["liveId"].as_str().unwrap().into()),
+    };
+    std::fs::write(
+        root.parent().unwrap().join("remove-during-stats"),
+        b"owned fixture only",
+    )
+    .unwrap();
+    let vanished = backend.container_stats(request.clone()).await.unwrap();
+    assert_eq!(vanished.availability, StatsAvailability::Missing);
+    assert_eq!(vanished.values, StatsValues::default());
+    assert_eq!(
+        backend.container_stats(request).await.unwrap().availability,
+        StatsAvailability::Missing
+    );
+    backend.shutdown().await;
+    println!(
+        "PASS native stats: actual CLI values, per-host concurrent request denied, stopped zero output replaced by a gap, disappearance between state/stats reads is a gap, disconnect reaps in-flight read and restores slots; old scope rejected."
+    );
+}

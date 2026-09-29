@@ -5,9 +5,12 @@ import argparse
 import os
 import shlex
 import sys
+import time
+from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', required=True)
+parser.add_argument('--control', type=Path)
 parser.add_argument('--owned', nargs='+', required=True)
 args = parser.parse_args()
 original = os.environ.get('SSH_ORIGINAL_COMMAND', '')
@@ -27,6 +30,16 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
     if operation[:2] == ['--host', 'unix:///var/run/docker.sock']:
         operation = operation[2:]
     allowed = (len(operation) == 3 and operation[0] in ('version', 'info') and operation[1] == '--format') or (len(operation) == 4 and operation[:3] == ['context', 'inspect', '--format']) or operation in (['compose', 'version'], ['compose', 'version', '--format', 'json'])
+    if len(operation) == 7 and operation[:6] == ['stats', '--no-stream', '--no-trunc', '--format', '{{json .}}', '--'] and operation[6] in args.owned:
+        allowed = True
+        if args.control and (args.control / 'remove-during-stats').exists():
+            (args.control / 'stats-dispatch').write_text(operation[6])
+            deadline = time.monotonic() + 10
+            while not (args.control / 'stats-removed').exists() and time.monotonic() < deadline:
+                time.sleep(.02)
+            if not (args.control / 'stats-removed').exists(): sys.exit(124)
+    if len(operation) == 7 and operation[:4] == ['inspect', '--type', 'container', '--format'] and operation[4] == '{"running":{{json .State.Running}},"startedAt":{{json .State.StartedAt}}}' and operation[5] == '--' and operation[6] in args.owned:
+        allowed = True
     if operation[:3] == ['logs', '--follow', '--timestamps']:
         operation = [operation[0]] + operation[2:]
     if operation[:2] == ['logs', '--timestamps'] and operation[-2:-1] == ['--'] and operation[-1] in args.owned:
