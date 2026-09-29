@@ -1,8 +1,8 @@
 # Execution tracker
 
-Updated: 2026-09-29T09:40:16+00:00
+Updated: 2026-09-29T10:02:21+00:00
 
-blocked: **0** | done: **48** | in_progress: **0** | pending: **12**
+blocked: **0** | done: **49** | in_progress: **0** | pending: **11**
 
 Generated from `state.json`. Edit status through `python3 codex/scripts/track.py`.
 
@@ -58,7 +58,7 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 | 046 | 05 Terminal and resilience | Feature-complete desktop checkpoint | high | done | codex/tracking/evidence/046.md |
 | 047 | 06 Quality and delivery | Focused security review | high | done | codex/tracking/evidence/047.md |
 | 048 | 06 Quality and delivery | Frontend and parser regression coverage | high | done | codex/tracking/evidence/048.md |
-| 049 | 06 Quality and delivery | Disposable direct and bastion integration lab | high | pending | — |
+| 049 | 06 Quality and delivery | Disposable direct and bastion integration lab | high | done | codex/tracking/evidence/049.md |
 | 050 | 06 Quality and delivery | Native desktop integration tests | high | pending | — |
 | 051 | 06 Quality and delivery | Local verification command and clean builds | medium | pending | — |
 | 052 | 06 Quality and delivery | Linux and macOS CI build matrix | high | pending | — |
@@ -170,3 +170,5 @@ Generated from `state.json`. Edit status through `python3 codex/scripts/track.py
 - 2026-09-29T09:29:19+00:00 — 047: done; PASS real native external-UI baseline reproduced and fixed with zero HTTP probes; strict IPC/CSP and seeded support redaction; normal binary no TCP listener; 150 Rust, 86 Node, 21 browser tests; release build, clippy, audit triage passed
 - 2026-09-29T09:29:45+00:00 — 048: start;
 - 2026-09-29T09:40:16+00:00 — 048: done; PASS 87 Node, 151 Rust, 348 browser matrix tests plus 12 artifact-routing checks; controlled parser fault failed as expected then restored byte-for-byte; strict SSH inspect fixture matched independent Docker CLI; lint and contracts passed
+- 2026-09-29T09:43:55+00:00 — 049: start;
+- 2026-09-29T10:02:21+00:00 — 049: done; Native disposable KVM direct/ProxyJump integration passed: real Docker reads/actions/Compose/PTY, private route rejection, trust failures, SSH loss/reconnect, action-count and cleanup oracle; 151 Rust and 14 tracker tests passed

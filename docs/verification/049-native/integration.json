@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "baseImageSha512": "d0ddf1faae4d44aee3ad6621f166bd414c2f99b6974fb455408612d59cbb31a5390ca259800ac0c6b60505493880ed6de8beb986f6d0883b26c8e84ce75a266c",
+  "qemu": "QEMU emulator version 10.2.1 (Debian 1:10.2.1+ds-1ubuntu3.2)",
+  "clientSsh": "OpenSSH_10.2p1 Ubuntu-2ubuntu3.6, OpenSSL 3.5.5 27 Jan 2026",
+  "hostDockerUsed": false,
+  "privilegedContainers": false,
+  "privateAddress": [
+    "127.49.0.2",
+    22222
+  ],
+  "privateDirectTcpClosedBefore": true,
+  "privateDirectTcpClosedDuring": true,
+  "privateWithoutJumpRejected": true,
+  "privateViaJumpVerified": true,
+  "guest": {
+    "alpine": "3.22.4",
+    "kernel": "6.12.81-0-virt",
+    "dockerServer": "28.3.3",
+    "dockerClient": "28.3.3",
+    "compose": "2.36.2",
+    "ssh": "OpenSSH_10.0p2, OpenSSL 3.5.6 7 Apr 2026"
+  },
+  "nativeExit": 0,
+  "checks": [
+    "PASS 049: direct-owned: handshake, exact inventory, masked inspect, logs, stats, cancelled follow, read-only denial, stop/start once, verified Compose restart once, PTY echo/resize/close, actual SSH session loss, reconnect/new read-only scope, no stale action/input or persisted payload",
+    "PASS 049: private-owned: handshake, exact inventory, masked inspect, logs, stats, cancelled follow, read-only denial, stop/start once, verified Compose restart once, PTY echo/resize/close, actual SSH session loss, reconnect/new read-only scope, no stale action/input or persisted payload",
+    "PASS 049: direct-bad: native changed host key rejected before Docker readiness",
+    "PASS 049: private-bad: native changed host key rejected before Docker readiness",
+    "PASS 049: via-bad-jump: native changed host key rejected before Docker readiness",
+    "PASS 049: native slow remote command over ProxyJump timed out and reaped within four seconds"
+  ],
+  "independentDockerEventCounts": {
+    "owned-live": {
+      "start": 2,
+      "die": 2
+    },
+    "untouched": {
+      "start": 0,
+      "die": 0
+    },
+    "owned049-web-1": {
+      "start": 2,
+      "die": 2
+    },
+    "owned049-worker-1": {
+      "start": 2,
+      "die": 2
+    }
+  },
+  "independentDockerStateVerified": true,
+  "untouchedContainerUnchanged": true,
+  "trustAndConfigUnchanged": true,
+  "guestContainersRemoved": 4,
+  "observedSshIdentitiesReaped": 117,
+  "vmReaped": true,
+  "temporaryKeysSeedAndDiskRemoved": true
+}

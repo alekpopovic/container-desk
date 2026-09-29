@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T09:40:16+00:00",
+  "updated_at": "2026-09-29T10:02:21+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1650,6 +1650,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T09:43:55+00:00",
+      "id": "049",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T10:02:21+00:00",
+      "id": "049",
+      "action": "done",
+      "note": "Native disposable KVM direct/ProxyJump integration passed: real Docker reads/actions/Compose/PTY, private route rejection, trust failures, SSH loss/reconnect, action-count and cleanup oracle; 151 Rust and 14 tracker tests passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T09:43:55+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -2257,12 +2291,14 @@
       "note": ""
     },
     "049": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T09:43:55+00:00",
+      "finished_at": "2026-09-29T10:02:21+00:00",
+      "evidence": "codex/tracking/evidence/049.md",
+      "evidence_sha256": "3ac798f5be0f6c65622eaacb3055fe009a452fd7056d4fb29c7a89e5a4a7256e",
+      "checks": [
+        "Native disposable KVM direct/ProxyJump integration passed: real Docker reads/actions/Compose/PTY, private route rejection, trust failures, SSH loss/reconnect, action-count and cleanup oracle; 151 Rust and 14 tracker tests passed"
+      ],
       "commit": "",
       "note": ""
     },

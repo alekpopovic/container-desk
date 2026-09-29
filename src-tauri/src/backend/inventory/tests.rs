@@ -1,4 +1,5 @@
 use super::*;
+mod integration;
 use std::time::Duration;
 fn draft(alias: &str, config: &str) -> HostDraft {
     HostDraft {
