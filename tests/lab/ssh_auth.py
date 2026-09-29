@@ -33,6 +33,7 @@ def native_test(executable, name, env):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--launch", action="store_true", help="042 minimal-environment GUI/desktop launch; requires --engine and native drivers")
     parser.add_argument("--engine", action="store_true", help="Run a real isolated empty Docker Engine in the SSH target")
     parser.add_argument("--listing", action="store_true", help="Seed two metadata-only containers in the private Engine for listing checks")
     parser.add_argument("--volumes", action="store_true", help="035 volume metadata and mount references on isolated Engine; requires --inventory")
@@ -44,6 +45,8 @@ def main():
     parser.add_argument("--native-driver", type=Path, help="Optional external tauri-driver executable for the real native UI journey")
     parser.add_argument("--webkit-driver", type=Path, help="WebKitWebDriver executable, required with --native-driver")
     args = parser.parse_args()
+    if args.launch and not (args.engine and args.native_driver and args.webkit_driver):
+        parser.error("--launch requires --engine and native drivers")
     if args.volumes and not args.inventory:
         parser.error("--volumes requires --inventory")
     if args.images and not args.inventory:
@@ -154,7 +157,7 @@ def main():
                         dc("exec", names[-1], "cat", "/tmp/engine.log")
                         raise RuntimeError("isolated Docker Engine did not start")
                     time.sleep(0.1)
-            agent_socket = root / "agent.sock"
+            agent_socket = root / ("agent Ž.sock" if args.launch else "agent.sock")
             agent = subprocess.Popen(["ssh-agent", "-D", "-a", str(agent_socket)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             for _ in range(50):
                 if agent_socket.exists():
@@ -181,7 +184,7 @@ def main():
             def host(alias, role, trust="known", identity="plain", loaded=False, jump=None, private=False):
                 sections.append(f"Host {alias}\n HostName {'target' if private else addresses[role]}\n Port {22 if private else ports[role]}\n"
                                 f" User lab\n HostKeyAlias {role}-key\n UserKnownHostsFile {root / trust}\n GlobalKnownHostsFile {root / 'empty'}\n"
-                                f" IdentityFile {root / identity}\n IdentitiesOnly yes\n IdentityAgent {agent_socket if loaded else 'none'}\n"
+                                f" IdentityFile {root / identity}\n IdentitiesOnly yes\n IdentityAgent \"{agent_socket if loaded else 'none'}\"\n"
                                 + (f" ProxyJump {jump}\n" if jump else ""))
 
             def case(alias, expected, **kwargs):
@@ -209,6 +212,9 @@ def main():
                                    ("jump-absent", "authentication_failed"), ("jump-encrypted-unloaded", "authentication_failed"),
                                    ("jump-encrypted-loaded", "verified")):
                 case("via-" + jump, expected, jump=jump, private=True)
+            if args.launch:
+                case("direct-encrypted-stale-agent", "authentication_failed", identity="encrypted")
+                sections[-1] = sections[-1].replace('IdentityAgent "none"', 'IdentityAgent "' + str(root / 'missing-agent') + '"')
             config = root / "config"
             # Deliberately permissive source policy: app's strict overlay must win on both hops.
             config.write_text("Host *\n BatchMode no\n StrictHostKeyChecking no\n UpdateHostKeys yes\n ForwardAgent yes\n" + "".join(sections))
@@ -306,7 +312,10 @@ def main():
                 assert not any(row[0] in ('ls','cat','find','du','tar') or any('_data' in arg for arg in row) for row in trace)
                 print('PASS volume command gate: only fixed Docker metadata/probe argv admitted; no returned mountpoint used as a command argument or filesystem read.',flush=True)
             if args.native_driver:
-                from native_ssh import verify
+                if args.launch:
+                    from native_launch import verify
+                else:
+                    from native_ssh import verify
                 verify(root, args.native_driver.resolve(), args.webkit_driver.resolve(), config, engine, args.native_artifacts, args.inventory, args.inspect, args.compose, args.images, args.volumes)
             assert not marker.exists()
             assert before == {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in watched}

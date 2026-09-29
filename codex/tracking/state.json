@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T07:30:08+00:00",
+  "updated_at": "2026-09-29T07:37:40+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -1412,6 +1412,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T07:30:28+00:00",
+      "id": "042",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T07:37:40+00:00",
+      "id": "042",
+      "action": "done",
+      "note": "83 Node and 141 Rust tests passed; actual Linux gio launch, Unicode paths, settings permission denial, 16 SSH auth cases and real Engine/native agent journey passed; macOS explicitly pending",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T07:30:28+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1935,12 +1969,14 @@
       "note": ""
     },
     "042": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T07:30:28+00:00",
+      "finished_at": "2026-09-29T07:37:40+00:00",
+      "evidence": "codex/tracking/evidence/042.md",
+      "evidence_sha256": "2633a76206dbd71f9b237540a95da3ea2398269a042409bdb79f111d418709fb",
+      "checks": [
+        "83 Node and 141 Rust tests passed; actual Linux gio launch, Unicode paths, settings permission denial, 16 SSH auth cases and real Engine/native agent journey passed; macOS explicitly pending"
+      ],
       "commit": "",
       "note": ""
     },

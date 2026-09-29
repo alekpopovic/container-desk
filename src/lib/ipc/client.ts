@@ -658,7 +658,7 @@ export const sshAccessHelp: Record<SshAccessStatus, string> = {
   host_key_rejected:
     "SSH rejected a destination or jump host key. Review trust and revocation with its administrator.",
   authentication_failed:
-    "SSH authentication failed at the destination or a jump host. Check each hop and load encrypted keys in your normal OS agent.",
+    "SSH authentication failed at the destination or a jump host. A passphrase-protected key may not be loaded in the desktop session agent. Check each hop, load the key using your OS tools, and check Native dependencies in Settings.",
   timed_out:
     "The SSH check reached its 15-second deadline. Check network access, each jump host and your agent, then retry explicitly.",
   output_limit:

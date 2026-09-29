@@ -176,15 +176,19 @@ pub async fn inspect_agent(path: Option<&Path>) -> AgentDiagnostic {
         },
     };
     let message = match status {
-        AgentStatus::Unset => "SSH_AUTH_SOCK is not set. Existing configured keys may still work.",
+        AgentStatus::Unset => {
+            "SSH_AUTH_SOCK is not set in this desktop session. Configured keys or IdentityAgent may still work."
+        }
         AgentStatus::Missing => {
-            "The SSH agent socket is missing. Start or reconnect your agent in your terminal."
+            "The inherited SSH agent socket is missing. Check your desktop session agent and restart the app after changing its environment."
         }
         AgentStatus::NotSocket => "SSH_AUTH_SOCK does not point to a Unix socket.",
         AgentStatus::Inaccessible => {
-            "The SSH agent socket could not be reached. Check your terminal's agent setup."
+            "The inherited SSH agent socket could not be reached. Check its permissions and desktop session agent; do not make the socket public."
         }
-        AgentStatus::Reachable => "The SSH agent socket is reachable. Identities were not queried.",
+        AgentStatus::Reachable => {
+            "The inherited SSH agent socket is reachable. Loaded keys were not checked; a selected host may use a different IdentityAgent."
+        }
     };
     AgentDiagnostic {
         status,

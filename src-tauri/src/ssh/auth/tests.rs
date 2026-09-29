@@ -19,7 +19,7 @@ fn policy_references_source_without_copying_and_cleans_only_owned_entries() {
         crate::test_directory_suffix()
     ));
     fs::create_dir(&root).unwrap();
-    let source = root.join("source-$%-config");
+    let source = root.join("source Željko-$%-config");
     fs::write(&source, b"Host fixture\n HostName 192.0.2.1\n").unwrap();
     let selected = SshSelection {
         alias: "fixture".into(),

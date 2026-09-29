@@ -91,6 +91,12 @@ export function DependencyDiagnostics({
         Docker, jq, Python, Rust and Node are not required. Python is used only
         by the development tracker.
       </p>
+      <p className="muted">
+        Desktop launchers can use a different agent environment from your
+        terminal. An encrypted key must already be available to OpenSSH through
+        your OS agent or configured Keychain. ContainerDesk never asks for its
+        passphrase or runs shell profile scripts. Check each jump host too.
+      </p>
       {!native && (
         <p className="muted">
           {demo

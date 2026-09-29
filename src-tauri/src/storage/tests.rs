@@ -344,3 +344,30 @@ fn schema_two_hosts_migrate_without_changing_ids_or_original_bytes() {
     assert!(saved.hosts[0].ssh.is_none());
     assert_eq!(adapter.read(true).unwrap().unwrap(), original);
 }
+
+#[test]
+fn unicode_paths_and_denied_writes_keep_existing_settings() {
+    let dir = TestDir::new();
+    let path = dir.0.join("Korisnik Željko/Podaci aplikacije 日本語");
+    let mut store = SettingsStore::load(Box::new(FileStorage::open(&path).unwrap())).unwrap();
+    store.replace(preferences(), 0).unwrap();
+    let before = fs::read(path.join("preferences/settings.json")).unwrap();
+    // A real Unix permission denial requires an unprivileged test process.
+    if unsafe { libc::geteuid() } != 0 {
+        fs::set_permissions(path.join("preferences"), fs::Permissions::from_mode(0o500)).unwrap();
+        let failed = store.set_theme(SetThemeRequest {
+            expected_revision: 1,
+            theme: Theme::Dark,
+        });
+        fs::set_permissions(path.join("preferences"), fs::Permissions::from_mode(0o700)).unwrap();
+        assert_eq!(failed.unwrap_err().code, ErrorCode::StorageUnavailable);
+        assert_eq!(
+            fs::read(path.join("preferences/settings.json")).unwrap(),
+            before
+        );
+        assert!(!store.snapshot().writable);
+    }
+    drop(store);
+    let reopened = SettingsStore::load(Box::new(FileStorage::open(&path).unwrap())).unwrap();
+    assert_eq!(reopened.snapshot().preferences.hosts, preferences().hosts);
+}
