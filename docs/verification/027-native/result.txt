@@ -1,0 +1,12 @@
+Native CLI oracle: stdout/stderr records 4 2 largest stderr line bytes 300589
+PASS native Docker events: live scoped channel automatically invalidated inventory after external removal; authoritative snapshot removed the selected owned container without manual refresh.
+PASS native release Tauri channel: actual follow batches, event-loop stall/drop marker, bounded preview, stop, timestamp resume, route unmount; app storage/diagnostics clean.
+
+running 1 test
+PASS native events: scoped start/die/destroy records; one-stream bound; foreign cancel denied; stop releases permits; deletion during gap gives ContainerNotFound and authoritative snapshot removal; replay still marks gap; real SSH loss reaps without ACK.
+test backend::inventory::tests::checkpoint027_owned_events_reconnect_gap_and_deleted_before_inspect ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 118 filtered out; finished in 5.29s
+
+PASS: owned Docker events, cancellation, gap/replay and authoritative deleted-container snapshot; strict client trust unchanged.
+Cleaned only owned log containers, loopback sshd and temporary keys/data.

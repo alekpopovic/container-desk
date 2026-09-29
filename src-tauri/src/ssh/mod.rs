@@ -22,3 +22,5 @@ pub fn validate_alias(alias: &str) -> Result<(), AppError> {
     }
     Ok(())
 }
+
+pub(crate) mod subscriptions;

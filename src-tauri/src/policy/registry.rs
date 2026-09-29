@@ -17,12 +17,16 @@ pub enum ResponseKind {
     ImageDetail,
     LogSnapshot,
     LogStream,
+    EventStream,
     Mutation,
     TerminalSession,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ReadOperation {
     ListContainers,
+    FollowEvents {
+        since: Option<String>,
+    },
     ContainerStats {
         container_id: ContainerId,
     },
@@ -92,6 +96,26 @@ fn limits(value: i32, min: i32, max: i32) -> Result<u32, AppError> {
 }
 pub fn read(operation: &ReadOperation) -> Result<CommandPlan, AppError> {
     Ok(match operation {
+        ReadOperation::FollowEvents { since } => {
+            validate_log_range(since.as_deref(), None)?;
+            let mut result = plan(
+                &[
+                    "docker",
+                    "events",
+                    "--filter",
+                    "type=container",
+                    "--format",
+                    "{{json .}}",
+                ],
+                OperationCategory::Read,
+                ResponseKind::EventStream,
+                30,
+            );
+            if let Some(since) = since {
+                result.args.extend(["--since".into(), since.clone()]);
+            }
+            result
+        }
         ReadOperation::ListContainers => plan(
             &[
                 "docker",

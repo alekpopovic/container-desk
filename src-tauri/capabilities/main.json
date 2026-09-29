@@ -17,6 +17,8 @@
     "allow-container-logs",
     "allow-container-stats",
     "allow-follow-container-logs",
+    "allow-follow-docker-events",
+    "allow-ack-docker-events",
     "allow-ack-container-logs",
     "allow-export-container-logs",
     "allow-get-workspace-mode",

@@ -141,6 +141,7 @@ export default function App() {
       containersExtra={
         <ContainerInventory
           inspectEnabled={native && workspace.mode.mode === "live"}
+          eventStatus={containers.eventStatus}
           view={containers.view}
           host={displayState.kind === "empty" ? null : displayState.host}
           refresh={() => {

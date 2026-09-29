@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T01:34:18+00:00",
+  "updated_at": "2026-09-29T01:55:35+00:00",
   "history": [
     {
       "at": "2026-09-28T16:55:10+00:00",
@@ -902,6 +902,40 @@
         "note": ""
       },
       "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T01:34:50+00:00",
+      "id": "027",
+      "action": "start",
+      "note": "",
+      "previous": {
+        "status": "pending",
+        "started_at": null,
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
+    },
+    {
+      "at": "2026-09-29T01:55:35+00:00",
+      "id": "027",
+      "action": "done",
+      "note": "104 Rust tests; 49 IPC tests; 60 affected browser cases; clippy/fmt; actual owned SSH/Docker event and release Tauri GUI acceptance passed",
+      "previous": {
+        "status": "in_progress",
+        "started_at": "2026-09-29T01:34:50+00:00",
+        "finished_at": null,
+        "evidence": null,
+        "evidence_sha256": null,
+        "checks": [],
+        "commit": "",
+        "note": ""
+      },
+      "reset_previous": {}
     }
   ],
   "tasks": {
@@ -1245,12 +1279,14 @@
       "note": ""
     },
     "027": {
-      "status": "pending",
-      "started_at": null,
-      "finished_at": null,
-      "evidence": null,
-      "evidence_sha256": null,
-      "checks": [],
+      "status": "done",
+      "started_at": "2026-09-29T01:34:50+00:00",
+      "finished_at": "2026-09-29T01:55:35+00:00",
+      "evidence": "codex/tracking/evidence/027.md",
+      "evidence_sha256": "fb04fa514f5de6ce502ae58fa5c4c0bc6c60eebad3842d437df4481f33342f9e",
+      "checks": [
+        "104 Rust tests; 49 IPC tests; 60 affected browser cases; clippy/fmt; actual owned SSH/Docker event and release Tauri GUI acceptance passed"
+      ],
       "commit": "",
       "note": ""
     },

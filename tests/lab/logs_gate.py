@@ -47,6 +47,12 @@ if words and words[0] in ('docker', '/usr/bin/docker'):
         allowed = len(options) in (2, 4, 6) and options[0] == '--tail'
         for index in range(0, len(options), 2):
             allowed = allowed and options[index] in ('--tail', '--since', '--until') and all(c in '0123456789.' for c in options[index + 1])
+    if operation[:5] == ['events', '--filter', 'type=container', '--format', '{{json .}}']:
+        options = operation[5:]
+        allowed = not options or (len(options) == 2 and options[0] == '--since' and options[1] and all(c in '0123456789.' for c in options[1]))
+        if allowed:
+            for ident in args.owned: words.extend(['--filter', 'container=' + ident])
+            original = 'exec ' + ' '.join(shlex.quote(word) for word in words)
     if operation == ['ps', '--all', '--no-trunc', '--format', '{{json .}}']:
         allowed = True
         for ident in args.owned: words.extend(['--filter', 'id=' + ident])

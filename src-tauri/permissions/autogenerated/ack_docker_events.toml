@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-ack-docker-events"
+description = "Enables the ack_docker_events command without any pre-configured scope."
+commands.allow = ["ack_docker_events"]
+
+[[permission]]
+identifier = "deny-ack-docker-events"
+description = "Denies the ack_docker_events command without any pre-configured scope."
+commands.deny = ["ack_docker_events"]

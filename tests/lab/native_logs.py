@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -189,6 +189,16 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
                 wait('return document.querySelector(".live-logs")?.innerText.includes("Export cancelled.")')
                 assert destination.read_text() == expected
                 print('PASS native selected export: secret review, real GTK Save and Cancel, exact ordered 2-line UTF-8 file, mode 0600, no unrelated container data, clipboard exact visible text.', flush=True)
+            if events_id:
+                wait('return document.querySelector(".event-status")?.innerText.includes("Live events")')
+                click(f'//tr[@data-container-id="{events_id}"]//button')
+                wait(f'return document.querySelector(".selected-container")?.textContent.includes("{events_id}")')
+                (root / 'gui-delete').write_text('remove only owned unsupported-log fixture')
+                wait('return document.querySelectorAll("[data-container-id]").length === 2')
+                wait('return document.querySelector(".detail-panel")?.innerText.includes("No container selected")')
+                script('window.scrollTo(0,0)')
+                (artifacts / 'native-event-deletion.png').write_bytes(base64.b64decode(command('GET', '/screenshot'), validate=True))
+                print('PASS native Docker events: live scoped channel automatically invalidated inventory after external removal; authoritative snapshot removed the selected owned container without manual refresh.', flush=True)
             click('//nav[@aria-label="Resources"]//a[normalize-space(.)="Hosts"]')
             wait('return !document.querySelector(".live-logs")')
             time.sleep(.5)

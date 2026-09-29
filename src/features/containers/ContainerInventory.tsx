@@ -63,12 +63,14 @@ export function ContainerInventory({
   refresh,
   select,
   inspectEnabled = false,
+  eventStatus,
 }: {
   view: InventoryView;
   host: DisplayHost | null;
   refresh: () => void;
   select: (id: string) => void;
   inspectEnabled?: boolean;
+  eventStatus?: string;
 }) {
   const [statsHistory] = useState(() => new StatsHistory());
   const [search, setSearch] = useState("");
@@ -139,6 +141,11 @@ export function ContainerInventory({
             {view.scope ? `${view.rows.length} containers` : "No live data"}
           </span>
         </div>
+        {eventStatus && (
+          <p className="event-status" role="status">
+            {eventStatus}
+          </p>
+        )}
         <div className="container-tools">
           <label>
             Search containers
@@ -365,7 +372,7 @@ export function ContainerInventory({
               <dt>Health</dt>
               <dd>{chosen.health ?? "Unknown"}</dd>
             </dl>
-            {inspectEnabled && !view.stale && view.scope && (
+            {inspectEnabled && (!view.stale || view.loading) && view.scope && (
               <ContainerDetails
                 key={JSON.stringify([view.scope, chosen.id, view.updatedAt])}
                 scope={view.scope}
@@ -383,22 +390,28 @@ export function ContainerInventory({
           </div>
         )}
       </aside>
-      {chosen && inspectEnabled && !view.stale && view.scope && (
-        <ContainerStats
-          key={JSON.stringify([view.scope, chosen.id])}
-          scope={view.scope}
-          id={chosen.id}
-          history={statsHistory}
-        />
-      )}
-      {chosen && inspectEnabled && !view.stale && view.scope && (
-        <LiveLogs
-          key={JSON.stringify([view.scope, chosen.id])}
-          scope={view.scope}
-          id={chosen.id}
-          source={`${host?.name ?? "Selected host"} / ${chosen.name}`}
-        />
-      )}
+      {chosen &&
+        inspectEnabled &&
+        (!view.stale || view.loading) &&
+        view.scope && (
+          <ContainerStats
+            key={JSON.stringify(["stats", view.scope, chosen.id])}
+            scope={view.scope}
+            id={chosen.id}
+            history={statsHistory}
+          />
+        )}
+      {chosen &&
+        inspectEnabled &&
+        (!view.stale || view.loading) &&
+        view.scope && (
+          <LiveLogs
+            key={JSON.stringify(["logs", view.scope, chosen.id])}
+            scope={view.scope}
+            id={chosen.id}
+            source={`${host?.name ?? "Selected host"} / ${chosen.name}`}
+          />
+        )}
     </div>
   );
 }

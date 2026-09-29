@@ -1,3 +1,4 @@
+import { useContainerEvents } from "../events/useContainerEvents";
 import {
   useCallback,
   useEffect,
@@ -26,7 +27,7 @@ export function useContainerInventory(
   const bridge = native ? nativeBridge : demoBridge;
   const refresh = useCallback(async () => {
     const ticket = cache.begin();
-    if (!ticket) return;
+    if (!ticket) return false;
     try {
       const response = await bridge.listContainers(
         ticket.scope,
@@ -41,6 +42,7 @@ export function useContainerInventory(
           : "Container data could not be loaded.",
       );
     }
+    return true;
   }, [bridge, cache]);
   const token = connection
     ? JSON.stringify({
@@ -112,5 +114,14 @@ export function useContainerInventory(
         stale: false,
         error: null,
       };
-  return { view: visible, refresh, select: (id: string) => cache.select(id) };
+  const eventStatus = useContainerEvents(
+    native && mode.mode === "live" ? visible.scope : null,
+    refresh,
+  );
+  return {
+    view: visible,
+    refresh,
+    eventStatus,
+    select: (id: string) => cache.select(id),
+  };
 }

@@ -42,6 +42,8 @@ pub fn run() {
             commands::container_logs,
             commands::container_stats,
             commands::follow_container_logs,
+            commands::follow_docker_events,
+            commands::ack_docker_events,
             commands::ack_container_logs,
             commands::export_container_logs,
             commands::prepare_confirmation,

@@ -1238,3 +1238,47 @@ pub struct StatsSample {
     pub values: StatsValues,
     pub raw: StatsRaw,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct FollowEventsRequest {
+    pub scope: SessionScope,
+    pub since: Option<String>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub enum ContainerEventAction {
+    Create,
+    Start,
+    Stop,
+    Die,
+    Destroy,
+    Restart,
+    Pause,
+    Unpause,
+    Rename,
+    HealthStatus,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct ContainerEvent {
+    pub actor_id: ContainerId,
+    pub action: ContainerEventAction,
+    pub timestamp_unix_nanos: String,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[cfg_attr(test, derive(ts_rs::TS))]
+pub struct EventBatch {
+    pub scope: SessionScope,
+    pub subscription_id: SubscriptionId,
+    pub sequence: u32,
+    pub events: Vec<ContainerEvent>,
+    pub dropped_records: u32,
+    pub gap: bool,
+    pub ended: bool,
+    pub error: Option<ErrorCode>,
+}

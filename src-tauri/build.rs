@@ -19,6 +19,8 @@ fn main() {
             "container_logs",
             "container_stats",
             "follow_container_logs",
+            "follow_docker_events",
+            "ack_docker_events",
             "ack_container_logs",
             "export_container_logs",
             "prepare_confirmation",

@@ -1101,3 +1101,7 @@ legend {
   stroke: var(--muted);
   stroke-width: 1;
 }
+.event-status {
+  padding: 0 16px;
+  color: var(--muted);
+}

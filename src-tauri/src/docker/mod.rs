@@ -150,3 +150,5 @@ pub fn prepare(
 mod tests;
 
 pub(crate) mod live_logs;
+
+pub(crate) mod events;

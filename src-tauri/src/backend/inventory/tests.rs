@@ -1075,3 +1075,194 @@ async fn checkpoint026_owned_stats_running_stopped_disappeared_and_disconnect() 
         "PASS native stats: actual CLI values, per-host concurrent request denied, stopped zero output replaced by a gap, disappearance between state/stats reads is a gap, disconnect reaps in-flight read and restores slots; old scope rejected."
     );
 }
+
+#[tokio::test]
+#[ignore = "requires owned Docker events SSH lab with lifecycle controller"]
+async fn checkpoint027_owned_events_reconnect_gap_and_deleted_before_inspect() {
+    let manifest = std::env::var("CONTAINERDESK_LOG_LAB_MANIFEST").unwrap();
+    let lab: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&manifest).unwrap()).unwrap();
+    let root = std::path::Path::new(&manifest).parent().unwrap();
+    let backend = Backend::new(&root.join("events-app-data"), "/unused-lab-home".into());
+    let mut host = draft("logs-owned", lab["config"].as_str().unwrap());
+    host.docker.executable = Some("/usr/bin/docker".into());
+    let saved = backend
+        .save_host(SaveHostRequest {
+            mode: WorkspaceMode::Live,
+            expected_revision: 0,
+            id: None,
+            draft: host,
+        })
+        .await
+        .unwrap();
+    let id = saved.saved.preferences.hosts[0].id.clone();
+    backend
+        .connect_inventory_host(InventoryConnectRequest {
+            mode: WorkspaceMode::Live,
+            host_id: id.clone(),
+        })
+        .await
+        .unwrap();
+    ready(&backend, WorkspaceMode::Live, id.clone()).await;
+    let scope = backend
+        .connect_host(ConnectHostRequest {
+            selection: HostSelection {
+                host_id: id,
+                selection_generation: 1,
+            },
+        })
+        .unwrap()
+        .scope;
+    let target = ContainerId(lab["containerId"].as_str().unwrap().into());
+    let (sender, mut receiver) = tokio::sync::mpsc::channel(2);
+    let response = backend
+        .follow_docker_events(
+            FollowEventsRequest {
+                scope: scope.clone(),
+                since: None,
+            },
+            Arc::new(move |b| sender.try_send(b).map_err(|_| ())),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        backend
+            .follow_docker_events(
+                FollowEventsRequest {
+                    scope: scope.clone(),
+                    since: None
+                },
+                Arc::new(|_| Ok(()))
+            )
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::ResourceLimit
+    );
+    let ack = |sequence| AckLogsRequest {
+        scope: scope.clone(),
+        subscription_id: response.subscription_id.clone(),
+        sequence,
+    };
+    backend.ack_docker_events(ack(0)).unwrap();
+    let first = tokio::time::timeout(Duration::from_secs(5), receiver.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(first.gap, "New streams never promise a complete history");
+    backend.ack_docker_events(ack(first.sequence)).unwrap();
+    std::fs::write(root.join("event-start"), b"owned fixture only").unwrap();
+    let mut seen = Vec::new();
+    let mut since = None;
+    tokio::time::timeout(Duration::from_secs(10), async {
+        while !seen.contains(&ContainerEventAction::Die) {
+            let batch = receiver.recv().await.unwrap();
+            assert!(!batch.ended);
+            for event in batch.events {
+                assert_eq!(event.actor_id, target);
+                let nanos = event.timestamp_unix_nanos.parse::<u64>().unwrap();
+                since = Some(format!(
+                    "{}.{:09}",
+                    nanos / 1_000_000_000,
+                    nanos % 1_000_000_000
+                ));
+                seen.push(event.action);
+            }
+            backend.ack_docker_events(ack(batch.sequence)).unwrap();
+        }
+    })
+    .await
+    .unwrap();
+    assert!(seen.contains(&ContainerEventAction::Start));
+    let mut foreign = scope.clone();
+    foreign.session_generation += 1;
+    assert_eq!(
+        backend
+            .cancel_subscription(CancelSubscriptionRequest {
+                scope: foreign,
+                subscription_id: response.subscription_id.clone()
+            })
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::SubscriptionNotFound
+    );
+    backend
+        .cancel_subscription(CancelSubscriptionRequest {
+            scope: scope.clone(),
+            subscription_id: response.subscription_id,
+        })
+        .await
+        .unwrap();
+    assert_eq!(backend.read_slots.available_permits(), 4);
+    std::fs::write(root.join("event-delete"), b"owned stopped fixture only").unwrap();
+    tokio::time::timeout(Duration::from_secs(10), async {
+        while !root.join("event-delete-done").exists() {
+            tokio::time::sleep(Duration::from_millis(30)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(
+        backend
+            .inspect_container(InspectContainerRequest {
+                scope: scope.clone(),
+                container_id: target.clone(),
+                reveal_sensitive: false
+            })
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::ContainerNotFound
+    );
+    let snapshot = backend
+        .list_containers(ListContainersRequest {
+            scope: scope.clone(),
+        })
+        .await
+        .unwrap();
+    assert!(!snapshot.containers.iter().any(|c| c.id == target));
+    let (sender, mut receiver) = tokio::sync::mpsc::channel(2);
+    let response = backend
+        .follow_docker_events(
+            FollowEventsRequest {
+                scope: scope.clone(),
+                since,
+            },
+            Arc::new(move |b| sender.try_send(b).map_err(|_| ())),
+        )
+        .await
+        .unwrap();
+    backend
+        .ack_docker_events(AckLogsRequest {
+            scope: scope.clone(),
+            subscription_id: response.subscription_id.clone(),
+            sequence: 0,
+        })
+        .unwrap();
+    let first = tokio::time::timeout(Duration::from_secs(5), receiver.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(first.gap);
+    assert!(
+        first
+            .events
+            .iter()
+            .any(|e| e.actor_id == target && e.action == ContainerEventAction::Destroy)
+    );
+    // Lose the owned server without returning ACK; shared runner must reap and release slots.
+    std::fs::write(root.join("cut-network"), b"owned server only").unwrap();
+    tokio::time::timeout(Duration::from_secs(6), async {
+        while backend.read_slots.available_permits() != 4 {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    })
+    .await
+    .unwrap();
+    backend.shutdown().await;
+    assert_eq!(backend.event_streams.active_count(), 0);
+    println!(
+        "PASS native events: scoped start/die/destroy records; one-stream bound; foreign cancel denied; stop releases permits; deletion during gap gives ContainerNotFound and authoritative snapshot removal; replay still marks gap; real SSH loss reaps without ACK."
+    );
+}

@@ -1,6 +1,9 @@
 use super::*;
+use crate::ssh::runner::RunError;
 use crate::ssh::runner::Runner;
 use std::sync::atomic::AtomicUsize;
+use std::{sync::atomic::Ordering, time::Duration};
+use tokio::sync::{Semaphore, mpsc, watch};
 fn request() -> FollowLogsRequest {
     FollowLogsRequest {
         scope: crate::contract_tests::scope(),
@@ -165,7 +168,7 @@ async fn slow_consumption_drops_data_without_extra_ipc_and_cancel_reaps_heavy_ch
     );
     runner.wait_idle().await;
     assert_eq!(slots.available_permits(), 4);
-    assert!(subscriptions.entries.lock().unwrap().is_empty());
+    assert!(subscriptions.active_count() == 0);
     std::fs::remove_dir_all(root).unwrap();
 }
 #[tokio::test]
@@ -238,7 +241,7 @@ async fn abandoned_renderer_expires_and_reaps_without_any_ack() {
         .unwrap();
     tokio::time::timeout(Duration::from_secs(33), async {
         loop {
-            if subscriptions.entries.lock().unwrap().is_empty() {
+            if subscriptions.active_count() == 0 {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(100)).await;
@@ -248,5 +251,5 @@ async fn abandoned_renderer_expires_and_reaps_without_any_ack() {
     .unwrap();
     runner.wait_idle().await;
     assert_eq!(slots.available_permits(), 4);
-    assert_eq!(subscriptions.slots.available_permits(), 2);
+    assert_eq!(subscriptions.available_slots(), 2);
 }

@@ -1119,10 +1119,20 @@ function validateLogRecords(records: unknown[], maxBytes = 8 * 1024 * 1024) {
   }
 }
 
-export async function followContainerLogs(
-  request: import("./generated.ts").FollowLogsRequest,
+type StreamEnvelope = {
+  scope: SessionScope;
+  subscriptionId: string;
+  sequence: number;
+  ended: boolean;
+  error: ErrorCode | null;
+};
+async function followAcknowledged<B extends StreamEnvelope>(
+  startCommand: string,
+  ackCommand: string,
+  request: { scope: SessionScope },
+  validatePayload: (value: Record<string, unknown>) => void,
   current: () => SessionScope | null,
-  consume: (batch: import("./generated.ts").LogBatch) => void | Promise<void>,
+  consume: (batch: B) => void | Promise<void>,
   failed: (error: IpcError) => void,
   signal: AbortSignal,
 ): Promise<{ stop: () => Promise<void> }> {
@@ -1166,14 +1176,12 @@ export async function followContainerLogs(
           !record(value) ||
           !scope(value.scope) ||
           !sameScope(value.scope, request.scope) ||
-          value.containerId !== request.containerId ||
           value.subscriptionId !== subscriptionId ||
           value.sequence !== sequence + 1 ||
           !Number.isSafeInteger(value.sequence) ||
-          !Array.isArray(value.records) ||
-          value.records.length > 128 ||
           !Number.isSafeInteger(value.droppedRecords) ||
           Number(value.droppedRecords) < 0 ||
+          Number(value.droppedRecords) > 0xffffffff ||
           typeof value.gap !== "boolean" ||
           typeof value.ended !== "boolean" ||
           (value.error !== null &&
@@ -1181,11 +1189,11 @@ export async function followContainerLogs(
               !Object.hasOwn(messages, value.error)))
         )
           throw new IpcError("invalid_response");
-        validateLogRecords(value.records, 262174);
+        validatePayload(value);
         consuming = true;
         holdsConsumption = true;
         sequence += 1;
-        const batch = value as import("./generated.ts").LogBatch;
+        const batch = value as unknown as B;
         await consume(batch);
         consuming = false;
         holdsConsumption = false;
@@ -1199,7 +1207,7 @@ export async function followContainerLogs(
           return;
         }
         if (!stopped)
-          await call("ack_container_logs", {
+          await call(ackCommand, {
             scope: request.scope,
             subscriptionId,
             sequence,
@@ -1218,7 +1226,7 @@ export async function followContainerLogs(
     })();
   };
   // Do not discard a late successful start before its owned ID can be cancelled.
-  const result = await call("follow_container_logs", request, () => true, {
+  const result = await call(startCommand, request, () => true, {
     onBatch: channel,
   });
   if (
@@ -1236,7 +1244,7 @@ export async function followContainerLogs(
     throw new IpcError("stale_session");
   }
   try {
-    await call("ack_container_logs", {
+    await call(ackCommand, {
       scope: request.scope,
       subscriptionId,
       sequence: 0,
@@ -1246,6 +1254,77 @@ export async function followContainerLogs(
     throw error;
   }
   return { stop };
+}
+
+export function followContainerLogs(
+  request: import("./generated.ts").FollowLogsRequest,
+  current: () => SessionScope | null,
+  consume: (batch: import("./generated.ts").LogBatch) => void | Promise<void>,
+  failed: (error: IpcError) => void,
+  signal: AbortSignal,
+): Promise<{ stop: () => Promise<void> }> {
+  return followAcknowledged(
+    "follow_container_logs",
+    "ack_container_logs",
+    request,
+    (value) => {
+      if (
+        value.containerId !== request.containerId ||
+        !Array.isArray(value.records) ||
+        value.records.length > 128
+      )
+        throw new IpcError("invalid_response");
+      validateLogRecords(value.records, 262174);
+    },
+    current,
+    consume,
+    failed,
+    signal,
+  );
+}
+export function followDockerEvents(
+  request: import("./generated.ts").FollowEventsRequest,
+  current: () => SessionScope | null,
+  consume: (batch: import("./generated.ts").EventBatch) => void | Promise<void>,
+  failed: (error: IpcError) => void,
+  signal: AbortSignal,
+): Promise<{ stop: () => Promise<void> }> {
+  return followAcknowledged(
+    "follow_docker_events",
+    "ack_docker_events",
+    request,
+    (value) => {
+      if (!Array.isArray(value.events) || value.events.length > 64)
+        throw new IpcError("invalid_response");
+      for (const event of value.events) {
+        if (
+          !record(event) ||
+          typeof event.actorId !== "string" ||
+          !/^[a-f0-9]{64}$/.test(event.actorId) ||
+          typeof event.timestampUnixNanos !== "string" ||
+          !/^(0|[1-9]\d{0,19})$/.test(event.timestampUnixNanos) ||
+          BigInt(event.timestampUnixNanos) > 18446744073709551615n ||
+          ![
+            "create",
+            "start",
+            "stop",
+            "die",
+            "destroy",
+            "restart",
+            "pause",
+            "unpause",
+            "rename",
+            "health_status",
+          ].includes(String(event.action))
+        )
+          throw new IpcError("invalid_response");
+      }
+    },
+    current,
+    consume,
+    failed,
+    signal,
+  );
 }
 
 export async function exportContainerLogs(

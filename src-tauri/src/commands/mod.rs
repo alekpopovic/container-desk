@@ -489,3 +489,24 @@ pub async fn container_stats(
 ) -> Result<StatsSample, AppError> {
     backend.container_stats(request).await
 }
+
+#[tauri::command]
+pub async fn follow_docker_events(
+    backend: tauri::State<'_, Backend>,
+    request: FollowEventsRequest,
+    on_batch: tauri::ipc::Channel<EventBatch>,
+) -> Result<CancelSubscriptionResponse, AppError> {
+    backend
+        .follow_docker_events(
+            request,
+            std::sync::Arc::new(move |batch| on_batch.send(batch).map_err(|_| ())),
+        )
+        .await
+}
+#[tauri::command]
+pub fn ack_docker_events(
+    backend: tauri::State<'_, Backend>,
+    request: AckLogsRequest,
+) -> Result<(), AppError> {
+    backend.ack_docker_events(request)
+}

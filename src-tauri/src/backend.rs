@@ -14,6 +14,7 @@ pub struct Backend {
     process_runner: crate::ssh::runner::Runner,
     sessions: Arc<crate::ssh::sessions::Sessions>,
     log_streams: crate::docker::live_logs::Subscriptions,
+    event_streams: crate::ssh::subscriptions::Subscriptions,
     shutting_down: std::sync::atomic::AtomicBool,
     config_home: std::path::PathBuf,
     policy: Arc<Mutex<PolicyEngine>>,
@@ -35,6 +36,7 @@ impl Backend {
             process_runner: crate::ssh::runner::Runner::default(),
             sessions: Arc::new(crate::ssh::sessions::Sessions::default()),
             log_streams: Default::default(),
+            event_streams: crate::ssh::subscriptions::Subscriptions::with_capacity(1),
             shutting_down: std::sync::atomic::AtomicBool::new(false),
             config_home,
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
@@ -51,6 +53,7 @@ impl Backend {
             .store(true, std::sync::atomic::Ordering::SeqCst);
         self.sessions.shutdown().await;
         self.log_streams.shutdown().await;
+        self.event_streams.shutdown().await;
     }
     pub fn config_path(&self, path: Option<&str>) -> Result<SshConfigPath, AppError> {
         let preferences = self.preferences()?;
@@ -779,6 +782,51 @@ impl Backend {
         self.log_streams
             .start(request, job, queue, sink, current, (read, stream))
     }
+    pub async fn follow_docker_events(
+        &self,
+        request: FollowEventsRequest,
+        sink: crate::docker::events::BatchSink,
+    ) -> Result<CancelSubscriptionResponse, AppError> {
+        self.require_live_mode()?;
+        self.policy
+            .lock()
+            .map_err(|_| AppError::new(ErrorCode::Internal))?
+            .authorize_read(
+                &request.scope,
+                &ReadOperation::FollowEvents {
+                    since: request.since.clone(),
+                },
+            )?;
+        self.require_session(&request.scope)?;
+        let read = self
+            .read_slots
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| AppError::new(ErrorCode::ResourceLimit))?;
+        let stream = self.event_streams.reserve()?;
+        let queue = Arc::new(Mutex::new(crate::docker::events::EventQueue::default()));
+        let job = self
+            .sessions
+            .follow_events(&request, crate::docker::events::line_sink(queue.clone()))
+            .await?;
+        self.require_session(&request.scope)?;
+        let sessions = self.sessions.clone();
+        let policy = self.policy.clone();
+        let scope = request.scope.clone();
+        let current = Arc::new(move || {
+            policy
+                .lock()
+                .map_err(|_| AppError::new(ErrorCode::Internal))?
+                .require_session(&scope)?;
+            sessions.require_scope(&scope)
+        });
+        self.event_streams
+            .start(request, job, queue, sink, current, (read, stream))
+    }
+    pub fn ack_docker_events(&self, request: AckLogsRequest) -> Result<(), AppError> {
+        self.require_session(&request.scope)?;
+        self.event_streams.ack(&request)
+    }
     pub fn ack_container_logs(&self, request: AckLogsRequest) -> Result<(), AppError> {
         self.require_session(&request.scope)?;
         self.log_streams.ack(&request)
@@ -788,7 +836,12 @@ impl Backend {
         request: CancelSubscriptionRequest,
     ) -> Result<CancelSubscriptionResponse, AppError> {
         // Exact owned scope authorizes cleanup even after that session was invalidated.
-        self.log_streams.cancel(&request).await?;
+        match self.log_streams.cancel(&request).await {
+            Err(e) if e.code == ErrorCode::SubscriptionNotFound => {
+                self.event_streams.cancel(&request).await?
+            }
+            other => other?,
+        }
         Ok(CancelSubscriptionResponse {
             scope: request.scope,
             subscription_id: request.subscription_id,
@@ -805,6 +858,7 @@ impl Default for Backend {
             process_runner: crate::ssh::runner::Runner::default(),
             sessions: Arc::new(crate::ssh::sessions::Sessions::default()),
             log_streams: Default::default(),
+            event_streams: crate::ssh::subscriptions::Subscriptions::with_capacity(1),
             shutting_down: std::sync::atomic::AtomicBool::new(false),
             config_home: std::path::PathBuf::from("/tmp/containerdesk-unused-home"),
             policy: Arc::new(Mutex::new(PolicyEngine::default())),
