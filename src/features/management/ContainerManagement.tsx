@@ -1,3 +1,7 @@
+import {
+  ConfirmationDialog,
+  useConfirmationFocus,
+} from "../../components/ConfirmationDialog";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as bridge from "../../lib/ipc/client";
 import type {
@@ -25,6 +29,7 @@ export function ContainerManagement({
   stale: boolean;
   refresh: () => void;
 }) {
+  const confirmationFocus = useConfirmationFocus();
   const [enabled, setEnabled] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const binding = useRef(scope).current;
@@ -267,10 +272,11 @@ export function ContainerManagement({
         ))}
       </div>
       {intent && intent.operation.category === "mutation" && (
-        <div
-          role="dialog"
-          aria-modal="false"
-          aria-label="Confirm container action"
+        <ConfirmationDialog
+          returnFocus={confirmationFocus}
+          label="Confirm container action"
+          busy={busy}
+          onCancel={() => setIntent(null)}
           className="mutation-confirmation"
         >
           <h4>Confirm {intent.operation.spec.operation}</h4>
@@ -304,6 +310,7 @@ export function ContainerManagement({
             Confirm action
           </button>
           <button
+            data-cancel
             className="button"
             type="button"
             disabled={busy}
@@ -311,7 +318,7 @@ export function ContainerManagement({
           >
             Cancel action
           </button>
-        </div>
+        </ConfirmationDialog>
       )}
       <p role="status">{message}</p>
       <button

@@ -117,6 +117,8 @@ export function ComposeInventory({
           Search projects
           <input
             type="search"
+            data-shortcut="search"
+            aria-keyshortcuts="Control+f Meta+f"
             maxLength={256}
             value={search}
             onChange={(e) => {
@@ -126,6 +128,8 @@ export function ComposeInventory({
           />
         </label>
         <button
+          data-shortcut="refresh"
+          aria-keyshortcuts="Control+r Meta+r"
           type="button"
           className="button"
           disabled={busy || view.loading}

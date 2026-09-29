@@ -5,6 +5,7 @@ import type {
   ContainerPort,
   SavedHost,
 } from "../lib/ipc/generated";
+import { useWorkspaceShortcuts } from "./useWorkspaceShortcuts";
 import { VersionInfo } from "./VersionInfo";
 
 // Presentation-only inputs; backend identity/authorization is enforced separately.
@@ -150,6 +151,7 @@ export function WorkspaceShell({
   demo?: DemoControls;
 }) {
   const [route, setRoute] = useState<Route>(readRoute);
+  useWorkspaceShortcuts();
   const [chosenGroup, setGroup] = useState("All hosts");
   const groups = [
     ...new Set([
@@ -399,6 +401,13 @@ export function WorkspaceShell({
                     : "Choose a theme for this window."}
                 </p>
               </div>
+              <p className="keyboard-help">
+                Keyboard: Ctrl (Linux) / Cmd (macOS) + F searches the current
+                resource view; + R refreshes the current resource view; + Shift
+                + H focuses saved hosts; + Shift + L focuses the Logs tab.
+                Shortcuts pause inside terminal controls and dialogs. Tab moves
+                through controls; Escape cancels a confirmation before dispatch.
+              </p>
               <fieldset>
                 <legend>Theme</legend>
                 <div className="theme-options">

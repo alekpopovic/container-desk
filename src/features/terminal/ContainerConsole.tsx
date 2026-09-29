@@ -31,6 +31,7 @@ export function ContainerConsole({
             key={value}
             id={`${uid}-${value}`}
             type="button"
+            data-shortcut={value === "logs" ? "logs" : undefined}
             role="tab"
             aria-selected={value === tab}
             aria-controls={`${uid}-panel`}

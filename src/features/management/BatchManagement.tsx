@@ -1,3 +1,7 @@
+import {
+  ConfirmationDialog,
+  useConfirmationFocus,
+} from "../../components/ConfirmationDialog";
 import { useEffect, useRef, useState } from "react";
 import * as bridge from "../../lib/ipc/client";
 import type {
@@ -32,6 +36,7 @@ export function BatchManagement({
   const alive = useRef(true);
   const lock = useRef(false);
   const activeIntent = useRef<string | null>(null);
+  const confirmationFocus = useConfirmationFocus();
   const [enabled, setEnabled] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -302,14 +307,15 @@ export function BatchManagement({
         </button>
       </div>
       {intent && intent.operation.category === "mutation" && (
-        <div
-          role="dialog"
-          aria-modal="false"
-          aria-label={
+        <ConfirmationDialog
+          returnFocus={confirmationFocus}
+          label={
             intent.operation.spec.operation === "remove"
               ? "Confirm stopped-container removal"
               : "Confirm container batch"
           }
+          busy={busy}
+          onCancel={() => setIntent(null)}
           className="mutation-confirmation"
         >
           <h4>
@@ -365,6 +371,7 @@ export function BatchManagement({
             Confirm selected action
           </button>
           <button
+            data-cancel
             className="button"
             type="button"
             disabled={busy}
@@ -372,7 +379,7 @@ export function BatchManagement({
           >
             Cancel batch confirmation
           </button>
-        </div>
+        </ConfirmationDialog>
       )}
       <p role="status">{message}</p>
       {busy && activeIntent.current && (

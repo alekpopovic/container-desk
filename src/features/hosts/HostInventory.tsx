@@ -316,6 +316,7 @@ export function HostInventory({
       </ul>
       {filtered.length === 0 && <p>No saved hosts in this group.</p>}
       <button
+        data-shortcut="new-host"
         type="button"
         className="button"
         disabled={busy || !available}

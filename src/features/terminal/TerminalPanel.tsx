@@ -1,3 +1,7 @@
+import {
+  ConfirmationDialog,
+  useConfirmationFocus,
+} from "../../components/ConfirmationDialog";
 import { useEffect, useRef, useState } from "react";
 import { Terminal as Xterm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -29,6 +33,7 @@ export function TerminalPanel({
   const lock = useRef(false);
   const pasteBlocked = useRef(false);
   const closeButton = useRef<HTMLButtonElement>(null);
+  const confirmationFocus = useConfirmationFocus();
   const [managed, setManaged] = useState(false);
   const [enabled, setEnabled] = useState(false);
   const [initializing, setInitializing] = useState(true);
@@ -397,10 +402,12 @@ export function TerminalPanel({
         </button>
       </div>
       {intent?.operation.category === "terminal" && (
-        <div
+        <ConfirmationDialog
+          returnFocus={confirmationFocus}
           className="mutation-confirmation"
-          role="dialog"
-          aria-label="Confirm terminal access"
+          onCancel={() => setIntent(null)}
+          busy={busy}
+          label="Confirm terminal access"
         >
           <h4>Open interactive shell</h4>
           <p>
@@ -426,19 +433,22 @@ export function TerminalPanel({
             Confirm terminal
           </button>
           <button
+            data-cancel
+            disabled={busy}
             className="button"
             type="button"
             onClick={() => setIntent(null)}
           >
             Cancel terminal
           </button>
-        </div>
+        </ConfirmationDialog>
       )}
       {paste !== null && (
-        <div
+        <ConfirmationDialog
+          returnFocus={confirmationFocus}
           className="terminal-paste"
-          role="dialog"
-          aria-label="Confirm multiline paste"
+          onCancel={() => finishPaste(false)}
+          label="Confirm multiline paste"
         >
           <h4>Paste multiple lines into {name}?</h4>
           <p>
@@ -454,13 +464,14 @@ export function TerminalPanel({
             Send multiline paste
           </button>
           <button
+            data-cancel
             className="button"
             type="button"
             onClick={() => finishPaste(false)}
           >
             Cancel paste
           </button>
-        </div>
+        </ConfirmationDialog>
       )}
       {error && <p role="alert">{error}</p>}
       <p className="terminal-size">

@@ -111,3 +111,23 @@ test("close under output, host switch, inactive input and revocation never reope
     await page.evaluate(() => JSON.stringify({ ...localStorage })),
   ).not.toContain("synthetic-040-stream");
 });
+
+test("workspace shortcuts do not consume terminal keys", async ({ page }) => {
+  await page.goto("/tests/ui/fixture.html?state=terminal");
+  await connect(page);
+  const input = page.locator(".xterm-helper-textarea");
+  await input.focus();
+  for (const key of [
+    "Control+f",
+    "Control+r",
+    "Control+Shift+h",
+    "Control+Shift+l",
+  ]) {
+    await page.keyboard.press(key);
+    await expect(input).toBeFocused();
+  }
+  await expect(page.getByLabel("Fixture terminal input")).toContainText(
+    "\u0006",
+  );
+  expect(await page.evaluate(() => location.hash)).toBe("");
+});

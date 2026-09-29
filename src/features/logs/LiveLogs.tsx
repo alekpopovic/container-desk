@@ -1,3 +1,5 @@
+import { trapDialogTab } from "../../components/ConfirmationDialog";
+import { useRemSize } from "../../components/useRemSize";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   exportContainerLogs,
@@ -22,6 +24,7 @@ export function LiveLogs({
   id: ContainerId;
   source?: string;
 }) {
+  const rowHeight = useRemSize() * (24 / 14);
   const buffer = useRef(new LogBuffer());
   const [rows, setRows] = useState<BufferedLog[]>([]);
   const [running, setRunning] = useState(false);
@@ -46,12 +49,15 @@ export function LiveLogs({
   const serial = useRef(0);
   const mounted = useRef(true);
   const resume = useRef<string | null>(null);
-  const viewport = useRef<HTMLDivElement>(null);
+  const viewport = useRef<HTMLElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const filtered = useMemo(() => filterLogs(rows, search), [rows, search]);
   const startRow = Math.max(
     0,
-    Math.min(Math.max(0, filtered.length - 1), Math.floor(scroll / 24) - 6),
+    Math.min(
+      Math.max(0, filtered.length - 1),
+      Math.floor(scroll / rowHeight) - 6,
+    ),
   );
   const endRow = Math.min(filtered.length, startRow + 32);
   const visible = filtered.slice(startRow, endRow);
@@ -75,6 +81,7 @@ export function LiveLogs({
       document.removeEventListener("selectionchange", changed);
     };
   }, []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: A rem resize changes scrollHeight without changing buffered rows.
   useLayoutEffect(() => {
     if (
       filtered.length > 0 &&
@@ -84,10 +91,14 @@ export function LiveLogs({
       viewport.current
     )
       viewport.current.scrollTop = viewport.current.scrollHeight;
-  }, [follow, paused, selecting, filtered]);
+  }, [follow, paused, selecting, filtered, rowHeight]);
   useEffect(() => {
-    if (exportLines) dialog.current?.showModal();
-    else dialog.current?.close();
+    if (exportLines) {
+      dialog.current?.showModal();
+      dialog.current
+        ?.querySelector<HTMLButtonElement>("[data-cancel]")
+        ?.focus();
+    } else dialog.current?.close();
   }, [exportLines]);
   function showBuffer() {
     const current = buffer.current.snapshot();
@@ -304,7 +315,10 @@ export function LiveLogs({
           duplicates are possible.
         </p>
       )}
-      <div
+      <section
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: A scroll region must support keyboard scrolling.
+        tabIndex={0}
+        aria-label="Scrollable buffered logs"
         className="log-preview log-viewport"
         ref={viewport}
         onScroll={(event) => setScroll(event.currentTarget.scrollTop)}
@@ -314,7 +328,7 @@ export function LiveLogs({
           <tbody>
             {startRow > 0 && (
               <tr aria-hidden="true" tabIndex={-1}>
-                <td colSpan={2} style={{ height: startRow * 24 }} />
+                <td colSpan={2} style={{ height: startRow * rowHeight }} />
               </tr>
             )}
             {visible.map((row, offset) => (
@@ -347,14 +361,14 @@ export function LiveLogs({
               <tr aria-hidden="true" tabIndex={-1}>
                 <td
                   colSpan={2}
-                  style={{ height: (filtered.length - endRow) * 24 }}
+                  style={{ height: (filtered.length - endRow) * rowHeight }}
                 />
               </tr>
             )}
           </tbody>
         </table>
         {filtered.length === 0 && <p>No matching buffered lines.</p>}
-      </div>
+      </section>
       <div className="log-tools">
         <span>
           {filtered.length} matching · {selected.size} selected
@@ -408,10 +422,12 @@ export function LiveLogs({
         {copyStatus} {exportStatus}
       </p>
       <dialog
+        onKeyDown={trapDialogTab}
         ref={dialog}
         aria-labelledby={`export-${id}`}
         className="log-export"
-        onCancel={() => {
+        onCancel={(event) => {
+          event.preventDefault();
           if (!exportBusy) setExportLines(null);
         }}
       >
@@ -447,6 +463,7 @@ export function LiveLogs({
           Save selected logs…
         </button>
         <button
+          data-cancel
           type="button"
           className="button"
           disabled={exportBusy}

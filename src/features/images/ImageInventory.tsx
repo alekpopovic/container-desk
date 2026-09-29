@@ -100,6 +100,8 @@ export function ImageInventory({
           Search images
           <input
             type="search"
+            data-shortcut="search"
+            aria-keyshortcuts="Control+f Meta+f"
             maxLength={256}
             value={query}
             onChange={(e) => {
@@ -121,6 +123,8 @@ export function ImageInventory({
           Dangling images only
         </label>
         <button
+          data-shortcut="refresh"
+          aria-keyshortcuts="Control+r Meta+r"
           className="button"
           type="button"
           disabled={busy}

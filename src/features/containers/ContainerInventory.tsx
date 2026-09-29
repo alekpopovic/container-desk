@@ -1,3 +1,4 @@
+import { useRemSize } from "../../components/useRemSize";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BatchManagement } from "../management/BatchManagement";
 import { sameScope } from "../../lib/ipc/client";
@@ -96,8 +97,12 @@ export function ContainerInventory({
     column: "Name",
     ascending: true,
   });
+  const rem = useRemSize();
+  const rowHeight = 4 * rem;
+  const [paged, setPaged] = useState(false);
+  const [page, setPage] = useState(0);
   const [scroll, setScroll] = useState(0);
-  const viewport = useRef<HTMLDivElement>(null);
+  const viewport = useRef<HTMLElement>(null);
   const rows = useMemo(() => {
     const query = search.toLocaleLowerCase();
     return view.rows
@@ -129,19 +134,23 @@ export function ContainerInventory({
       });
   }, [view.rows, search, state, sort]);
   const virtual = rows.length > 200;
-  const start = virtual
-    ? Math.max(
-        0,
-        Math.min(
-          rows.length - 1,
-          Math.floor(Math.max(0, scroll - 44) / 56) - 6,
-        ),
-      )
-    : 0;
+  const start =
+    virtual && paged
+      ? Math.min(page * 24, Math.floor((rows.length - 1) / 24) * 24)
+      : virtual
+        ? Math.max(
+            0,
+            Math.min(
+              rows.length - 1,
+              Math.floor(Math.max(0, scroll - (44 / 14) * rem) / rowHeight) - 6,
+            ),
+          )
+        : 0;
   const end = virtual ? Math.min(rows.length, start + 24) : rows.length;
   const visible = rows.slice(start, end);
   const chosen = view.rows.find((row) => row.id === view.selectedId);
   function resetScroll() {
+    setPage(0);
     setScroll(0);
     if (viewport.current) viewport.current.scrollTop = 0;
   }
@@ -167,6 +176,8 @@ export function ContainerInventory({
           <label>
             Search containers
             <input
+              data-shortcut="search"
+              aria-keyshortcuts="Control+f Meta+f"
               type="search"
               value={search}
               maxLength={256}
@@ -203,6 +214,8 @@ export function ContainerInventory({
             type="button"
             className="button"
             disabled={!view.scope || view.loading}
+            data-shortcut="refresh"
+            aria-keyshortcuts="Control+r Meta+r"
             onClick={refresh}
           >
             Refresh containers
@@ -224,7 +237,54 @@ export function ContainerInventory({
             "No successful snapshot yet."
           )}
         </p>
-        <div
+        {virtual && (
+          <div className="table-pages">
+            <label>
+              <input
+                type="checkbox"
+                checked={paged}
+                onChange={(event) => {
+                  setPaged(event.target.checked);
+                  resetScroll();
+                }}
+              />
+              Use paged table (24 rows per page)
+            </label>
+            {paged && (
+              <>
+                <button
+                  type="button"
+                  className="button"
+                  disabled={start === 0}
+                  onClick={() => {
+                    setPage(Math.max(0, Math.floor(start / 24) - 1));
+                    if (viewport.current) viewport.current.scrollTop = 0;
+                  }}
+                >
+                  Previous containers
+                </button>
+                <button
+                  type="button"
+                  className="button"
+                  disabled={end === rows.length}
+                  onClick={() => {
+                    setPage(Math.floor(start / 24) + 1);
+                    if (viewport.current) viewport.current.scrollTop = 0;
+                  }}
+                >
+                  Next containers
+                </button>
+                <span role="status">
+                  Rows {start + 1}–{end} of {rows.length}
+                </span>
+              </>
+            )}
+          </div>
+        )}
+        <section
+          // biome-ignore lint/a11y/noNoninteractiveTabindex: A scroll region must support keyboard scrolling.
+          tabIndex={0}
+          aria-label="Scrollable container table"
           className="container-scroll"
           ref={viewport}
           onScroll={(event) => setScroll(event.currentTarget.scrollTop)}
@@ -269,9 +329,9 @@ export function ContainerInventory({
               </tr>
             </thead>
             <tbody>
-              {start > 0 && (
+              {!paged && start > 0 && (
                 <tr aria-hidden="true" tabIndex={-1} className="table-spacer">
-                  <td colSpan={6} style={{ height: start * 56 }} />
+                  <td colSpan={6} style={{ height: start * rowHeight }} />
                 </tr>
               )}
               {visible.map((row, offset) => (
@@ -330,11 +390,11 @@ export function ContainerInventory({
                   </td>
                 </tr>
               ))}
-              {end < rows.length && (
+              {!paged && end < rows.length && (
                 <tr aria-hidden="true" tabIndex={-1} className="table-spacer">
                   <td
                     colSpan={6}
-                    style={{ height: (rows.length - end) * 56 }}
+                    style={{ height: (rows.length - end) * rowHeight }}
                   />
                 </tr>
               )}
@@ -377,7 +437,7 @@ export function ContainerInventory({
               )}
             </tbody>
           </table>
-        </div>
+        </section>
         <p className="muted table-count">
           {rows.length} matching · {view.rows.length} total
           {virtual ? ` · rows ${start + 1}–${end} visible` : ""}

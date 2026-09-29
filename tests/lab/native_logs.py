@@ -10,7 +10,7 @@ import urllib.request
 from native_ssh import unused_port, ELEMENT, REPO
 
 
-def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False, recovery=False):
+def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export_id=None, xdotool=None, stats=False, events_id=None, mvp=False, management=False, batch=False, networks=False, compose_actions=False, terminal=False, recovery=False, keyboard=False):
     env = os.environ.copy()
     for name in ('LD_LIBRARY_PATH', 'LD_PRELOAD', 'GTK_PATH', 'GIO_MODULE_DIR', 'SSH_AUTH_SOCK'):
         env.pop(name, None)
@@ -79,7 +79,7 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             result = request('POST', '/session', {'capabilities': {'alwaysMatch': {'browserName': 'wry', 'tauri:options': {'application': str(REPO / 'src-tauri/target/release/containerdesk')}}}})
             session = result['sessionId']
             command('POST', '/timeouts', {'implicit': 5000, 'script': 5000, 'pageLoad': 15000})
-            if (stats or terminal) and xdotool:
+            if (stats or terminal or keyboard) and xdotool:
                 found = subprocess.run([str(xdotool), 'search', '--onlyvisible', '--name', '^ContainerDesk$'], env=env, capture_output=True, text=True, check=True, timeout=10).stdout.split()
                 owned_windows = []
                 for window in found:
@@ -95,6 +95,10 @@ def verify(root, tauri_driver, webkit_driver, config, live_id, artifacts, export
             fill('Display name', 'Owned live log checkpoint')
             fill('Saved Docker executable', '/usr/bin/docker')
             button('Save host')
+            if keyboard:
+                from native_keyboard import verify as verify_keyboard
+                verify_keyboard(root,artifacts,script,command,wait,live_id,xdotool,env)
+                return
             button('Connect saved host')
             wait('return document.body.innerText.includes("Ready · SSH session")')
             if mvp:

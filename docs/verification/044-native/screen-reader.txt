@@ -1,0 +1,3 @@
+Actual Orca speech-generation spot check on isolated AT-SPI bus.
+Announced labels: Search containers, Start logs
+No audible-quality claim. No raw log output retained.

@@ -160,6 +160,9 @@ test("keyboard skip, route navigation and theme radios retain visible focus", as
   page,
 }) => {
   await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: "Skip to content" }),
+  ).toBeAttached();
   await page.keyboard.press("Tab");
   await expect(
     page.getByRole("button", { name: "Skip to content" }),

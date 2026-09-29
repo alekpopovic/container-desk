@@ -1,3 +1,7 @@
+import {
+  ConfirmationDialog,
+  useConfirmationFocus,
+} from "../../components/ConfirmationDialog";
 import { useEffect, useRef, useState } from "react";
 import * as bridge from "../../lib/ipc/client";
 import type {
@@ -23,6 +27,7 @@ export function ComposeManagement({
   stale: boolean;
   refresh: () => void;
 }) {
+  const confirmationFocus = useConfirmationFocus();
   const [directory, setDirectory] = useState(""),
     [files, setFiles] = useState(""),
     [name, setName] = useState(project),
@@ -339,10 +344,11 @@ export function ComposeManagement({
         ))}
       </div>
       {intent && intent.operation.category === "compose" && (
-        <div
-          role="dialog"
-          aria-modal="false"
-          aria-label="Confirm Compose action"
+        <ConfirmationDialog
+          returnFocus={confirmationFocus}
+          label="Confirm Compose action"
+          busy={busy}
+          onCancel={() => setIntent(null)}
           className="mutation-confirmation"
         >
           <h4>Confirm Compose {intent.operation.spec.operation}</h4>
@@ -398,6 +404,7 @@ export function ComposeManagement({
             Confirm Compose action
           </button>
           <button
+            data-cancel
             className="button"
             type="button"
             disabled={busy}
@@ -405,7 +412,7 @@ export function ComposeManagement({
           >
             Cancel Compose action
           </button>
-        </div>
+        </ConfirmationDialog>
       )}
       <p role="status">{status}</p>
       {observations.length > 0 && (

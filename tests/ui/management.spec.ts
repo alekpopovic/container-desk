@@ -6,6 +6,7 @@ test("explicit management, exact confirmation, one dispatch and observed health"
   await expect(
     page.getByRole("button", { name: "Restart container", exact: true }),
   ).toBeDisabled();
+  await page.getByRole("button", { name: "Fixture hold mutation" }).click();
   await page.getByRole("button", { name: "Enable management" }).click();
   await page
     .getByRole("button", { name: "Restart container", exact: true })
@@ -14,7 +15,6 @@ test("explicit management, exact confirmation, one dispatch and observed health"
   await expect(dialog).toContainText("Disposable fixture host");
   await expect(dialog).toContainText("a".repeat(64));
   await expect(dialog.locator("img")).toHaveCount(0);
-  await page.getByRole("button", { name: "Fixture hold mutation" }).click();
   await page
     .getByRole("button", { name: "Confirm action", exact: true })
     .dblclick();

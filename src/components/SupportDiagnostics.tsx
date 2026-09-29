@@ -1,3 +1,4 @@
+import { trapDialogTab } from "./ConfirmationDialog";
 import { isTauri } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -135,6 +136,7 @@ export function SupportDiagnostics({ demo = false }: { demo?: boolean }) {
       )}
       {message && <p role="status">{message}</p>}
       <dialog
+        onKeyDown={trapDialogTab}
         ref={dialog}
         className="support-confirmation"
         aria-labelledby="clear-support-title"

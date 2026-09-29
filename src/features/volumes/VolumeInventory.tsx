@@ -99,6 +99,8 @@ export function VolumeInventory({
           Search volumes
           <input
             type="search"
+            data-shortcut="search"
+            aria-keyshortcuts="Control+f Meta+f"
             value={query}
             maxLength={256}
             onChange={(e) => {
@@ -108,6 +110,8 @@ export function VolumeInventory({
           />
         </label>
         <button
+          data-shortcut="refresh"
+          aria-keyshortcuts="Control+r Meta+r"
           className="button"
           type="button"
           disabled={busy}

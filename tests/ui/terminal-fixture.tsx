@@ -1,3 +1,4 @@
+import { useWorkspaceShortcuts } from "../../src/components/useWorkspaceShortcuts";
 import { StrictMode, useMemo, useRef, useState } from "react";
 import { mockIPC } from "@tauri-apps/api/mocks";
 import { ContainerConsole } from "../../src/features/terminal/ContainerConsole";
@@ -16,6 +17,7 @@ type Owned = {
   flood: boolean;
 };
 export function TerminalFixture() {
+  useWorkspaceShortcuts();
   const [host, setHost] = useState(1);
   const [closed, setClosed] = useState(0);
   const [opens, setOpens] = useState(0);

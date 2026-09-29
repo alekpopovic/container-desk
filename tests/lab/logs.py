@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--jump', action='store_true', help='Use a second owned loopback sshd as an actual ProxyJump')
     parser.add_argument('--mvp', action='store_true', help='Integrated 030 native journey; requires --stream --stats --jump')
     parser.add_argument('--stream', action='store_true')
+    parser.add_argument('--keyboard', action='store_true', help='044 native keyboard and Orca journey; requires stream, jump and drivers')
     parser.add_argument('--recovery', action='store_true', help='041 native connection interruption and shutdown; requires terminal/native drivers')
     parser.add_argument('--terminal', action='store_true', help='039 non-root PTY and shell-less disposable container; requires --stream')
     parser.add_argument('--compose-actions', action='store_true', help='037 verified existing Compose project actions; requires --stream --jump')
@@ -43,6 +44,7 @@ def main():
     args = parser.parse_args()
     if bool(args.native_driver) != bool(args.webkit_driver) or (args.native_driver and not args.stream):
         parser.error('Native driver flags require --stream and both driver paths')
+    if args.keyboard and not (args.stream and args.jump and args.native_driver and args.focus_xdotool): parser.error('--keyboard requires --stream --jump, native drivers and --focus-xdotool')
     if args.recovery and not (args.terminal and args.jump and args.native_driver): parser.error('--recovery requires --terminal --jump and native drivers')
     if args.terminal and (not args.stream or args.management or args.compose_actions or args.networks or args.stats or args.events or args.reads or args.mvp): parser.error('--terminal requires --stream and excludes other checkpoint modes')
     if args.compose_actions and (not args.stream or not args.jump or args.management or args.stats or args.events or args.reads or args.mvp or args.networks): parser.error('--compose-actions requires --stream --jump and excludes other checkpoint modes')
@@ -211,7 +213,7 @@ def main():
                 if args.stream and args.native_driver:
                     from native_logs import verify
                     try:
-                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[2] if args.terminal else owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions, args.terminal, args.recovery)
+                        verify(root, args.native_driver, args.webkit_driver, ssh_config, owned[2] if args.terminal else owned[-1], args.native_artifacts, owned[0] if args.export_xdotool else None, args.export_xdotool or args.focus_xdotool, args.stats, owned[1] if args.events or args.mvp else None, args.mvp, args.management and not args.batch, args.batch, args.networks, args.compose_actions, args.terminal, args.recovery, args.keyboard)
                     except Exception:
                         # Only bounded state fields from owned fixtures; no logs, env or generic inspect dump.
                         if args.management:
