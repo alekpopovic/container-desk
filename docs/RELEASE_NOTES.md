@@ -1,6 +1,6 @@
-# ContainerDesk 0.1.0 — local release candidate
+# ContainerDesk 0.1.0 — unsigned preview release
 
-2026-09-29. Ready for **local unsigned evaluation** on the verified platforms below. No public release, tag, publisher workflow or auto-updater is included. Artifact source: `ce33d6cd9bba5823642749a26d3e6d367a9bab73`; [successful native run](https://github.com/alekpopovic/container-desk/actions/runs/36594720178). Later review/documentation commits do not rebuild or relabel these packages.
+2026-09-29. **[Public pre-release v0.1.0](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0)**, manually published at the owner's explicit request after local acceptance. All six verified installers, SHA256SUMS and provenance/build metadata are attached. No publisher workflow or auto-updater was added. Artifact source: `ce33d6cd9bba5823642749a26d3e6d367a9bab73`; [successful native run](https://github.com/alekpopovic/container-desk/actions/runs/36594720178). Later review/documentation commits do not rebuild or relabel these packages.
 
 ## Included
 
@@ -28,4 +28,4 @@ Dependency review retains two upstream warnings: GLib 0.18.5 unsound iterator ([
 
 ## Distribution status
 
-Linux is unsigned. ARM Mac uses linker ad-hoc signing; Intel is unsigned. Neither Mac package is Developer ID signed/notarized, and internet-download Gatekeeper approval is unverified. [Optional signing readiness](signing.md) is configuration-ready without owner credentials. These local artifacts are not approved public installers. No OS protection was disabled to claim a pass. CI artifact retention is 14 days; preserve the local candidate independently. Any public distribution, signing credentials or provider account remains an owner action.
+Linux is unsigned. ARM Mac uses linker ad-hoc signing; Intel is unsigned. Neither Mac package is Developer ID signed/notarized, and internet-download Gatekeeper approval is unverified. [Optional signing readiness](signing.md) is configuration-ready without owner credentials. The owner authorized public distribution as an unsigned preview; this does not establish signed-download/Gatekeeper acceptance. No OS protection was disabled to claim a pass. Original CI artifact retention is 14 days; the release assets are separately attached to v0.1.0. Signing credentials, notarization and provider accounts remain owner actions. [Publication/download receipt](releases/v0.1.0.md).

@@ -1,5 +1,7 @@
 # ContainerDesk 0.1.0 — final handover
 
+**Post-handover update:** the owner committed the previously uncommitted CI relocation as `c2464b8` and then explicitly requested publication. [v0.1.0](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0) now contains the original verified installers as an unsigned public preview; [publication receipt](releases/v0.1.0.md). No workflow was enabled or added. The 060 handover below and the local candidate document their earlier pre-publication state; original package bytes/hashes remain unchanged.
+
 The agreed application and three native platform gates are complete. All 60 prompts are tracked with evidence; 052 omits public publishing by the user's explicit scope decision and 055 uses its explicitly permitted no-credentials signing-readiness branch. This delivery is a **local unsigned release candidate**, with no public release/tag/publisher or auto-updater.
 
 ## Package location and identity

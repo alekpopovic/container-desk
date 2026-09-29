@@ -4,20 +4,22 @@ Desktop aplikacija za rad sa Docker-om na Linux serverima preko tvog postojećeg
 
 Aplikacija prikazuje kontejnere, inspect detalje, logove, statistiku, Compose projekte, slike, volumene i mreže. Start/stop/restart, ograničeno uklanjanje zaustavljenih kontejnera i terminal traže posebno omogućavanje i potvrdu. Slike, volumeni i mreže su samo za pregled. Nema prune-a, Compose up/down, registry prijavljivanja, Kubernetes-a ili automatskog ažuriranja. Radni naziv je ContainerDesk; nije tvrdnja o registrovanom žigu.
 
-**Status:** svih 60 promptova je završeno u dogovorenom obimu. [Završna primopredaja i paketi](docs/FINAL_HANDOVER.md). Funkcije su implementirane; aktuelne provere i ograničenja su u [statusu projekta](docs/project-status.md). Ubuntu 24.04 x86_64 deb/AppImage i macOS 15.7.9 app/DMG na Apple Silicon/Intel imaju stvarne dokaze izvršavanja. [Konačna native matrica](docs/platform-matrix.md) potvrđuje SSH/Docker/PTY na sve tri klijentske platforme. Nema odobrene javne objave; Mac Developer ID potpis/notarizacija nisu provereni bez vlasnikovih kredencijala. Workflow za javnu objavu je izostavljen po dogovoru.
+**Status:** svih 60 promptova je završeno u dogovorenom obimu. [Završna primopredaja i paketi](docs/FINAL_HANDOVER.md). Funkcije su implementirane; aktuelne provere i ograničenja su u [statusu projekta](docs/project-status.md). Ubuntu 24.04 x86_64 deb/AppImage i macOS 15.7.9 app/DMG na Apple Silicon/Intel imaju stvarne dokaze izvršavanja. [Konačna native matrica](docs/platform-matrix.md) potvrđuje SSH/Docker/PTY na sve tri klijentske platforme. [Preuzmi v0.1.0 — javno pre-release izdanje](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0); Mac Developer ID potpis/notarizacija nisu provereni bez vlasnikovih kredencijala. Workflow za javnu objavu je izostavljen po dogovoru; ovo izdanje je objavljeno ručno na izričit zahtev vlasnika.
+
+**Instalacija:** [Linux deb](https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-x86_64-unknown-linux-gnu.deb) · [Linux AppImage](https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-x86_64-unknown-linux-gnu.AppImage) · [Mac Apple Silicon DMG](https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-aarch64-apple-darwin.dmg) · [Mac Intel DMG](https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-x86_64-apple-darwin.dmg). [Checksum fajl](https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/SHA256SUMS). Mac paketi nisu Developer ID potpisani/notarizovani, pa Gatekeeper može blokirati preuzetu aplikaciju.
 
 ## 1. Instalacija
 
-Preuzmi odgovarajući **razvojni** paket iz uspešnog [CI izvršavanja vlasničkog repozitorijuma](https://github.com/alekpopovic/container-desk/actions/workflows/ci.yml), za tačan pregledani commit i arhitekturu. Proveri metadata i SHA256SUMS prema [uputstvu za ažuriranje](docs/updates.md). CI artefakti traju 14 dana i ne predstavljaju odobren javni release.
+Preuzmi paket za svoj sistem i procesor sa [GitHub izdanja v0.1.0](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0), kao i `SHA256SUMS`. Uporedi izračunati SHA-256 izabranog fajla sa istoimenim redom u tom checksum fajlu. Metadata i dokaz porekla su takođe priloženi; detalji su u [uputstvu za ažuriranje](docs/updates.md). Ovo je javna nepotpisana probna verzija.
 
 Na Ubuntu 24.04 x86_64, posle provere preuzetih fajlova:
 
 ```sh
-sha256sum --check SHA256SUMS
+sha256sum containerdesk-0.1.0-x86_64-unknown-linux-gnu.deb
 sudo apt install ./containerdesk-0.1.0-x86_64-unknown-linux-gnu.deb
 ```
 
-Pokreni **ContainerDesk** iz menija aplikacija. Detalji i ograničenja AppImage formata su u [Linux paketima](docs/linux-packages.md). Na Mac-u koristi paket za svoj procesor, proveri `shasum -a 256 --check SHA256SUMS`, otvori DMG i kopiraj aplikaciju u Applications. Trenutni nepotpisani/ad-hoc paketi su za lokalnu razvojnu proveru; internet Gatekeeper prihvat nije potvrđen. Ne uklanjaj karantin i ne isključuj zaštitu da bi test izgledao uspešan. Pogledaj [Mac pakete](docs/macos-packages.md) i [opciono potpisivanje](docs/signing.md).
+Pokreni **ContainerDesk** iz menija aplikacija. Detalji i ograničenja AppImage formata su u [Linux paketima](docs/linux-packages.md). Na Mac-u koristi paket za svoj procesor, izračunaj `shasum -a 256 ime-preuzetog-paketa.dmg` i uporedi sa njegovim redom u `SHA256SUMS`, otvori DMG i kopiraj aplikaciju u Applications. Trenutni nepotpisani/ad-hoc paketi su objavljeni kao probna verzija; internet Gatekeeper prihvat nije potvrđen. Ne uklanjaj karantin i ne isključuj zaštitu da bi test izgledao uspešan. Pogledaj [Mac pakete](docs/macos-packages.md) i [opciono potpisivanje](docs/signing.md).
 
 ## 2. Pripremi pouzdan SSH pristup
 

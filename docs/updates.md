@@ -16,16 +16,16 @@ The initial installer scheme accepts numeric `MAJOR.MINOR.PATCH`, with no `v` pr
 
 ## Obtain and verify a package
 
-There is currently **no approved public download** and no public-publishing workflow. The owner-controlled source is [alekpopovic/container-desk](https://github.com/alekpopovic/container-desk); development packages are attached to successful [native CI runs](https://github.com/alekpopovic/container-desk/actions/workflows/ci.yml), retained for 14 days. Select a reviewed exact source commit and the artifact for your CPU/OS. Do not use a similarly named repository or infer approval from a green build. A future approved public release must be linked here with its final manifest, platform evidence and signatures; no substitute endpoint is shipped now.
+The owner-authorized public download is [ContainerDesk v0.1.0 unsigned preview](https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0). Choose the exact package for your CPU/OS and verify its digest against the attached [SHA256SUMS](https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/SHA256SUMS); [release provenance](https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/release-provenance.json) links the exact tested source and native evidence. Developer ID/notarization and signed-download Gatekeeper acceptance are unverified. The owner-controlled source remains [alekpopovic/container-desk](https://github.com/alekpopovic/container-desk). No public-publishing workflow or automatic updater was added; GitHub Actions are currently disabled. Do not use a similarly named repository or infer signed-release readiness from the public download alone.
 
-After extracting a trusted CI artifact, verify the complete manifest in that directory:
+For a single release installer, calculate `sha256sum <file>` (Linux) or `shasum -a 256 <file>` (macOS) and compare it with the matching filename row in SHA256SUMS. If you downloaded every file listed in the release manifest, or extracted a complete trusted CI artifact, verify the complete manifest in that directory:
 
 ```sh
 sha256sum --check SHA256SUMS          # Linux
 shasum -a 256 --check SHA256SUMS      # macOS
 ```
 
-Check package metadata's `sourceCommit`, `sourceDirty: false`, `target`, version, toolchains and verification-report hash against the selected run. Hashes on their own do not authenticate a download's author. Signed distribution has additional requirements in [signing](signing.md), including a verified owner key for any detached Linux manifest signature. Current unsigned/ad-hoc Mac packages are local development output, not approved internet installers.
+Check package metadata's `sourceCommit`, `sourceDirty: false`, `target`, version, toolchains and verification-report hash against the selected run. Hashes on their own do not authenticate a download's author. Signed distribution has additional requirements in [signing](signing.md), including a verified owner key for any detached Linux manifest signature. Current unsigned/ad-hoc Mac packages are publicly available as an owner-authorized preview; normal downloaded Gatekeeper acceptance is still unverified.
 
 ## Preserve settings before replacement
 

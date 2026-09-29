@@ -1,0 +1,93 @@
+{
+  "releaseId": 399383011,
+  "url": "https://github.com/alekpopovic/container-desk/releases/tag/v0.1.0",
+  "tag": "v0.1.0",
+  "sourceCommit": "ce33d6cd9bba5823642749a26d3e6d367a9bab73",
+  "publishedAt": "2026-09-29T17:42:05Z",
+  "draft": false,
+  "prerelease": true,
+  "assetCount": 11,
+  "allAnonymousDownloadsVerified": true,
+  "assets": [
+    {
+      "name": "SHA256SUMS",
+      "bytes": 1120,
+      "sha256": "7e8f545fbbcd51caa6ce50b5f455575455b5cf154803363679f069b4be3a3efd",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/SHA256SUMS",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "containerdesk-0.1.0-aarch64-apple-darwin.app.tar.gz",
+      "bytes": 4591863,
+      "sha256": "f326b7bc7469de5f1ba93030f798e400a8f3c0d84c8b30a3c92e45deb2f2208c",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-aarch64-apple-darwin.app.tar.gz",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "containerdesk-0.1.0-aarch64-apple-darwin.dmg",
+      "bytes": 4617228,
+      "sha256": "ad1cc6f09653785b6a1fa647b83c4e3ba9b15be2b2c385e65bf71ef36320a454",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-aarch64-apple-darwin.dmg",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "containerdesk-0.1.0-aarch64-apple-darwin.json",
+      "bytes": 1415,
+      "sha256": "66d9f7c60fcd6834765780b462f4822ba71d5bb78a13ff4c8bf85937a08b7dc7",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-aarch64-apple-darwin.json",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "containerdesk-0.1.0-x86_64-apple-darwin.app.tar.gz",
+      "bytes": 4683797,
+      "sha256": "c86fdc2f55a65f2b282e33716144918edcedcb557da0b3856152b1b51417adaa",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-x86_64-apple-darwin.app.tar.gz",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "containerdesk-0.1.0-x86_64-apple-darwin.dmg",
+      "bytes": 4711272,
+      "sha256": "85610a2061828fd6fa770aa0d25aa9f2c9db12b847aa48407410de96c05329d5",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-x86_64-apple-darwin.dmg",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "containerdesk-0.1.0-x86_64-apple-darwin.json",
+      "bytes": 1414,
+      "sha256": "c69abfd6c8d3596e03db2a6fb92c89bc1b499ec7f00c5855d96b435591d31ed5",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-x86_64-apple-darwin.json",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "containerdesk-0.1.0-x86_64-unknown-linux-gnu.AppImage",
+      "bytes": 83364344,
+      "sha256": "c5956e3f1e9b7f9c6de759864a3c7fb6b0ba56353d526356ecc37eb309f5c0ae",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-x86_64-unknown-linux-gnu.AppImage",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "containerdesk-0.1.0-x86_64-unknown-linux-gnu.deb",
+      "bytes": 4980694,
+      "sha256": "fb3deee5d2046822c899b99f278b0f500db34fb796b7a13a17625bfb469e82c9",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-x86_64-unknown-linux-gnu.deb",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "containerdesk-0.1.0-x86_64-unknown-linux-gnu.json",
+      "bytes": 1436,
+      "sha256": "bf5bce41de40bf67f4d30eee897ff789cfdac888a1bdbe9a0ba99299f1953695",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/containerdesk-0.1.0-x86_64-unknown-linux-gnu.json",
+      "anonymousDownloadVerified": true
+    },
+    {
+      "name": "release-provenance.json",
+      "bytes": 2013,
+      "sha256": "8bfc07152a911d5ac25ec996f029d47344f5c81ff980444a7eca315f9f8ee147",
+      "url": "https://github.com/alekpopovic/container-desk/releases/download/v0.1.0/release-provenance.json",
+      "anonymousDownloadVerified": true
+    }
+  ],
+  "signing": "Linux unsigned; Mac ARM linker ad-hoc, Mac Intel unsigned; Developer ID/notarization not performed",
+  "publicationAuthorization": "Explicit user request after completion of the 60 prompts",
+  "workflowAddedOrEnabled": false
+}
